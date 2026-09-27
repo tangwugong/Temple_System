@@ -14,13 +14,13 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // 靜態檔案託管 (提供 public 目錄下的前端頁面)
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'docs')));
 
 // =========================================================================
 // 1. 設定 SQLite 執行資料夾與資料庫路徑：D:\DB\sqlite\temple.db
 // =========================================================================
 // 使用 path.join 或雙反斜線避免 Windows 轉義字元報錯
-const dbDir = path.normalize('D:/DB/sqlite');
+const dbDir = path.normalize('sqlite');
 const dbPath = path.join(dbDir, 'temple.db');
 
 // 防呆機制：若 D:\DB\sqlite 資料夾尚未建立，自動建立目錄
