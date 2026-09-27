@@ -1,0 +1,431 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>信眾家戶檔案 - 五公祖師巖</title>
+    <script src="js/tailwindcss.js"></script>
+    <script src="js/vue.global.prod.js"></script>
+    <script src="js/common.js"></script>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-amber-50/40 text-slate-800 min-h-screen">
+    <div id="app" v-cloak class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+
+        <!-- 頂部操作列 -->
+        <div class="flex flex-wrap justify-between items-center bg-white p-5 rounded-xl border border-amber-200 shadow-sm gap-4">
+            <div>
+                <h2 class="font-bold text-lg text-slate-900">信眾人員與家戶主檔維護 (CRM)</h2>
+                <p class="text-xs text-gray-500">以家戶為核心結構，支援同戶家眷成員增修與生肖年齡自動試算</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <input v-model="searchKeyword"
+                       type="text"
+                       placeholder="🔍 搜尋戶長姓名、手機或地址..."
+                       class="w-60 border rounded-lg px-3 py-1.5 text-xs bg-gray-50 focus:bg-white outline-none focus:border-amber-700 transition-colors" />
+                <button @click="openAddHouseholdModal"
+                        class="px-4 py-2 bg-amber-800 hover:bg-amber-900 active:scale-95 text-white text-xs font-bold rounded-lg shadow transition-all flex items-center gap-1">
+                    <span>➕</span> 新增家戶 (新戶長)
+                </button>
+            </div>
+        </div>
+
+        <!-- 家戶清冊展示 -->
+        <div class="space-y-4">
+            <div v-for="h in filteredHouseholds"
+                 :key="h.familyCode"
+                 class="border border-amber-200 rounded-xl overflow-hidden bg-white shadow-sm hover:border-amber-400 transition-colors">
+
+                <!-- 戶長卡片頂部標題列 -->
+                <div class="p-4 bg-amber-50/60 border-b border-amber-100 flex flex-wrap justify-between items-center gap-3">
+                    <div class="flex items-center gap-3">
+                        <span class="px-2.5 py-1 bg-amber-800 text-white text-xs font-mono font-bold rounded">
+                            {{ h.familyCode }}
+                        </span>
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                {{ h.name }}
+                                <span class="text-[11px] font-normal text-amber-900 bg-amber-100 px-2 py-0.5 rounded-full">戶長</span>
+                            </h3>
+                            <p class="text-xs text-gray-500 font-mono mt-0.5">📞 {{ h.phone }} ｜ 📍 {{ h.address }}</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <button @click="openAddMemberModal(h)"
+                                class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 rounded-lg text-xs font-medium transition-all flex items-center gap-1">
+                            <span>➕</span> 增列眷屬
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 眷屬成員明細表格 -->
+                <div class="p-4 overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr class="text-gray-400 border-b">
+                                <th class="pb-2 font-medium">關係稱謂</th>
+                                <th class="pb-2 font-medium">成員姓名</th>
+                                <th class="pb-2 font-medium">聯絡電話</th>
+                                <th class="pb-2 font-medium">國曆生日</th>
+                                <th class="pb-2 font-medium">生肖 / 實歲</th>
+                                <th class="pb-2 font-medium">身分證字號</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr v-for="m in h.members" :key="m.id" class="hover:bg-amber-50/20">
+                                <td class="py-2.5 text-amber-900 font-bold">{{ m.relationship }}</td>
+                                <td class="py-2.5 font-bold text-slate-800">{{ m.name }}</td>
+                                <td class="py-2.5 font-mono text-gray-600">{{ m.phone || '-' }}</td>
+                                <td class="py-2.5 font-mono text-gray-600">{{ m.birthdate || '-' }}</td>
+                                <td class="py-2.5 text-slate-700 font-medium">
+                                    <span v-if="m.zodiac" class="text-red-800 font-bold">{{ m.zodiac }}</span>
+                                    <span v-if="m.birthdate"> ({{ calculateAge(m.birthdate) }}歲)</span>
+                                    <span v-else class="text-gray-400">-</span>
+                                </td>
+                                <td class="py-2.5 font-mono text-gray-500">{{ m.idNumber || '-' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+            <div v-if="filteredHouseholds.length === 0" class="text-center py-16 bg-white rounded-xl border border-dashed text-gray-400 text-xs">
+                查無符合之信眾家戶檔案，可點選上方「新增家戶」建立第一筆戶長資料。
+            </div>
+        </div>
+
+        <!-- ================= 彈窗 1：新增家戶 (新戶長) ================= -->
+        <div v-if="showHouseholdModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+                <div class="bg-amber-900 px-6 py-4 text-white flex justify-between items-center">
+                    <h3 class="font-bold text-base">建立新信眾家戶 (戶長主檔)</h3>
+                    <button @click="showHouseholdModal = false" class="text-amber-200 hover:text-white text-xl">✕</button>
+                </div>
+
+                <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">家戶代號 *</label>
+                            <input v-model="householdForm.familyCode" type="text" class="w-full border rounded-lg px-3 py-2 font-mono bg-gray-50" />
+                        </div>
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">戶長姓名 *</label>
+                            <input v-model="householdForm.name" type="text" placeholder="例：林大寶" class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">聯絡手機 *</label>
+                            <input v-model="householdForm.phone" type="text" placeholder="例：0912-345678" class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">身分證字號 (報稅申報)</label>
+                            <input v-model="householdForm.idNumber" type="text" placeholder="例：D123456789" class="w-full border rounded-lg px-3 py-2 uppercase font-mono" />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-bold text-amber-900 mb-1">國曆生日 (自動換算生肖)</label>
+                            <input v-model="householdForm.birthdate"
+                                   @change="onHouseholdBirthdateChange"
+                                   type="date"
+                                   class="w-full border rounded-lg px-3 py-2 font-mono bg-amber-50/40" />
+                        </div>
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">推算生肖 / 實歲</label>
+                            <input :value="householdForm.zodiac ? `${householdForm.zodiac} (${householdForm.age}歲)` : '填寫生日後自動帶入'"
+                                   disabled
+                                   class="w-full border rounded-lg px-3 py-2 bg-gray-100 font-bold text-red-800" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">戶籍 / 通訊地址 *</label>
+                        <input v-model="householdForm.address" type="text" placeholder="例：台南市安定區港南里 12 號" class="w-full border rounded-lg px-3 py-2" />
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 px-6 py-3 border-t flex justify-end gap-2 text-xs">
+                    <button @click="showHouseholdModal = false" class="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-lg">取消</button>
+                    <button @click="submitHousehold" class="px-5 py-2 bg-amber-800 hover:bg-amber-900 active:scale-95 text-white font-bold rounded-lg shadow">
+                        確認儲存家戶
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 彈窗 2：增列眷屬成員 ================= -->
+        <div v-if="showMemberModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+                <div class="bg-emerald-900 px-6 py-4 text-white flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-base">增列家眷成員</h3>
+                        <p class="text-[11px] text-emerald-200 font-mono">所屬家戶：{{ memberForm.familyCode }} (戶長: {{ activeHousehold?.name }})</p>
+                    </div>
+                    <button @click="showMemberModal = false" class="text-emerald-200 hover:text-white text-xl">✕</button>
+                </div>
+
+                <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">關係稱謂 *</label>
+                            <select v-model="memberForm.relationship" class="w-full border rounded-lg px-3 py-2 bg-white">
+                                <option value="配偶">配偶</option>
+                                <option value="長子">長子</option>
+                                <option value="次子">次子</option>
+                                <option value="長女">長女</option>
+                                <option value="次女">次女</option>
+                                <option value="父親">父親</option>
+                                <option value="母親">母親</option>
+                                <option value="家眷">家眷</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">眷屬大名 *</label>
+                            <input v-model="memberForm.name" type="text" placeholder="例：林小寶" class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">聯絡手機</label>
+                            <input v-model="memberForm.phone" type="text" placeholder="可共用戶長電話" class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">身分證字號</label>
+                            <input v-model="memberForm.idNumber" type="text" placeholder="例：D223456789" class="w-full border rounded-lg px-3 py-2 uppercase font-mono" />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-bold text-emerald-900 mb-1">國曆生日 (自動換算生肖)</label>
+                            <input v-model="memberForm.birthdate"
+                                   @change="onMemberBirthdateChange"
+                                   type="date"
+                                   class="w-full border rounded-lg px-3 py-2 font-mono bg-emerald-50/40" />
+                        </div>
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">推算生肖 / 實歲</label>
+                            <input :value="memberForm.zodiac ? `${memberForm.zodiac} (${memberForm.age}歲)` : '填寫生日後自動帶入'"
+                                   disabled
+                                   class="w-full border rounded-lg px-3 py-2 bg-gray-100 font-bold text-red-800" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 px-6 py-3 border-t flex justify-end gap-2 text-xs">
+                    <button @click="showMemberModal = false" class="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-lg">取消</button>
+                    <button @click="submitMember" class="px-5 py-2 bg-emerald-800 hover:bg-emerald-900 active:scale-95 text-white font-bold rounded-lg shadow">
+                        確認增列眷屬
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const households = ref([]);
+                const searchKeyword = ref('');
+                const showHouseholdModal = ref(false);
+                const showMemberModal = ref(false);
+                const activeHousehold = ref(null);
+
+                // 表單物件
+                const householdForm = ref({
+                    familyCode: '',
+                    name: '',
+                    phone: '',
+                    address: '',
+                    birthdate: '',
+                    zodiac: '',
+                    age: 0,
+                    idNumber: ''
+                });
+
+                const memberForm = ref({
+                    familyCode: '',
+                    name: '',
+                    relationship: '配偶',
+                    phone: '',
+                    birthdate: '',
+                    zodiac: '',
+                    age: 0,
+                    idNumber: ''
+                });
+
+                // 生肖換算
+                const getZodiac = (year) => {
+                    if (!year) return '';
+                    const animals = ['鼠', '牛', '虎', '兔', '龍', '蛇', '馬', '羊', '猴', '雞', '狗', '豬'];
+                    return animals[(year - 4) % 12];
+                };
+
+                const calculateAge = (birthdateStr) => {
+                    if (!birthdateStr) return 0;
+                    const birthYear = new Date(birthdateStr).getFullYear();
+                    return Math.max(0, 2026 - birthYear);
+                };
+
+                // 生日變更監聽
+                const onHouseholdBirthdateChange = () => {
+                    if (householdForm.value.birthdate) {
+                        const y = new Date(householdForm.value.birthdate).getFullYear();
+                        householdForm.value.zodiac = getZodiac(y);
+                        householdForm.value.age = calculateAge(householdForm.value.birthdate);
+                    }
+                };
+
+                const onMemberBirthdateChange = () => {
+                    if (memberForm.value.birthdate) {
+                        const y = new Date(memberForm.value.birthdate).getFullYear();
+                        memberForm.value.zodiac = getZodiac(y);
+                        memberForm.value.age = calculateAge(memberForm.value.birthdate);
+                    }
+                };
+
+                // 讀取家戶列表
+                const loadHouseholds = async () => {
+                    try {
+                        const res = await fetch(`${API_BASE}/households`);
+                        const data = await res.json();
+                        if (data.success) households.value = data.data;
+                    } catch (e) {
+                        console.error('載入家戶失敗', e);
+                    }
+                };
+
+                // 搜尋過濾
+                const filteredHouseholds = computed(() => {
+                    if (!searchKeyword.value) return households.value;
+                    const kw = searchKeyword.value.trim().toLowerCase();
+                    return households.value.filter(h =>
+                        h.name.toLowerCase().includes(kw) ||
+                        h.phone.includes(kw) ||
+                        h.familyCode.toLowerCase().includes(kw) ||
+                        h.address.toLowerCase().includes(kw)
+                    );
+                });
+
+                // 開啟新增家戶彈窗
+                const openAddHouseholdModal = () => {
+                    const nextNum = (households.value.length + 881).toString().padStart(4, '0');
+                    householdForm.value = {
+                        familyCode: `FAM-${nextNum}`,
+                        name: '',
+                        phone: '',
+                        address: '台南市',
+                        birthdate: '',
+                        zodiac: '',
+                        age: 0,
+                        idNumber: ''
+                    };
+                    showHouseholdModal.value = true;
+                };
+
+                // 開啟增列眷屬彈窗
+                const openAddMemberModal = (household) => {
+                    activeHousehold.value = household;
+                    memberForm.value = {
+                        familyCode: household.familyCode,
+                        name: '',
+                        relationship: '配偶',
+                        phone: household.phone,
+                        birthdate: '',
+                        zodiac: '',
+                        age: 0,
+                        idNumber: ''
+                    };
+                    showMemberModal.value = true;
+                };
+
+                // 送出建立家戶 (戶長)
+                const submitHousehold = async () => {
+                    if (!householdForm.value.name || !householdForm.value.phone || !householdForm.value.address) {
+                        alert('請填寫完整戶長大名、電話與地址');
+                        return;
+                    }
+
+                    try {
+                        const res = await fetch(`${API_BASE}/households`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(householdForm.value)
+                        });
+                        const result = await res.json();
+                        if (result.success) {
+                            alert('家戶建立成功！');
+                            showHouseholdModal.value = false;
+                            await loadHouseholds();
+                        } else {
+                            alert(`建立失敗：${result.message}`);
+                        }
+                    } catch (e) {
+                        alert('連線伺服器異常');
+                    }
+                };
+
+                // 送出增列眷屬
+                const submitMember = async () => {
+                    if (!memberForm.value.name) {
+                        alert('請填寫眷屬大名');
+                        return;
+                    }
+
+                    try {
+                        const res = await fetch(`${API_BASE}/members`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(memberForm.value)
+                        });
+                        const result = await res.json();
+                        if (result.success) {
+                            alert('眷屬增列成功！');
+                            showMemberModal.value = false;
+                            await loadHouseholds();
+                        } else {
+                            alert(`增列失敗：${result.message}`);
+                        }
+                    } catch (e) {
+                        alert('連線伺服器異常');
+                    }
+                };
+
+                onMounted(loadHouseholds);
+
+                return {
+                    households,
+                    searchKeyword,
+                    filteredHouseholds,
+                    showHouseholdModal,
+                    showMemberModal,
+                    activeHousehold,
+                    householdForm,
+                    memberForm,
+                    calculateAge,
+                    onHouseholdBirthdateChange,
+                    onMemberBirthdateChange,
+                    openAddHouseholdModal,
+                    openAddMemberModal,
+                    submitHousehold,
+                    submitMember
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

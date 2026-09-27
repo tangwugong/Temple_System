@@ -1,0 +1,359 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>廟宇沿革 - 五公祖師巖</title>
+    <script src="js/tailwindcss.js"></script>
+    <script src="js/vue.global.prod.js"></script>
+    <script src="js/common.js"></script>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+
+        .vintage-border {
+            border-image: linear-ctx;
+        }
+    </style>
+</head>
+>
+<body class="bg-[#FFFDF7] text-slate-800 min-h-screen" style="background-color: #FFFDF7;">
+    
+
+    <div id="app" v-cloak class="max-w-6xl mx-auto px-4 py-8 space-y-10">
+
+        <!-- 頂部古典氣度迎風橫額 (Hero Banner) -->
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-amber-950 via-amber-900 to-amber-950 text-amber-50 p-8 sm:p-12 shadow-xl border border-amber-800/80 text-center space-y-4">
+            <div class="absolute -right-10 -bottom-10 opacity-10 text-9xl select-none">⛩️</div>
+            <span class="inline-block px-4 py-1 rounded-full bg-amber-800/80 border border-amber-600 text-amber-200 text-xs font-bold tracking-widest uppercase">
+                溯源百年 ‧ 巍峨福地
+            </span>
+            <h1 class="text-3xl sm:text-5xl font-black tracking-widest text-amber-200 font-serif drop-shadow-md">
+                {{ historyData.title || '五公祖師巖 ‧ 百年香火溯源' }}
+            </h1>
+            <p class="text-sm sm:text-base text-amber-100/90 font-medium max-w-2xl mx-auto tracking-wide">
+                {{ historyData.subtitle || '代代相傳護蒼生 ‧ 慈悲濟世化萬方' }}
+            </p>
+        </div>
+
+        <!-- 核心歷史淵源主文 (卷軸感排版) -->
+        <div class="bg-white rounded-3xl border border-amber-200 shadow-sm p-6 sm:p-10 space-y-6">
+            <div class="flex items-center gap-3 border-b border-amber-100 pb-4">
+                <span class="text-3xl">📜</span>
+                <div>
+                    <h2 class="text-lg sm:text-xl font-bold text-amber-950 font-serif">開基立廟淵源</h2>
+                    <p class="text-xs text-gray-400">溯源先賢開拓足跡，領略五公聖澤恩庇</p>
+                </div>
+            </div>
+
+            <div class="text-sm sm:text-base text-slate-700 leading-loose whitespace-pre-wrap font-sans text-justify">
+                {{ historyData.summary_html }}
+            </div>
+        </div>
+
+        <!-- 主祀神尊格位介紹：五公祖師天尊群像卡 -->
+        <div class="space-y-4">
+            <div class="text-center space-y-1">
+                <span class="text-xs font-bold text-amber-800 bg-amber-100 px-3 py-1 rounded-full border border-amber-300">
+                    萬家燈火 ‧ 虔誠頂禮
+                </span>
+                <h2 class="text-xl sm:text-2xl font-black text-slate-900 font-serif">主祀尊神 ‧ 五公菩薩聖紀</h2>
+            </div>
+
+            <div class="bg-gradient-to-br from-amber-900 to-amber-950 text-white rounded-3xl p-6 sm:p-8 shadow-md border border-amber-800 space-y-6">
+                <p class="text-xs sm:text-sm text-amber-100 leading-relaxed font-sans">
+                    {{ historyData.deities_html }}
+                </p>
+
+                <!-- 五位菩薩立體宮徽微型卡 -->
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2">
+                    <div v-for="d in deitiesList" :key="d.name" @click="selectedMaster = d" class="bg-amber-900/60 border border-amber-700/80 rounded-2xl p-4 text-center space-y-1.5 hover:bg-amber-800/80 transition-all">
+
+                        <span class="text-2xl">{{ d.icon }}</span>
+                        <h4 class="font-bold text-amber-200 text-sm font-serif">{{ d.name }}</h4>
+                        <span class="text-[10px] text-amber-300/80 block font-mono">{{ d.title }}</span>
+                        <p class="text-[10px] text-amber-100/70 scale-95 pt-1">{{ d.desc }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- 百年香火傳承歷史時光軸 (Timeline) -->
+        <div class="bg-white rounded-3xl border border-amber-200 shadow-sm p-6 sm:p-10 space-y-8">
+            <div class="flex items-center gap-3 border-b border-amber-100 pb-4">
+                <span class="text-3xl">⏳</span>
+                <div>
+                    <h2 class="text-lg sm:text-xl font-bold text-amber-950 font-serif">香火傳承大事記時光軸</h2>
+                    <p class="text-xs text-gray-400">見證本巖由清代草廬至現代化莊嚴殿宇之璀璨歷程</p>
+                </div>
+            </div>
+
+            <!-- 垂直時光軸 -->
+            <div class="relative pl-6 sm:pl-10 space-y-8 before:absolute before:left-3 sm:before:left-5 before:top-2 before:bottom-2 before:w-0.5 before:bg-amber-300">
+                <div v-for="(item, idx) in sortedTimeline"
+                     :key="item.id"
+                     class="relative group">
+
+                    <!-- 節點圖示 -->
+                    <div class="absolute -left-6 sm:-left-10 top-0.5 w-6 sm:w-8 h-6 sm:h-8 rounded-full bg-amber-800 text-amber-100 border-2 border-amber-200 flex items-center justify-center text-xs sm:text-sm shadow-md group-hover:scale-110 transition-transform">
+                        {{ item.icon_tag || '🏛️' }}
+                    </div>
+
+                    <!-- 內容卡片 -->
+                    <div class="bg-amber-50/50 hover:bg-amber-50 border border-amber-200/80 rounded-2xl p-4 sm:p-5 transition-all shadow-sm space-y-1.5 ml-2 sm:ml-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <span class="font-mono text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-800 text-white shadow-sm">
+                                西元 {{ item.solar_year }} 年
+                            </span>
+                            <span class="text-xs font-bold text-amber-900 font-serif">{{ item.dynasty_era }}</span>
+                        </div>
+                        <h3 class="font-bold text-base text-slate-900 pt-1 font-serif">{{ item.event_title }}</h3>
+                        <p class="text-xs sm:text-sm text-slate-600 leading-relaxed font-sans">{{ item.event_content }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 祖師生平聖紀詳細簡介彈窗 (含照片) -->
+        <div v-if="selectedMaster"
+             class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm transition-all"
+             @click.self="closeMasterDetail">
+
+            <div class="bg-[#FFFDF7] text-slate-900 max-w-4xl w-full rounded-3xl border-2 border-amber-400 shadow-2xl overflow-hidden relative animate-in fade-in zoom-in-95 duration-200">
+
+                <!-- 關閉叉叉按鈕 -->
+                <button type="button" @click="closeMasterDetail"
+                        class="absolute right-3 top-3 z-10 text-amber-950/70 hover:text-amber-950 bg-amber-100 hover:bg-amber-200 w-8 h-8 rounded-full flex items-center justify-center text-base font-bold transition-all shadow-sm">
+                    ✕
+                </button>
+
+                <div class="flex flex-col sm:flex-row">
+                    <!-- 祖師照片展區 (左側) -->
+                    <div class="sm:w-2/5 bg-gradient-to-b from-amber-950 to-amber-900 flex flex-col items-center justify-center p-6 text-center border-b sm:border-b-0 sm:border-r border-amber-800">
+                        <div class="relative w-36 h-48 sm:w-44 sm:h-56 rounded-2xl overflow-hidden border-2 border-amber-400/80 shadow-lg bg-amber-950 flex items-center justify-center">
+                            <!-- 若有圖片則顯示照片，失敗或未上傳則回退顯示 icon -->
+                            <img v-if="selectedMaster.image"
+                                 :src="selectedMaster.image"
+                                 :alt="selectedMaster.name"
+                                 @error="$event.target.style.display='none'"
+                                 class="w-full h-full object-cover">
+                            <span v-else class="text-6xl">{{ selectedMaster.image || '⛩️' }}</span>
+                        </div>
+                        <div class="mt-3">
+                            <span class="text-[10px] font-bold tracking-widest text-amber-300 bg-amber-950/80 px-2.5 py-0.5 rounded-full border border-amber-700 font-mono">
+                                {{ selectedMaster.title || '主祀尊神' }}
+                            </span>
+                            <h3 class="text-xl font-bold text-amber-100 font-serif mt-1">{{ selectedMaster.name }}</h3>
+                        </div>
+                    </div>
+
+                    <!-- 聖紀簡介內文 (右側) -->
+                    <div class="sm:w-3/5 p-6 sm:p-7 flex flex-col justify-between space-y-4">
+                        <div class="space-y-3">
+                            <div class="border-b border-amber-200 pb-2">
+                                <span class="text-xs font-bold text-amber-800 tracking-wider font-serif">📜 尊神顯化大願聖紀</span>
+                                <p class="text-xs text-amber-950/70 font-medium">{{ selectedMaster.desc }}</p>
+                            </div>
+
+                            <div class="text-slate-700 text-xs sm:text-sm leading-relaxed font-serif text-justify max-h-56 overflow-y-auto pr-2">
+                                {{ selectedMaster.bio }}
+                            </div>
+                        </div>
+
+                        <div class="pt-2 flex justify-end border-t border-amber-100">
+                            <button type="button" @click="closeMasterDetail"
+                                    class="w-full sm:w-auto px-5 py-2 bg-amber-800 hover:bg-amber-900 active:scale-95 text-amber-100 font-bold rounded-xl text-xs shadow-md transition-all">
+                                合十頂禮 ‧ 關閉
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+
+        <!-- 結語願景 -->
+        <div class="text-center p-6 bg-amber-100/60 rounded-2xl border border-amber-300 text-xs text-amber-900 space-y-1 font-serif">
+            <p class="font-bold text-sm">⛩️ 五公聖德 ‧ 福佑群生 ‧ 萬代馨香 ⛩️</p>
+            <p class="opacity-80">竭誠歡迎十方大德蒞臨參香祈福、添油香共結善緣</p>
+        </div>
+
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const getApiBase = () => (typeof API_BASE !== 'undefined' && API_BASE) ? API_BASE : '/api';
+                
+                const historyData = ref({
+                    title: '',
+                    subtitle: '',
+                    summary_html: '',
+                    deities_html: '',
+                    timeline: []
+                });
+
+                const fiveMasters = [
+                    { name: '誌公祖師', title: '大悲救苦', icon: '📿', desc: '神通廣大 解除疾厄' },
+                    { name: '朗公祖師', title: '法慧無量', icon: '📜', desc: '開示明路 庇蔭家宅' },
+                    { name: '康公祖師', title: '威德普照', icon: '🛡️', desc: '驅除瘟疫 消災解難' },
+                    { name: '寶公祖師', title: '行願慈悲', icon: '🏮', desc: '賜福添壽 庇佑仕途' },
+                    { name: '化公祖師', title: '度化萬方', icon: '✨', desc: '化解冤結 闔家吉慶' }
+                ];
+
+                // 1. 彈窗控制變數 (記錄當前點選的祖師物件)
+                const selectedMaster = ref(null);
+
+                const openMasterDetail = (master) => {
+                    console.log('[點擊神尊]', master);
+                    selectedMaster.value = master;
+                };
+
+                const closeMasterDetail = () => {
+                    selectedMaster.value = null;
+                };
+
+                // 預設五公祖師資料
+                const defaultMasters = [
+                    {
+                        name: '誌公祖師',
+                        title: '大悲救苦',
+                        icon: '📿',
+                        image: 'images/masters/zhigong.jpg',
+                        desc: '神通廣大 解除疾厄',
+                        bio: '誌公祖師（寶誌禪師），南北朝時期高僧。少時出家，修習禪業，具天眼通與宿命通等無礙大神通。其行履瀟灑、度化神異，深得梁武帝崇信與敬重。祖師以大慈悲願力垂示迷津，常藉神變顯化救拔疾疫之苦，解除人間眾生諸般疾厄與災殃。'
+                    },
+                    {
+                        name: '朗公祖師',
+                        title: '法慧無量',
+                        icon: '📜',
+                        image: 'images/masters/langgong.jpg',
+                        desc: '開示明路 庇蔭家宅',
+                        bio: '朗公祖師道行深邃，深研經典三藏，具辨惑釋難之圓融法慧。雲遊名山大川講經開示，點化迷徒無數。其威德如日昭晰，破除群迷暗昧，凡信眾家宅不寧者，蒙祖師慈光庇蔭，皆能化凶為吉，庇佑闔家安泰。'
+                    },
+                    {
+                        name: '康公祖師',
+                        title: '威德普照',
+                        icon: '🛡️',
+                        image: 'images/masters/kanggong.jpg',
+                        desc: '驅除瘟疫 消災解難',
+                        bio: '康公祖師身具降魔金剛之威，剛烈護法而內蓄慈悲。古代疫癘叢生、妖氛侵害之際，祖師展現廣大威神力，敕水驅邪、禳除瘟癀戾氣，是鎮守壇場、消災禦難、護衛信眾身心康泰的強大庇護神。'
+                    },
+                    {
+                        name: '寶公祖師',
+                        title: '行願慈悲',
+                        icon: '🏮',
+                        image: 'images/masters/baogong.jpg',
+                        desc: '賜福添壽 庇佑仕途',
+                        bio: '寶公祖師發廣大弘誓願，慈悲心念不捨一切眾生。平生廣修布施、拔苦與樂，隨機感赴。信眾若求福祉延年、功名事業或行善積德者，虔心向祖師祈願，常蒙感應加被，廣獲福澤福田。'
+                    },
+                    {
+                        name: '化公祖師',
+                        title: '度化萬方',
+                        icon: '✨',
+                        image: 'images/masters/huagong.jpg',
+                        desc: '化解冤結 闔家吉慶',
+                        bio: '化公祖師行道精微，具大方便智度，長於調伏剛強、消弭宿世怨懟。凡世間家庭反目、冤結牽纏者，祖師以無漏慈音法語開導撫平，促成合和圓滿，令十方信眾闔家吉祥安泰。'
+                    }
+                ];
+
+                const deitiesList = ref([...defaultMasters]);
+
+                // 2. 依年份正序排序 (由早到晚，如 1895 -> 1945 -> 2026)
+                // 若要改為「最新的年份在最上面」，將 aYear - bYear 改為 bYear - aYear 即可
+                const sortedTimeline = computed(() => {
+                    const list = historyData.value?.timeline;
+                    if (!Array.isArray(list) || list.length === 0) return [];
+
+                    return [...list].sort((a, b) => {
+                        const aYear = parseInt(a.solar_year, 10) || 0;
+                        const bYear = parseInt(b.solar_year, 10) || 0;
+                        return aYear - bYear; // 正序排列
+                    });
+                });
+
+                const loadHistory = async () => {
+                    try {
+                        const res = await fetch(`${API_BASE}/history`);
+                        const d = await res.json();
+                        if (d.success) historyData.value = d.data;
+                    } catch (e) {
+                        console.error('載入沿革失敗', e);
+                    }
+                };
+
+                // 載入神尊資料：以系統參數維護的資料為主
+                const loadDeitiesData = async () => {
+                    try {
+                        const res = await fetch(`${getApiBase()}/settings/deities`);
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+                        const d = await res.json();
+
+                        // 若系統參數維護有資料，以資料庫資料為最高優先級
+                        if (d.success && Array.isArray(d.data) && d.data.length > 0) {
+                            deitiesList.value = d.data.map(item => {
+                                // 比對是否有前端預設輔助資訊 (如未上傳照片時的備用圖或 icon)
+                                const defaultItem = defaultMasters.find(m => m.name === (item.name || item.deity_name)) || {};
+                                // 核心：從 photos 陣列中抓取第一張圖的 url
+                                const photoUrl = (Array.isArray(item.photos) && item.photos.length > 0)
+                                    ? item.photos[0].url
+                                    : (item.image || defaultItem.image || '');
+
+                                return {
+                                    id: item.id,
+                                    // 1. 神尊姓名 (以系統參數為主)
+                                    name: item.name || item.deity_name || defaultItem.name || '尊神',
+
+                                    // 2. 尊號 / 稱謂
+                                    title: item.title || item.honorific || defaultItem.title || '主祀尊神',
+
+                                    // 3. 圖示 Emoji
+                                    icon: item.icon || defaultItem.icon || '⛩️',
+
+                                    // 4. 照片路徑：優先讀取系統維護的 image_url 或 photo
+                                    image: photoUrl || item.photo || item.image || defaultItem.image || '',
+
+                                    // 5. 簡短摘要 (以系統參數為主)
+                                    desc: item.desc || item.summary || item.memo || defaultItem.desc || '',
+
+                                    // 6. 生平聖紀主文：以系統參數的 bio / intro / content 為主！
+                                    bio: item.bio || item.intro || item.content || item.history_text || defaultItem.bio || '尊神神威顯赫，護佑合境平安。'
+                                };
+                            });
+                            
+                            console.log('[history.html] 已成功載入系統參數維護之神尊聖紀資料，共', deitiesList.value.length, '尊');
+                        } else {
+                            console.warn('[history.html] 系統參數尚無神尊資料，使用預設展示資料');
+                            deitiesList.value = [...defaultMasters];
+                        }
+                    } catch (e) {
+                        console.warn('[history.html] API 載入神尊失敗，回退至預設展示資料:', e);
+                        deitiesList.value = [...defaultMasters];
+                    }
+                };
+
+                onMounted(() => {
+                    loadDeitiesData();
+                });
+                onMounted(loadHistory);
+
+                return {
+                    historyData,
+                    sortedTimeline,
+                    deitiesList,
+                    selectedMaster,      // 👈 彈窗顯示開關
+                    openMasterDetail,    // 👈 點擊開啟事件
+                    closeMasterDetail
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

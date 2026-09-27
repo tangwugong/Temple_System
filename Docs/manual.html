@@ -1,0 +1,270 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>五公祖師巖 - 系統操作手冊</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="js/common.js"></script>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+
+            body {
+                background: white !important;
+                color: black !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-[#FDFBF7] text-slate-800 min-h-screen selection:bg-amber-800 selection:text-white">
+    <div id="app" v-cloak class="max-w-7xl mx-auto px-4 py-6 sm:py-8 space-y-6">
+
+        <!-- 頂部導航與工具列 -->
+        <div class="no-print bg-white p-4 sm:p-5 rounded-2xl border border-amber-200/90 shadow-sm flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="p-2 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-200 text-amber-900 transition-colors text-sm font-bold flex items-center gap-1">
+                    <span>⬅️</span> 返回大廳
+                </a>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
+                        <span>📖</span> 五公祖師巖 ‧ 數位宮務管理系統操作手冊
+                    </h1>
+                    <p class="text-xs text-slate-500">系統版本 V2.0 ‧ 歲次丙午年正式維運規範</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button @click="printManual" class="px-3.5 py-2 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold transition-all shadow flex items-center gap-1.5">
+                    <span>🖨️</span> 列印 / 另存 PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- 主體雙欄排版：左側快速錨點目錄，右側完整手冊內容 -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+            <!-- 左側固定目錄 (4 欄) -->
+            <div class="no-print lg:col-span-4 bg-white p-5 rounded-3xl border border-amber-200/90 shadow-sm space-y-3 sticky top-6">
+                <h2 class="text-sm font-bold text-amber-950 flex items-center gap-1.5 border-b border-amber-100 pb-2">
+                    <span>📑</span> 目錄索引捷徑
+                </h2>
+                <nav class="space-y-1 text-xs max-h-[calc(100vh-200px)] overflow-y-auto pr-1">
+                    <a v-for="item in navList" :key="item.id" :href="'#' + item.id" class="block py-2 px-3 rounded-xl hover:bg-amber-50 text-slate-700 hover:text-amber-900 font-medium transition-colors">
+                        {{ item.title }}
+                    </a>
+                </nav>
+            </div>
+
+            <!-- 右側詳細章節內容 (8 欄) -->
+            <div class="lg:col-span-8 bg-white p-6 sm:p-10 rounded-3xl border border-amber-200/90 shadow-sm space-y-10 text-slate-700 leading-relaxed text-sm">
+
+                <!-- 章節一：系統架構 -->
+                <section id="sec-architecture" class="space-y-3 border-b border-amber-100 pb-6">
+                    <div class="inline-block px-3 py-1 bg-amber-100 text-amber-900 text-xs font-bold rounded-full">第一章</div>
+                    <h2 class="text-xl font-black text-slate-900">系統整體架構與模組關聯</h2>
+                    <p class="text-xs text-slate-600">
+                        本系統以 <code>common.js</code> 為核心樞紐，串聯身分憑證管理、RBAC 角色權限矩陣、戶籍 CRM 資料流及後端 RESTful API 通訊。
+                    </p>
+                    <div class="p-4 bg-stone-900 text-amber-300 rounded-2xl font-mono text-xs overflow-x-auto">
+                        <pre>
+【信眾家戶 CRM】 ➔ 帶入戶籍家眷 ➔ 【法會報名 / 點燈排位 / 油香緣金】
+      │
+      └─➔ 普品物資代捐 ➔ 【物資代捐轉贈】 ➔ 社福簽收與徵信
+      │
+      └─➔ 緣金開單 ➔ 【公庫收支日記帳】 ➔ 自動借貸平衡統計</pre>
+                    </div>
+                </section>
+
+                <!-- 章節二：RBAC 權限矩陣 -->
+                <section id="sec-rbac" class="space-y-3 border-b border-amber-100 pb-6">
+                    <div class="inline-block px-3 py-1 bg-amber-100 text-amber-900 text-xs font-bold rounded-full">第二章</div>
+                    <h2 class="text-xl font-black text-slate-900">角色與安全權限控制體系 (RBAC)</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left border-collapse border border-amber-200">
+                            <thead>
+                                <tr class="bg-amber-900 text-amber-100">
+                                    <th class="p-2.5 border border-amber-800">角色代碼</th>
+                                    <th class="p-2.5 border border-amber-800">職稱</th>
+                                    <th class="p-2.5 border border-amber-800">主要授權範圍</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-amber-100">
+                                <tr>
+                                    <td class="p-2.5 font-bold font-mono text-amber-900">ADMIN</td>
+                                    <td class="p-2.5 font-bold">主委 / 管理員</td>
+                                    <td class="p-2.5">全功能、全模組管理、系統參數維護、帳冊全面核銷。</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2.5 font-bold font-mono text-amber-900">RITUAL</td>
+                                    <td class="p-2.5 font-bold">科儀法師組長</td>
+                                    <td class="p-2.5">規劃法會、現場登記、匯出疏文清冊、發布通告。</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2.5 font-bold font-mono text-amber-900">ACCOUNTANT</td>
+                                    <td class="p-2.5 font-bold">會計出納執事</td>
+                                    <td class="p-2.5">法會/點燈開單收款、油香收據開立、支出審核登錄。</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2.5 font-bold font-mono text-amber-900">VOLUNTEER</td>
+                                    <td class="p-2.5 font-bold">臨櫃服務志工</td>
+                                    <td class="p-2.5">臨櫃接待、查閱燈位狀態、查詢公開大榜。</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2.5 font-bold font-mono text-amber-900">GUEST</td>
+                                    <td class="p-2.5 font-bold">訪客善信</td>
+                                    <td class="p-2.5">免密參訪、公開科儀日程、點燈大榜徵信、閱覽沿革。</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 章節三：登入與身分切換 -->
+                <section id="sec-login" class="space-y-3 border-b border-amber-100 pb-6">
+                    <div class="inline-block px-3 py-1 bg-amber-100 text-amber-900 text-xs font-bold rounded-full">第三章</div>
+                    <h2 class="text-xl font-black text-slate-900">身分驗證與安全入口 (login.html)</h2>
+                    <ul class="list-disc list-inside space-y-1.5 text-xs">
+                        <li><strong>執事人員登入：</strong> 輸入分派之帳號與密碼，點擊「🔑 執事人員登入」，取得安全 Token 後導向大廳。</li>
+                        <li><strong>訪客免密瀏覽：</strong> 點擊「🙏 訪客信眾免密參訪」，以 <code>GUEST</code> 身分查閱公開大榜。</li>
+                        <li><strong>內部測試快捷身分：</strong> 開發與展示期間，可點選下方快捷按鈕一鍵模擬各角色環境。</li>
+                    </ul>
+                </section>
+
+                <!-- 章節四：宮務大廳與公告 -->
+                <section id="sec-index" class="space-y-3 border-b border-amber-100 pb-6">
+                    <div class="inline-block px-3 py-1 bg-amber-100 text-amber-900 text-xs font-bold rounded-full">第四章</div>
+                    <h2 class="text-xl font-black text-slate-900">宮務大廳與動態看板 (index.html)</h2>
+                    <ul class="list-disc list-inside space-y-1.5 text-xs">
+                        <li><strong>動態營運指標：</strong> 即時呈現法會場次、神位已安奉數、物資在庫數與公帳當期結餘（權限卡控）。</li>
+                        <li><strong>公告發布作業（限 ADMIN, RITUAL）：</strong> 點擊「➕ 發布新公告」，輸入標題、類別並可勾選「置頂」。</li>
+                        <li><strong>公告全文查閱：</strong> 點擊「全文」開啟彈窗閱讀完整內容與執事簽章。</li>
+                    </ul>
+                </section>
+
+                <!-- 章節五：年度法會與科儀 -->
+                <section id="sec-events" class="space-y-3 border-b border-amber-100 pb-6">
+                    <div class="inline-block px-3 py-1 bg-amber-100 text-amber-900 text-xs font-bold rounded-full">第五章</div>
+                    <h2 class="text-xl font-black text-slate-900">年度法會與科儀排程 (events.html)</h2>
+                    <ul class="list-disc list-inside space-y-1.5 text-xs">
+                        <li><strong>規劃新活動：</strong> 填寫代碼、名稱，選取國曆開經日期會自動連動農曆，並設定名額與每席緣金。</li>
+                        <li><strong>受理登記：</strong> 支援 CRM 快速搜尋信眾帶入，選定祈福類別與普品代捐方式，自動計算緣金並產出流水號。</li>
+                        <li><strong>匯出疏文清冊：</strong> 點擊「📜 下載疏文大榜清冊 (.txt)」，自動產出內嵌 UTF-8 BOM 之繁體中文檔案。</li>
+                        <li><strong>影音與照片分享：</strong> 支援 YouTube 連結（自動轉化為播放器）與現場相片上傳。</li>
+                    </ul>
+                </section>
+
+                <!-- 章節六：神位點燈排位 -->
+                <section id="sec-lantern" class="space-y-3 border-b border-amber-100 pb-6">
+                    <div class="inline-block px-3 py-1 bg-amber-100 text-amber-900 text-xs font-bold rounded-full">第六章</div>
+                    <h2 class="text-xl font-black text-slate-900">神位點燈與視覺化排位 (lantern.html)</h2>
+                    <ul class="list-disc list-inside space-y-1.5 text-xs">
+                        <li><strong>九宮燈牆排位：</strong> 綠色為空位，金色為已安奉顯名位。</li>
+                        <li><strong>臨櫃點燈：</strong> 點選空席位，填入善信生辰八字與地址，確認款項後開燈。</li>
+                        <li><strong>查榜檢索：</strong> 信眾輸入姓名即可迅速定位燈位編號。</li>
+                    </ul>
+                </section>
+
+                <!-- 章節七：物資代捐轉贈 -->
+                <section id="sec-charity" class="space-y-3 border-b border-amber-100 pb-6">
+                    <div class="inline-block px-3 py-1 bg-amber-100 text-amber-900 text-xs font-bold rounded-full">第七章</div>
+                    <h2 class="text-xl font-black text-slate-900">發心物資代捐與轉贈 (charity.html)</h2>
+                    <ul class="list-disc list-inside space-y-1.5 text-xs">
+                        <li><strong>入庫連動：</strong> 信眾報名法會勾選代捐時，系統自動將白米納入在庫數量。</li>
+                        <li><strong>轉贈派發：</strong> 選定受贈社福機構、輸入包數並上傳簽收照片，完成除帳徵信。</li>
+                    </ul>
+                </section>
+
+                <!-- 章節八：公庫收支日記帳 -->
+                <section id="sec-finance" class="space-y-3 border-b border-amber-100 pb-6">
+                    <div class="inline-block px-3 py-1 bg-amber-100 text-amber-900 text-xs font-bold rounded-full">第八章</div>
+                    <h2 class="text-xl font-black text-slate-900">公庫收支日記帳 (finance.html)</h2>
+                    <ul class="list-disc list-inside space-y-1.5 text-xs">
+                        <li><strong>香油開單：</strong> 登記收入，自動產生「五公緣字第 XXXXX 號」正式流水收據。</li>
+                        <li><strong>支出核銷：</strong> 登記法會採購或修繕工程支出，自動扣減公帳結餘。</li>
+                    </ul>
+                </section>
+
+                <!-- 章節九：信眾家戶 CRM -->
+                <section id="sec-crm" class="space-y-3 border-b border-amber-100 pb-6">
+                    <div class="inline-block px-3 py-1 bg-amber-100 text-amber-900 text-xs font-bold rounded-full">第九章</div>
+                    <h2 class="text-xl font-black text-slate-900">信眾家戶檔案 CRM (crm.html)</h2>
+                    <ul class="list-disc list-inside space-y-1.5 text-xs">
+                        <li>以「戶」為單位建立戶長與家眷資料，自動換算出生年次之生肖與虛歲。</li>
+                        <li>法會與點燈臨櫃作業時，直接帶入整戶名冊，無需重複登打。</li>
+                    </ul>
+                </section>
+
+                <!-- 章節十：常見問題排除 (FAQ) -->
+                <section id="sec-faq" class="space-y-3">
+                    <div class="inline-block px-3 py-1 bg-amber-100 text-amber-900 text-xs font-bold rounded-full">第十章</div>
+                    <h2 class="text-xl font-black text-slate-900">常見問題排除指南 (FAQ)</h2>
+                    <div class="space-y-3 text-xs">
+                        <div class="p-3 bg-amber-50/60 rounded-xl border border-amber-200">
+                            <p class="font-bold text-amber-950">Q1：點擊「規劃新活動」或「受理登記」無反應？</p>
+                            <p class="text-slate-600 mt-1">因權限控管機制，志工（VOLUNTEER）與訪客（GUEST）無法操作此項目。請點擊首頁登出，改以具備權限之帳號登入。</p>
+                        </div>
+                        <div class="p-3 bg-amber-50/60 rounded-xl border border-amber-200">
+                            <p class="font-bold text-amber-950">Q2：疏文大榜純文字檔開啟呈現亂碼？</p>
+                            <p class="text-slate-600 mt-1">系統匯出時已加入 UTF-8 BOM 標記，在 Windows 記事本與 Mac 文字編輯器中均能直接正確顯示繁體中文。</p>
+                        </div>
+                        <div class="p-3 bg-amber-50/60 rounded-xl border border-amber-200">
+                            <p class="font-bold text-amber-950">Q3：大廳頂部橫額圖片顯示空白？</p>
+                            <p class="text-slate-600 mt-1">請確認 <code>public/images/temple-banner.jpg</code> 檔案是否存在；系統亦具備自動回退機制，若檔案遺失將自動切換為備用古剎圖。</p>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+
+        <!-- 頁尾宣告 -->
+        <div class="text-center text-[11px] text-slate-400 font-mono pt-4">
+            五公祖師巖 宮務數位管理平台 ‧ 歲次丙午年 ‧ 數位手冊
+        </div>
+
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const navList = ref([
+                    { id: 'sec-architecture', title: '1. 系統架構與模組關聯' },
+                    { id: 'sec-rbac',         title: '2. 角色安全權限 (RBAC)' },
+                    { id: 'sec-login',        title: '3. 身分驗證入口 (login.html)' },
+                    { id: 'sec-index',        title: '4. 宮務大廳與看板 (index.html)' },
+                    { id: 'sec-events',       title: '5. 年度法會與科儀 (events.html)' },
+                    { id: 'sec-lantern',      title: '6. 神位點燈排位 (lantern.html)' },
+                    { id: 'sec-charity',      title: '7. 發心物資轉贈 (charity.html)' },
+                    { id: 'sec-finance',      title: '8. 公庫收支日記帳 (finance.html)' },
+                    { id: 'sec-crm',          title: '9. 信眾家戶檔案 (crm.html)' },
+                    { id: 'sec-faq',          title: '10. 常見問題排除 (FAQ)' }
+                ]);
+
+                const printManual = () => {
+                    window.print();
+                };
+
+                return {
+                    navList,
+                    printManual
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

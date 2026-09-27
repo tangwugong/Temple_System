@@ -1,0 +1,707 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>五公祖師巖 - 數位宮務管理平台</title>
+    <script src="js/tailwindcss.js"></script>
+    <script src="js/vue.global.prod.js"></script>
+    <script src="js/common.js"></script>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+
+        .text-glow-gold {
+            text-shadow: 0 0 20px rgba(245, 158, 11, 0.45);
+        }
+    </style>
+</head>
+<body class="bg-[#FDFBF7] text-slate-800 min-h-screen selection:bg-amber-800 selection:text-white" style="background-color: #FDFBF7;">
+    <div id="app" v-cloak class="max-w-7xl mx-auto px-4 py-6 sm:py-8 space-y-8">
+
+        <!-- ================= 1. 沉浸式天闕全景迎賓橫幅 (範例圖神韻風格) ================= -->
+        <!-- ================= 頂部全景迎賓橫幅 (內容靠頂部上緣對齊) ================= -->
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 items-stretch">
+            <!-- 左側：迎賓主視覺橫幅 (佔 4 欄，80%) -->
+            <div class="lg:col-span-4 relative overflow-hidden rounded-2xl sm:rounded-3xl min-h-[280px] sm:min-h-[320px] flex items-start shadow-2xl border-2 border-amber-500/50 bg-gradient-to-br from-amber-950 via-stone-950 to-red-950">
+
+                <!-- 背景大圖 -->
+                <img :src="templeBannerUrl"
+                     @error="onImageError"
+                     alt="五公祖師巖 殿堂宏偉景觀"
+                     class="absolute inset-0 w-full h-full object-cover object-center brightness-[0.88] contrast-[1.08] scale-100 hover:scale-105 transition-transform duration-1000 ease-out" />
+
+                <!-- 柔和漸層遮罩 (左側與頂部加深，確保靠頂文字清晰) -->
+                <div class="absolute inset-0 bg-gradient-to-b from-red-950/40 via-amber-950/50 to-transparent"></div>
+                <div class="absolute inset-0 bg-gradient-to-r from-red-950/35 via-amber-950/60 to-transparent"></div>
+
+                <!-- 前景內容容器：靠上對齊 -->
+                <div class="relative z-10 px-6 sm:px-8 lg:px-10 pt-3 sm:pt-4 pb-6 space-y-3.5 max-w-4xl">
+
+                    <!-- 金色導言膠囊標籤（往上提移） -->
+                    <div class="-mt-2 sm:-mt-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-950/70 border border-amber-400/90 backdrop-blur-md text-amber-300 text-xs sm:text-sm font-bold tracking-widest shadow-lg">
+                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                        <span>國泰民安 ‧ 風調雨順 ‧ 澤被群黎</span>
+                    </div>
+
+                    <!-- 廟名大標題 -->
+                    <div>
+                        <h1 class="text-3xl sm:text-5xl lg:text-6xl font-black tracking-widest text-amber-50 font-serif drop-shadow-[0_4px_12px_rgba(69,10,10,0.8)] text-glow-gold">
+                            五公祖師巖
+                        </h1>
+                    </div>
+
+                    </br></br></br></br></br></br>
+                    <!-- 宗旨內文簡介（加上 self-start mr-auto，確保容器靠左） -->
+                    <p class="mt-auto self-start mr-auto  sm:text-2xl text-amber-100/90 leading-relaxed font-sans text-left drop-shadow-[0_2px_4px_rgba(69,10,10,0.8)] max-w-3xl line-clamp-2">
+                        奉祀五公菩薩（誌公、朗公、康公、寶公、化公）。香火綿延百餘載，庇佑境內黎庶吉祥安泰。本巖提供全年度祈安消災、太歲安奉、文昌點燈、法會科儀登記與發心平安物資代捐扶弱服務。
+                    </p>
+                </div>
+            </div>
+
+            <!-- 右側：智慧善語錄直式卡片 (佔 1 欄，20%) -->
+            <div v-if="featuredQuote"
+                 class="lg:col-span-1 bg-white rounded-3xl border border-amber-200/90 shadow-sm p-4 flex flex-col justify-between space-y-3 relative overflow-hidden group hover:border-amber-400 hover:shadow-md transition-all">
+
+                <!-- 卡片標頭 -->
+                <div class="flex items-center justify-between border-b border-amber-100 pb-2">
+                    <span class="text-xs font-bold text-amber-900 flex items-center gap-1">
+                        <span>🪷</span> 每日善道語錄
+                    </span>
+                    <span v-if="featuredQuote.tag" class="text-[10px] px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-medium">
+                        {{ featuredQuote.tag }}
+                    </span>
+                </div>
+
+                <!-- index.html 右側善語錄卡片的展示區 -->
+                <div class="aspect-video lg:aspect-[4/3] w-full rounded-2xl overflow-hidden bg-amber-50 border border-amber-100 shrink-0">
+                    <video v-if="featuredQuote.imageUrl && /\.(mp4|webm|mov)$/i.test(featuredQuote.imageUrl)"
+                           :src="featuredQuote.imageUrl"
+                           autoplay loop muted playsinline
+                           class="w-full h-full object-cover"></video>
+                    <img v-else
+                         :src="featuredQuote.imageUrl"
+                         :alt="featuredQuote.title"
+                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                </div>
+
+                <!-- 善語錄照片 -->
+                <!--<div class="aspect-video lg:aspect-[4/3] w-full rounded-2xl overflow-hidden bg-amber-50 border border-amber-100 shrink-0">
+                    <img :src="featuredQuote.imageUrl"
+                         :alt="featuredQuote.title"
+                         @error="$event.target.src='https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&q=80'"
+                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                </div>-->
+
+                <!-- 善語錄內文 -->
+                <div class="flex-1 flex flex-col justify-between space-y-2">
+                    <div>
+                        <h4 class="font-bold text-xs text-slate-900 font-serif line-clamp-1 group-hover:text-amber-900 transition-colors">
+                            {{ featuredQuote.title }}
+                        </h4>
+                        <p class="text-[11px] text-slate-600 leading-relaxed font-serif line-clamp-4 bg-amber-50/40 p-2.5 rounded-xl border border-amber-100/70 mt-1">
+                            「{{ featuredQuote.content }}」
+                        </p>
+                    </div>
+
+                    <!-- 底部署名、維護日期與按鈕 -->
+                    <div class="pt-2 border-t border-amber-100 space-y-2 text-[10px] text-slate-400 font-mono">
+                        <div class="flex flex-col gap-0.5">
+                            <span class="font-bold text-amber-950 font-sans truncate">✍️ {{ featuredQuote.author || '五公祖師' }}</span>
+                            <span>📅 {{ featuredQuote.date }}</span>
+                        </div>
+
+                        <a href="quotes.html"
+                           class="w-full py-1.5 px-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 font-bold text-center flex items-center justify-center gap-1 transition-all">
+                            <span>更多語錄</span> <span>➔</span>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+           
+            <!-- ================= 2. 明亮開運即時看板 (白底暖金邊框) ================= -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-amber-200/90 hover:border-amber-400 transition-all shadow-sm space-y-2">
+                    <div class="flex justify-between items-center text-xs text-slate-500 font-medium">
+                        <span class="font-bold">📅 法會科儀檔期</span>
+                        <span class="text-lg">⛩️</span>
+                    </div>
+                    <div class="text-2xl font-black text-slate-900 font-mono">
+                        {{ stats.eventsCount }} <span class="text-xs font-normal text-slate-500">場排定中</span>
+                    </div>
+                    <p class="text-[11px] text-amber-800 truncate font-semibold font-mono">最新：{{ stats.latestEventName || '暫無活動' }}</p>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-amber-200/90 hover:border-amber-400 transition-all shadow-sm space-y-2">
+                    <div class="flex justify-between items-center text-xs text-slate-500 font-medium">
+                        <span class="font-bold">🏮 神位太歲 ‧ 光明燈</span>
+                        <span class="text-lg">🪔</span>
+                    </div>
+                    <div class="text-2xl font-black text-amber-900 font-mono">
+                        {{ stats.lanternOccupied }} <span class="text-xs font-normal text-slate-500">席位顯名安奉</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500">本命元辰光彩 ‧ 定址即時管控</p>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-amber-200/90 hover:border-amber-400 transition-all shadow-sm space-y-2">
+                    <div class="flex justify-between items-center text-xs text-slate-500 font-medium">
+                        <span class="font-bold">🌾 愛心平安白米物資</span>
+                        <span class="text-lg">🎁</span>
+                    </div>
+                    <div class="text-2xl font-black text-emerald-800 font-mono">
+                        {{ stats.charityStock }} <span class="text-xs font-normal text-slate-500">份在庫待派發</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500">十方信眾代捐 ‧ 轉贈育幼弱勢</p>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-amber-200/90 hover:border-amber-400 transition-all shadow-sm space-y-2">
+                    <div class="flex justify-between items-center text-xs text-slate-500 font-medium">
+                        <span class="font-bold">🪙 公帳當期結餘</span>
+                        <span class="text-lg">💰</span>
+                    </div>
+                    <div class="text-2xl font-black font-mono" :class="stats.financeBalance >= 0 ? 'text-amber-950' : 'text-red-700'">
+                        <span v-if="canViewFinance">NT$ {{ stats.financeBalance.toLocaleString() }}</span>
+                        <span v-else class="text-xs text-slate-400 font-sans font-bold">需會計/主管權限</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500">香油緣金收據與公庫流水日記帳</p>
+                </div>
+            </div>
+
+            <!-- ================= 3. 公告欄與今日吉課專區 (左 8 右 4 雙欄) ================= -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                <!-- 左側：最新宮務公告 (8 欄，白底金邊) -->
+                <div class="lg:col-span-8 bg-white rounded-3xl border border-amber-200/90 shadow-sm overflow-hidden flex flex-col justify-between">
+                    <div>
+                        <div class="p-5 border-b border-amber-100 bg-gradient-to-r from-amber-50/80 to-white flex flex-wrap justify-between items-center gap-3">
+                            <div class="flex items-center gap-2">
+                                <span class="text-lg">📢</span>
+                                <h2 class="text-base font-bold text-slate-900 tracking-wide">五公祖師巖 ‧ 最新宮務通告</h2>
+                            </div>
+                            <button v-if="canPublishNotice"
+                                    @click="openAddNoticeModal"
+                                    class="px-3.5 py-1.5 bg-amber-800 hover:bg-amber-900 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1">
+                                <span>➕</span> 發布新公告
+                            </button>
+                        </div>
+
+                        <div class="divide-y divide-amber-100 max-h-[360px] overflow-y-auto">
+                            <div v-for="item in announcements"
+                                 :key="item.id"
+                                 class="p-4 hover:bg-amber-50/40 transition-colors flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                                <div class="space-y-1.5 flex-1 pr-2">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span v-if="item.is_pinned === 1" class="px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 border border-red-200">
+                                            📌 置頂
+                                        </span>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                                            {{ item.category }}
+                                        </span>
+                                        <h3 class="font-bold text-sm text-slate-900">{{ item.title }}</h3>
+                                    </div>
+                                    <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed">{{ item.content }}</p>
+                                    <div class="flex items-center gap-4 text-[11px] text-slate-400 font-mono">
+                                        <span>✍️ 發布者：{{ item.publisher }}</span>
+                                        <span>📅 {{ item.publish_date }}</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <button @click="viewNoticeDetail(item)"
+                                            class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-lg text-xs font-medium transition-all">
+                                        全文
+                                    </button>
+                                    <button v-if="canPublishNotice"
+                                            @click="deleteNotice(item.id)"
+                                            class="px-2 py-1 text-red-600 hover:bg-red-50 rounded-lg text-xs transition-all">
+                                        刪除
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div v-if="announcements.length === 0" class="text-center py-12 text-slate-400 text-xs">
+                                目前尚無最新通告事項
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-amber-50/40 border-t border-amber-100 text-right">
+                        <button @click="refreshDashboard" class="text-xs text-amber-900 hover:text-amber-700 font-bold transition-colors">
+                            🔄 重新整理公告與指標
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 右側：今日參香資訊與參香指南 (4 欄) -->
+                <div class="lg:col-span-4 bg-white rounded-3xl border border-amber-200/90 shadow-sm p-6 space-y-4 flex flex-col justify-between">
+                    <div class="space-y-4">
+                        <div class="border-b border-amber-100 pb-3">
+                            <h3 class="text-sm font-bold text-amber-950 flex items-center gap-2">
+                                <span>🕯️</span> 信眾參香 ‧ 殿堂吉日提醒
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-0.5">天運吉昌 ‧ 神靈感應</p>
+                        </div>
+
+                        <div class="p-4 rounded-2xl bg-amber-50/60 border border-amber-200 space-y-1.5">
+                            <span class="text-[11px] font-mono text-amber-900 font-bold block">🏛️ 大殿開放時間</span>
+                            <p class="text-xs font-bold text-slate-800">每日上午 07:00 至 晚間 21:00</p>
+                            <p class="text-[11px] text-slate-500">逢初一、十五及法會科儀檔期延長開放至 22:00</p>
+                        </div>
+
+                        <div class="p-4 rounded-2xl bg-amber-50/60 border border-amber-200 space-y-1.5">
+                            <span class="text-[11px] font-mono text-amber-900 font-bold block">📜 臨櫃服務項目</span>
+                            <ul class="text-xs text-slate-700 space-y-1 list-disc list-inside">
+                                <li>甲辰/乙巳年 太歲、文昌光明燈安奉</li>
+                                <li>神明聖誕祈安植福疏文填寫登記</li>
+                                <li>隨喜添油香並開立正式公庫收據</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-amber-100/60 border border-amber-300 text-center text-xs text-amber-950 font-serif font-bold">
+                        南無五公祖師天尊 慈航普渡
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ================= 4. 業務模組作業大廳 (白底立體琥珀金邊卡片) ================= -->
+            <div class="space-y-4 pt-2">
+                <div class="flex justify-between items-center border-b border-amber-200 pb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-lg">🏛️</span>
+                        <h2 class="text-base font-bold text-slate-900 tracking-wide">宮務各項核心系統</h2>
+                    </div>
+                    <span class="text-xs text-slate-500 font-mono">
+                        可存取作業模組：{{ authorizedModules.length }} 個
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+                    <!-- 1. 廟宇沿革 (所有人開放) -->
+                    <a href="history.html" class="group bg-white p-5 rounded-2xl border border-amber-200/90 hover:border-amber-500 transition-all shadow-sm hover:shadow-md space-y-3 block">
+                        <div class="flex justify-between items-start">
+                            <span class="text-2xl p-2.5 bg-amber-50 group-hover:bg-amber-100 rounded-xl transition-colors">📜</span>
+                            <span class="text-[11px] text-amber-800 font-bold group-hover:translate-x-1 transition-transform">閱讀 ➔</span>
+                        </div>
+                        <h3 class="font-bold text-sm text-slate-900 group-hover:text-amber-900 transition-colors">廟宇沿革與神尊聖紀</h3>
+                        <p class="text-[11px] text-slate-500 leading-relaxed line-clamp-2">開基渡台立廟、五公聖尊神威及百年大事記時光軸。</p>
+                    </a>
+
+                    <!-- 2. 法會活動 (所有人可查榜) -->
+                    <a href="events.html" class="group bg-white p-5 rounded-2xl border border-amber-200/90 hover:border-amber-500 transition-all shadow-sm hover:shadow-md space-y-3 block">
+                        <div class="flex justify-between items-start">
+                            <span class="text-2xl p-2.5 bg-amber-50 group-hover:bg-amber-100 rounded-xl transition-colors">📅</span>
+                            <span class="text-[11px] text-amber-800 font-bold group-hover:translate-x-1 transition-transform">期程 ➔</span>
+                        </div>
+                        <h3 class="font-bold text-sm text-slate-900 group-hover:text-amber-900 transition-colors">年度法會科儀排程</h3>
+                        <p class="text-[11px] text-slate-500 leading-relaxed line-clamp-2">法會日期、信眾上疏登記、徵信金榜及影音心得分享。</p>
+                    </a>
+
+                    <!-- 3. 點燈排位 (所有人可查榜) -->
+                    <a href="lantern.html" class="group bg-white p-5 rounded-2xl border border-amber-200/90 hover:border-amber-500 transition-all shadow-sm hover:shadow-md space-y-3 block">
+                        <div class="flex justify-between items-start">
+                            <span class="text-2xl p-2.5 bg-amber-50 group-hover:bg-amber-100 rounded-xl transition-colors">🏮</span>
+                            <span class="text-[11px] text-amber-800 font-bold group-hover:translate-x-1 transition-transform">選位 ➔</span>
+                        </div>
+                        <h3 class="font-bold text-sm text-slate-900 group-hover:text-amber-900 transition-colors">神位點燈排位受理</h3>
+                        <p class="text-[11px] text-slate-500 leading-relaxed line-clamp-2">太歲、光明、文昌、財神燈壁即時排位與跨年度管理。</p>
+                    </a>
+
+                    <!-- 4. 物資轉贈 (權限管制) -->
+                    <a v-if="canAccess('charity.html')" href="charity.html" class="group bg-white p-5 rounded-2xl border border-amber-200/90 hover:border-emerald-500 transition-all shadow-sm hover:shadow-md space-y-3 block">
+                        <div class="flex justify-between items-start">
+                            <span class="text-2xl p-2.5 bg-emerald-50 group-hover:bg-emerald-100 rounded-xl transition-colors">🌾</span>
+                            <span class="text-[11px] text-emerald-800 font-bold group-hover:translate-x-1 transition-transform">轉贈 ➔</span>
+                        </div>
+                        <h3 class="font-bold text-sm text-slate-900 group-hover:text-emerald-900 transition-colors">公益平安物資代捐</h3>
+                        <p class="text-[11px] text-slate-500 leading-relaxed line-clamp-2">法會白米代捐登記、社福機構派發紀錄與現場留影簽收。</p>
+                    </a>
+
+                    <!-- 5. 財務日記帳 (僅 ADMIN, ACCOUNTANT) -->
+                    <a v-if="canAccess('finance.html')" href="finance.html" class="group bg-white p-5 rounded-2xl border border-amber-200/90 hover:border-amber-500 transition-all shadow-sm hover:shadow-md space-y-3 block">
+                        <div class="flex justify-between items-start">
+                            <span class="text-2xl p-2.5 bg-amber-50 group-hover:bg-amber-100 rounded-xl transition-colors">🪙</span>
+                            <span class="text-[11px] text-amber-800 font-bold group-hover:translate-x-1 transition-transform">帳冊 ➔</span>
+                        </div>
+                        <h3 class="font-bold text-sm text-slate-900 group-hover:text-amber-900 transition-colors">公庫財務收支日記帳</h3>
+                        <p class="text-[11px] text-slate-500 leading-relaxed line-clamp-2">油香開單流水號、各項支出審核與公款報表多維統計。</p>
+                    </a>
+
+                    <!-- 6. 信眾家戶 CRM (僅 ADMIN) -->
+                    <a v-if="canAccess('crm.html')" href="crm.html" class="group bg-white p-5 rounded-2xl border border-amber-200/90 hover:border-amber-500 transition-all shadow-sm hover:shadow-md space-y-3 block">
+                        <div class="flex justify-between items-start">
+                            <span class="text-2xl p-2.5 bg-amber-50 group-hover:bg-amber-100 rounded-xl transition-colors">👤</span>
+                            <span class="text-[11px] text-amber-800 font-bold group-hover:translate-x-1 transition-transform">家戶 ➔</span>
+                        </div>
+                        <h3 class="font-bold text-sm text-slate-900 group-hover:text-amber-900 transition-colors">信眾戶籍 CRM 檔案</h3>
+                        <p class="text-[11px] text-slate-500 leading-relaxed line-clamp-2">善信戶籍編聯、眷屬生肖年齡連動與參贊歷程建檔。</p>
+                    </a>
+
+                    <!-- 7. 系統參數維護 (僅 ADMIN) -->
+                    <a v-if="canAccess('settings.html')" href="settings.html" class="group bg-white p-5 rounded-2xl border border-amber-200/90 hover:border-amber-500 transition-all shadow-sm hover:shadow-md space-y-3 block">
+                        <div class="flex justify-between items-start">
+                            <span class="text-2xl p-2.5 bg-amber-50 group-hover:bg-amber-100 rounded-xl transition-colors">⚙️</span>
+                            <span class="text-[11px] text-amber-800 font-bold group-hover:translate-x-1 transition-transform">參數 ➔</span>
+                        </div>
+                        <h3 class="font-bold text-sm text-slate-900 group-hover:text-amber-900 transition-colors">系統參數與權限維護</h3>
+                        <p class="text-[11px] text-slate-500 leading-relaxed line-clamp-2">燈位規格年度一鍵生成、執事帳號權限與沿革大事記編輯。</p>
+                    </a>
+
+                    <!-- 系統操作手冊 (所有人開放閱覽) -->
+                    <a href="manual.html" class="group bg-white p-5 rounded-2xl border border-amber-200/90 hover:border-amber-500 transition-all shadow-sm hover:shadow-md space-y-3 block">
+                        <div class="flex justify-between items-start">
+                            <span class="text-2xl p-2.5 bg-amber-50 group-hover:bg-amber-100 rounded-xl transition-colors">📖</span>
+                            <span class="text-[11px] text-amber-800 font-bold group-hover:translate-x-1 transition-transform">查閱手冊 ➔</span>
+                        </div>
+                        <h3 class="font-bold text-sm text-slate-900 group-hover:text-amber-900 transition-colors">系統操作詳細手冊</h3>
+                        <p class="text-[11px] text-slate-500 leading-relaxed line-clamp-2">全站架構圖、RBAC 權限矩陣、九大模組操作指引與 FAQ。</p>
+                    </a>
+                    <!-- 廟宇聯絡資訊 (所有人開放) -->
+                    <a href="contact.html" class="group bg-white p-5 rounded-2xl border border-amber-200/90 hover:border-amber-500 transition-all shadow-sm hover:shadow-md space-y-3 block">
+                        <div class="flex justify-between items-start">
+                            <span class="text-2xl p-2.5 bg-amber-50 group-hover:bg-amber-100 rounded-xl transition-colors">📍</span>
+                            <span class="text-[11px] text-amber-800 font-bold group-hover:translate-x-1 transition-transform">前往 ➔</span>
+                        </div>
+                        <h3 class="font-bold text-sm text-slate-900 group-hover:text-amber-900 transition-colors">廟宇聯絡與交通指引</h3>
+                        <p class="text-[11px] text-slate-500 leading-relaxed line-clamp-2">殿堂參香開放時間、電話專線、香客交通指南與線上留話諮詢。</p>
+                    </a>
+
+                    <!-- 信眾諮詢留言管理 (僅執事權限) -->
+                    <a v-if="canAccess('inquiries.html')" href="inquiries.html" class="group bg-white p-5 rounded-2xl border border-amber-200/90 hover:border-amber-500 transition-all shadow-sm hover:shadow-md space-y-3 block">
+                        <div class="flex justify-between items-start">
+                            <span class="text-2xl p-2.5 bg-amber-50 group-hover:bg-amber-100 rounded-xl transition-colors">💬</span>
+                            <span class="text-[11px] text-amber-800 font-bold group-hover:translate-x-1 transition-transform">管理 ➔</span>
+                        </div>
+                        <h3 class="font-bold text-sm text-slate-900 group-hover:text-amber-900 transition-colors">信眾線上諮詢管理</h3>
+                        <p class="text-[11px] text-slate-500 leading-relaxed line-clamp-2">信眾線上諮詢訊息彙整、電聯進度追蹤與處理紀錄備忘。</p>
+                    </a>
+                </div>
+            </div>
+
+
+            <!-- ================= 彈窗 1：發布公告 Modal ================= -->
+            <div v-if="showAddModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+                <div class="bg-white border border-amber-300 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col text-slate-800 animate-in fade-in zoom-in duration-200">
+                    <div class="bg-amber-900 px-6 py-4 text-white flex justify-between items-center">
+                        <h3 class="font-bold text-base">發布宮務最新公告</h3>
+                        <button @click="showAddModal = false" class="text-amber-200 hover:text-white text-xl">✕</button>
+                    </div>
+
+                    <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
+                        <div>
+                            <label class="block font-bold text-slate-700 mb-1">公告標題 *</label>
+                            <input v-model="noticeForm.title" type="text" placeholder="例：下週法會執事人員勤前叮嚀" class="w-full border border-amber-200 bg-amber-50/30 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-amber-700 outline-none" />
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block font-bold text-slate-700 mb-1">公告類別</label>
+                                <select v-model="noticeForm.category" class="w-full border border-amber-200 bg-white rounded-lg px-3 py-2 text-slate-800 outline-none">
+                                    <option value="法會通知">法會通知</option>
+                                    <option value="宮務行政">宮務行政</option>
+                                    <option value="志工當值">志工當值</option>
+                                    <option value="慈善徵信">慈善徵信</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-bold text-slate-700 mb-1">置頂設定</label>
+                                <label class="flex items-center gap-2 mt-2 cursor-pointer font-bold text-amber-900">
+                                    <input type="checkbox" v-model="noticeForm.isPinned" class="w-4 h-4 rounded" />
+                                    <span>將此公告置頂顯示</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-slate-700 mb-1">公告內容說明 *</label>
+                            <textarea v-model="noticeForm.content" rows="4" placeholder="請填寫完整的通告說明事項..." class="w-full border border-amber-200 bg-amber-50/30 rounded-lg px-3 py-2 leading-relaxed text-slate-800 outline-none"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 px-6 py-3 border-t flex justify-end gap-2 text-xs">
+                        <button @click="showAddModal = false" class="px-4 py-2 text-slate-500 hover:bg-gray-200 rounded-lg font-bold">取消</button>
+                        <button @click="submitNotice" class="px-5 py-2 bg-amber-800 hover:bg-amber-900 active:scale-95 text-white font-bold rounded-lg shadow">
+                            確認送出發布
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= 彈窗 2：檢視公告全文 Modal ================= -->
+            <div v-if="showDetailModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+                <div class="bg-white border border-amber-300 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col text-slate-800">
+                    <div class="bg-amber-900 px-6 py-4 text-white flex justify-between items-center">
+                        <h3 class="font-bold text-base">{{ activeNotice?.title }}</h3>
+                        <button @click="showDetailModal = false" class="text-amber-200 hover:text-white text-xl">✕</button>
+                    </div>
+                    <div class="p-6 space-y-4 text-xs max-h-[70vh] overflow-y-auto">
+                        <div class="flex items-center justify-between pb-2 border-b border-gray-100 text-slate-500 font-mono text-[11px]">
+                            <span>類別：<b class="text-amber-900">{{ activeNotice?.category }}</b></span>
+                            <span>發布：{{ activeNotice?.publish_date }}（{{ activeNotice?.publisher }}）</span>
+                        </div>
+                        <p class="text-slate-700 leading-relaxed text-sm whitespace-pre-wrap">{{ activeNotice?.content }}</p>
+                    </div>
+                    <div class="bg-gray-50 px-6 py-3 border-t flex justify-end text-xs">
+                        <button @click="showDetailModal = false" class="px-4 py-2 bg-amber-800 text-white rounded-lg font-bold">關閉</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 頁尾宣告 -->
+            <div class="text-center text-[11px] text-slate-400 font-mono pt-4">
+                五公祖師巖 宮務數位管理平台 ‧ 歲次丙午年 ‧ 護佑吉祥
+            </div>
+
+        </div>
+
+        <script>
+            const { createApp, ref, computed, onMounted } = Vue;
+
+            createApp({
+                setup() {
+                    const currentUser = ref(null);
+                    const announcements = ref([]);
+                    const showAddModal = ref(false);
+                    const showDetailModal = ref(false);
+                    const activeNotice = ref(null);
+
+                    // 本廟宇實景照片路徑 (優先讀取本地 images/temple-banner.jpg)
+                    const templeBannerUrl = ref('images/Home1.jpg');
+
+                    const isGuest = computed(() => !currentUser.value || currentUser.value.role === 'GUEST');
+
+                    const onImageError = () => {
+                        // 自動備援至高品質深色古剎廟宇外觀圖
+                        templeBannerUrl.value = 'https://images.unsplash.com/photo-1548013146-72479768bada?auto=format&fit=crop&w=1200&q=80';
+                    };
+
+                    const noticeForm = ref({
+                        title: '',
+                        category: '法會通知',
+                        content: '',
+                        isPinned: false
+                    });
+
+                    const stats = ref({
+                        eventsCount: 0,
+                        latestEventName: '',
+                        lanternOccupied: 0,
+                        charityStock: 0,
+                        financeBalance: 0
+                    });
+
+                    const allModules = [
+                        { page: 'history.html', title: '百年廟宇沿革' },
+                        { page: 'events.html', title: '年度法會活動' },
+                        { page: 'lantern.html', title: '點燈排位受理' },
+                        { page: 'charity.html', title: '物資捐贈管理' },
+                        { page: 'finance.html', title: '公庫財務收支' },
+                        { page: 'crm.html', title: '信眾家戶檔案' },
+                        { page: 'settings.html', title: '系統參數維護' },
+                        { page: 'manual.html', title: '系統操作手冊' },
+                        { page: 'contact.html', title: '聯絡資訊' },
+                        { page: 'inquiries.html', title: '信眾線上諮詢管理' }
+                    ];
+
+                    const loadAnnouncements = async () => {
+                        try {
+                            const res = await fetch(`${API_BASE}/announcements`);
+                            const d = await res.json();
+                            if (d.success) announcements.value = d.data;
+                        } catch (e) {
+                            console.error('載入公告失敗', e);
+                        }
+                    };
+
+                    onMounted(async () => {
+                        currentUser.value = getCurrentUser();
+                        loadFeaturedQuote();
+                        await Promise.all([refreshDashboard(), loadAnnouncements()]);
+                    });
+
+                    const roleTitle = computed(() => {
+                        if (!currentUser.value || currentUser.value.role === 'GUEST') return '訪客善信';
+                        return ROLE_NAMES[currentUser.value.role] || currentUser.value.role;
+                    });
+
+                    const canAccess = (page) => {
+                        if (!currentUser.value) return ['index.html', 'history.html', 'events.html', 'lantern.html'].includes(page);
+                        const allowed = ROLE_PERMISSIONS[currentUser.value.role] || ['index.html', 'history.html'];
+                        return allowed.includes(page);
+                    };
+
+                    const authorizedModules = computed(() => allModules.filter(m => canAccess(m.page)));
+
+                    const canViewFinance = computed(() => ['ADMIN', 'ACCOUNTANT'].includes(currentUser.value?.role));
+
+                    const canPublishNotice = computed(() => ['ADMIN', 'RITUAL'].includes(currentUser.value?.role));
+
+                    const refreshDashboard = async () => {
+                        try {
+                            if (canAccess('events.html')) {
+                                const res = await fetch(`${API_BASE}/events`);
+                                const d = await res.json();
+                                if (d.success && Array.isArray(d.data)) {
+                                    stats.value.eventsCount = d.data.length;
+                                    stats.value.latestEventName = d.data[0]?.name || '';
+                                }
+                            }
+                            if (canAccess('charity.html')) {
+                                // 取得愛心白米物資在庫統計 (開放首頁看板全體顯示)
+                                try {
+                                    const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api';
+                                    const res = await fetch(`${apiBase}/charity/summary`);
+                                    if (res.ok) {
+                                        const d = await res.json();
+                                        if (d.success && Array.isArray(d.data)) {
+                                            stats.value.charityStock = d.data.reduce((sum, item) => {
+                                                return sum + (Number(item.remainingStock) || 0);
+                                            }, 0);
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.warn('物資指標載入略過:', e.message);
+                                }
+                            }
+                            if (canAccess('lantern.html')) {
+                                const res = await fetch(`${API_BASE}/lanterns`);
+                                const d = await res.json();
+                                if (d.success && Array.isArray(d.data)) {
+                                    stats.value.lanternOccupied = d.data.filter(l => l.status === 'OCCUPIED').length;
+                                }
+                            }
+                            if (canViewFinance.value) {
+                                const res = await fetch(`${API_BASE}/ledger`);
+                                const d = await res.json();
+                                if (d.success && Array.isArray(d.data)) {
+                                    const inc = d.data.filter(x => x.entry_type === 'INCOME').reduce((s, r) => s + Number(r.amount || 0), 0);
+                                    const exp = d.data.filter(x => x.entry_type === 'EXPENSE').reduce((s, r) => s + Number(r.amount || 0), 0);
+                                    stats.value.financeBalance = inc - exp;
+                                }
+                            }
+
+                        } catch (e) {
+                            console.warn('指標載入略過:', e.message);
+                        }
+                    };
+
+                    const openAddNoticeModal = () => {
+                        noticeForm.value = {
+                            title: '',
+                            category: '法會通知',
+                            content: '',
+                            isPinned: false
+                        };
+                        showAddModal.value = true;
+                    };
+
+                    const submitNotice = async () => {
+                        if (!noticeForm.value.title || !noticeForm.value.content) {
+                            alert('請填寫完整公告標題與內容');
+                            return;
+                        }
+                        try {
+                            const res = await fetch(`${API_BASE}/announcements`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    ...noticeForm.value,
+                                    publisher: currentUser.value?.realName || '執事會'
+                                })
+                            });
+                            const d = await res.json();
+                            if (d.success) {
+                                alert('公告已順利發布！');
+                                showAddModal.value = false;
+                                await loadAnnouncements();
+                            } else {
+                                alert(d.message);
+                            }
+                        } catch (e) {
+                            alert('連線伺服器失敗');
+                        }
+                    };
+
+                    const viewNoticeDetail = (item) => {
+                        activeNotice.value = item;
+                        showDetailModal.value = true;
+                    };
+
+                    const deleteNotice = async (id) => {
+                        if (!confirm('確定要刪除這則公告嗎？')) return;
+                        try {
+                            const res = await fetch(`${API_BASE}/announcements/${id}`, { method: 'DELETE' });
+                            const d = await res.json();
+                            if (d.success) {
+                                await loadAnnouncements();
+                            }
+                        } catch (e) {
+                            alert('刪除失敗');
+                        }
+                    };
+
+                    // 在 setup() 內部加入：
+                    const featuredQuote = ref(null);
+
+                    const loadFeaturedQuote = async () => {
+                        const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api';
+                        try {
+                            const res = await fetch(`${apiBase}/settings/quotes`);
+                            if (res.ok) {
+                                const d = await res.json();
+                                if (d.success && Array.isArray(d.data) && d.data.length > 0) {
+                                    // 優先挑選第一則（最新維護的善語錄）
+                                    featuredQuote.value = d.data[0];
+                                    return;
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('載入首頁善語錄失敗，採用預設展示');
+                        }
+
+                        // 後端未啟動或資料庫為空時的備援資料
+                        featuredQuote.value = {
+                            id: 1,
+                            title: '行善積德 ‧ 福慧自臨',
+                            content: '行一分善，消一分障；存一分仁，得一分安。心寬能容天下事，德厚方能載福祿。常念三寶慈悲，福慧自然常隨。',
+                            author: '誌公祖師法音',
+                            imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&q=80',
+                            tag: '福慧兼修',
+                            date: '2026-09-01'
+                        };
+                    };
+
+                    return {
+                        currentUser,
+                        roleTitle,
+                        isGuest,
+                        templeBannerUrl,
+                        onImageError,
+                        stats,
+                        announcements,
+                        showAddModal,
+                        showDetailModal,
+                        activeNotice,
+                        noticeForm,
+                        authorizedModules,
+                        canAccess,
+                        canViewFinance,
+                        canPublishNotice,
+                        refreshDashboard,
+                        openAddNoticeModal,
+                        submitNotice,
+                        viewNoticeDetail,
+                        deleteNotice,
+                        featuredQuote
+                    };
+                }
+            }).mount('#app');
+        </script>
+</body>
+</html>
