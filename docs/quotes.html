@@ -1,0 +1,170 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>五公祖師巖 - 善道語錄</title>
+    <script src="js/tailwindcss.js"></script>
+    <script src="js/vue.global.prod.js"></script>
+    <script src="js/common.js"></script>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-[#FDFBF7] text-slate-800 min-h-screen selection:bg-amber-800 selection:text-white">
+    <div id="app" v-cloak class="max-w-7xl mx-auto px-4 py-6 sm:py-8 space-y-8">
+
+        <!-- 頂部導航列 -->
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-amber-200/90 shadow-sm flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="p-2 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-200 text-amber-900 transition-colors text-sm font-bold flex items-center gap-1">
+                    <span>⬅️</span> 返回大廳
+                </a>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
+                        <span>🪷</span> 五公祖師巖 ‧ 智慧善語錄
+                    </h1>
+                    <p class="text-xs text-slate-500">祖師法語 ‧ 洗滌心靈 ‧ 增長善慧</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-950 font-bold">
+                <span>👤 {{ currentUser?.realName || currentUser?.username || '訪客善信' }}</span>
+                <span class="text-amber-700">({{ roleTitle }})</span>
+            </div>
+        </div>
+
+        <!-- 標頭導言 -->
+        <div class="text-center max-w-2xl mx-auto space-y-2">
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold">
+                <span>📖</span> 聖訓妙諦 ‧ 吉祥法音
+            </div>
+            <h2 class="text-2xl font-black text-slate-900 font-serif tracking-wide">
+                五公祖師法語慈示錄
+            </h2>
+            <p class="text-xs text-slate-500">以善語啟發善念，以法水清淨自心。願諸善信安樂吉祥。</p>
+        </div>
+
+        <!-- 善語錄卡片展示瀑布網格 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div v-for="quote in quotesList" :key="quote.id"
+                 class="bg-white rounded-3xl border border-amber-200/90 overflow-hidden shadow-sm hover:shadow-lg transition-all flex flex-col justify-between group">
+
+                <!-- 圖片區塊（防破圖備援） -->
+                <div class="aspect-[16/10] w-full overflow-hidden bg-amber-50 relative">
+                    <img :src="quote.imageUrl" :alt="quote.title"
+                         @error="$event.target.src='https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&q=80'"
+                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <span v-if="quote.tag" class="absolute top-3 right-3 px-2.5 py-1 bg-amber-950/80 backdrop-blur-md text-amber-200 text-[10px] font-bold rounded-full border border-amber-500/40">
+                        {{ quote.tag }}
+                    </span>
+                </div>
+
+                <!-- 文字內容區塊 -->
+                <div class="p-6 space-y-4 flex-1 flex flex-col justify-between">
+                    <div class="space-y-2">
+                        <h3 class="text-base font-bold text-slate-900 font-serif group-hover:text-amber-900 transition-colors">
+                            {{ quote.title }}
+                        </h3>
+                        <p class="text-xs sm:text-sm text-slate-600 leading-relaxed text-justify whitespace-pre-line bg-amber-50/30 p-3.5 rounded-2xl border border-amber-100 font-serif">
+                            「{{ quote.content }}」
+                        </p>
+                    </div>
+
+                    <!-- 底部署名與維護/發布日期 -->
+                    <div class="border-t border-amber-100 pt-3 flex items-center justify-between text-[11px] text-slate-400">
+                        <span class="font-bold text-amber-900 font-mono">
+                            ✍️ {{ quote.author || '五公祖師開示' }}
+                        </span>
+                        <span class="font-mono flex items-center gap-1">
+                            <span>📅 維護日期：</span>
+                            <span class="text-slate-500">{{ quote.date }}</span>
+                        </span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 無資料時的空提示 -->
+            <div v-if="quotesList.length === 0" class="col-span-full text-center py-12 text-slate-400 bg-white rounded-3xl border border-dashed border-amber-200">
+                目前尚無善語錄內容，請由後台管理系統新增登錄。
+            </div>
+        </div>
+
+        <!-- 頁尾宣告 -->
+        <div class="text-center text-[11px] text-slate-400 font-mono pt-4">
+            五公祖師巖 宮務數位管理平台 ‧ 歲次丙午年
+        </div>
+
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const currentUser = ref(null);
+                const quotesList = ref([]);
+
+                const loadQuotes = async () => {
+                    const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api';
+                    try {
+                        const res = await fetch(`${apiBase}/settings/quotes`);
+                        if (res.ok) {
+                            const d = await res.json();
+                            if (d.success && Array.isArray(d.data) && d.data.length > 0) {
+                                quotesList.value = d.data;
+                                return;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('API 載入失敗，採用預設善語錄');
+                    }
+
+                    // 預設資料示範
+                    quotesList.value = [
+                        {
+                            id: 1,
+                            title: '行善積德 ‧ 福慧自臨',
+                            content: '行一分善，消一分障；存一分仁，得一分安。心寬能容天下事，德厚方能載福祿。',
+                            author: '誌公祖師法音',
+                            imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&q=80',
+                            tag: '福慧兼修',
+                            date: '2026-09-01'
+                        },
+                        {
+                            id: 2,
+                            title: '清淨無染 ‧ 隨緣自在',
+                            content: '心若不起波瀾，塵世自成淨土。常保清淨之心，方能在煩亂的人間洞察明道。',
+                            author: '朗公菩薩開示',
+                            imageUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=600&q=80',
+                            tag: '定心安樂',
+                            date: '2026-09-05'
+                        }
+                    ];
+                };
+
+                onMounted(() => {
+                    if (typeof getCurrentUser === 'function') {
+                        currentUser.value = getCurrentUser();
+                    }
+                    loadQuotes();
+                });
+
+                const roleTitle = computed(() => {
+                    const role = currentUser.value?.role || 'GUEST';
+                    return typeof ROLE_NAMES !== 'undefined' && ROLE_NAMES[role] ? ROLE_NAMES[role] : '訪客善信';
+                });
+
+                return {
+                    currentUser,
+                    roleTitle,
+                    quotesList
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

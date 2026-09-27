@@ -1,0 +1,1551 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系統參數維護 - 五公祖師巖</title>
+    <script src="js/tailwindcss.js"></script>
+    <script src="js/vue.global.prod.js"></script>
+    <script src="js/common.js"></script>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-[#FFFDF7] text-slate-800 min-h-screen" style="background-color: #FFFDF7;">
+    <div id="app" v-cloak class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+
+        <!-- 頂部標題列 -->
+        <div class="bg-white p-6 rounded-2xl border border-amber-200 shadow-sm flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <span class="text-3xl p-2.5 bg-amber-100 rounded-xl">⚙️</span>
+                <div>
+                    <h1 class="text-xl font-black text-slate-900">五公祖師巖 ‧ 系統核心參數維護</h1>
+                    <p class="text-xs text-gray-500">管理殿堂點燈規格、廟宇執事組織架構與系統登入帳號安全權限</p>
+                </div>
+            </div>
+            <span class="text-xs bg-red-100 text-red-800 font-bold px-3 py-1.5 rounded-lg border border-red-200">
+                🛡️ 管理員專用權限專區 (ADMIN)
+            </span>
+        </div>
+
+        <!-- 功能頁籤分流 (Tab 切換) -->
+        <div class="flex border-b border-amber-200 space-x-2 bg-white px-4 rounded-t-xl">
+            <button @click="activeTab = 'LANTERN'"
+                    :class="activeTab === 'LANTERN' ? 'border-b-2 border-amber-800 text-amber-900 font-bold' : 'text-gray-500 hover:text-amber-800'"
+                    class="py-3 px-4 text-xs flex items-center gap-1.5 transition-all">
+                <span>🏮</span> 1. 點燈類別與燈位數量
+            </button>
+            <button @click="activeTab = 'STAFF'"
+                    :class="activeTab === 'STAFF' ? 'border-b-2 border-amber-800 text-amber-900 font-bold' : 'text-gray-500 hover:text-amber-800'"
+                    class="py-3 px-4 text-xs flex items-center gap-1.5 transition-all">
+                <span>👥</span> 2. 廟宇執事人員名冊
+            </button>
+            <button @click="activeTab = 'USERS'"
+                    :class="activeTab === 'USERS' ? 'border-b-2 border-amber-800 text-amber-900 font-bold' : 'text-gray-500 hover:text-amber-800'"
+                    class="py-3 px-4 text-xs flex items-center gap-1.5 transition-all">
+                <span>🔑</span> 3. 系統帳號與權限角色
+            </button>
+            <button @click="activeTab = 'HISTORY'"
+                    :class="activeTab === 'HISTORY' ? 'border-b-2 border-amber-800 text-amber-900 font-bold' : 'text-gray-500 hover:text-amber-800'"
+                    class="py-3 px-4 text-xs flex items-center gap-1.5 transition-all">
+                <span>📜</span> 4. 廟宇沿革與時光軸維護
+            </button>
+            <button @click="activeTab = 'CONTACT'"
+                    :class="activeTab === 'CONTACT' ? 'border-b-2 border-amber-800 text-amber-900 font-bold' : 'text-gray-500 hover:text-amber-800'"
+                    class="py-3 px-4 text-xs flex items-center gap-1.5 transition-all">
+                <span>📜</span> 5. 廟宇聯絡資訊維護
+            </button>
+            <button @click="activeTab = 'DEITIES'"
+                    :class="activeTab === 'DEITIES' ? 'border-b-2 border-amber-800 text-amber-900 font-bold' : 'text-gray-500 hover:text-amber-800'"
+                    class="py-3 px-4 text-xs flex items-center gap-1.5 transition-all">
+                <span>⛩️</span> 6. 五公聖尊聖紀維護
+            </button>
+            <button @click="activeTab = 'QUOTES'"
+                    :class="activeTab === 'QUOTES' ? 'border-b-2 border-amber-800 text-amber-900 font-bold' : 'text-gray-500 hover:text-amber-800'"
+                    class="py-3 px-4 text-xs flex items-center gap-1.5 transition-all">
+                <span>🪷</span> 7. 智慧善語錄維護
+            </button>
+        </div>
+
+        <!-- ================= 頁籤 1：點燈類別與燈位數量維護 ================= -->
+        <div v-if="activeTab === 'LANTERN'" class="space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <!-- 左：設定/新增點燈類別表單 -->
+                <div class="bg-white p-6 rounded-2xl border border-amber-200 shadow-sm space-y-4 h-fit">
+                    <h3 class="font-bold text-sm text-slate-900 border-b pb-2 flex items-center gap-1.5">
+                        <span>➕</span> 設定 / 擴增點燈類別規格
+                    </h3>
+
+                    <div class="space-y-3 text-xs">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-1">代碼前綴 * (如 T, L)</label>
+                                <input v-model="lanternForm.typeCode" type="text" maxlength="3" uppercase placeholder="例：W" class="w-full border rounded-lg px-3 py-2 font-mono uppercase font-bold" />
+                            </div>
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-1">承辦殿堂</label>
+                                <input v-model="lanternForm.hallName" type="text" placeholder="文昌殿" class="w-full border rounded-lg px-3 py-2" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">點燈名稱 (全銜) *</label>
+                            <input v-model="lanternForm.typeName" type="text" placeholder="例：文昌智慧金榜燈" class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-1">每盞緣金 (NT$) *</label>
+                                <input v-model.number="lanternForm.defaultFee" type="number" min="100" step="100" class="w-full border rounded-lg px-3 py-2 font-mono font-bold text-red-700" />
+                            </div>
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-1">總燈位上限數 *</label>
+                                <input v-model.number="lanternForm.totalCapacity" type="number" min="8" step="8" class="w-full border rounded-lg px-3 py-2 font-mono font-bold text-amber-900" />
+                            </div>
+                        </div>
+
+                        <div class="pt-2">
+                            <label class="flex items-center gap-2 cursor-pointer font-bold text-emerald-800">
+                                <input type="checkbox" v-model="lanternForm.isEnabled" class="w-4 h-4 rounded" />
+                                <span>啟用此點燈服務並開放臨櫃受理</span>
+                            </label>
+                        </div>
+
+                        <button @click="submitLanternConfig"
+                                class="w-full py-2.5 bg-amber-800 hover:bg-amber-900 text-white font-bold rounded-xl shadow transition-all">
+                            儲存並自動建立/擴增燈位
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 右：現有燈壁清冊與即時安奉率 -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-amber-200 shadow-sm space-y-4">
+                    <!-- 一鍵依年度初始化燈位控制列 -->
+                    <div class="bg-amber-50/80 border border-amber-300 rounded-xl p-4 flex flex-wrap justify-between items-center gap-3">
+                        <div>
+                            <h4 class="font-bold text-xs text-amber-950 flex items-center gap-1.5">
+                                <span>✨</span> 依年度批次建立各燈別燈位矩陣
+                            </h4>
+                            <p class="text-[11px] text-amber-900/80 mt-0.5">
+                                依據目前各殿堂啟用的規格上限，為指定年度建立全新完整燈位
+                            </p>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-1 bg-white border border-amber-300 rounded-lg px-2 py-1">
+                                <span class="text-xs text-gray-500 font-bold">目標年度:</span>
+                                <input v-model.number="batchGenYear"
+                                       type="number"
+                                       min="2025"
+                                       max="2035"
+                                       class="w-16 text-xs font-mono font-bold text-amber-950 outline-none" />
+                                <span class="text-xs text-gray-500">年</span>
+                            </div>
+
+                            <button @click="triggerBatchGenerate(false)"
+                                    :disabled="isGenerating"
+                                    class="px-3.5 py-1.5 bg-amber-800 hover:bg-amber-900 active:scale-95 disabled:bg-gray-400 text-white rounded-lg font-bold text-xs shadow transition-all flex items-center gap-1">
+                                <span>🚀</span> {{ isGenerating ? '生成中...' : '一鍵產生該年度燈位' }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <h3 class="font-bold text-sm text-slate-900">各殿燈位總覽與佔用率統計</h3>
+                        <button @click="loadLanternConfigs" class="text-xs text-amber-800 hover:underline">🔄 重新整理</button>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div v-for="c in lanternConfigs"
+                             :key="c.type_code"
+                             class="p-4 rounded-xl border border-amber-100 bg-amber-50/30 space-y-2">
+
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="text-xs bg-amber-800 text-white font-mono font-bold px-2 py-0.5 rounded">
+                                        代碼: {{ c.type_code }}-XXX
+                                    </span>
+                                    <h4 class="font-bold text-sm text-slate-900 mt-1">{{ c.type_name }}</h4>
+                                    <p class="text-[11px] text-gray-500 font-mono">{{ c.hall_name }} ｜ 單盞 NT$ {{ c.default_fee }}</p>
+                                </div>
+                                <span :class="c.is_enabled ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-500'" class="text-[10px] font-bold px-2 py-0.5 rounded">
+                                    {{ c.is_enabled ? '服務中' : '未啟用' }}
+                                </span>
+                            </div>
+
+                            <!-- 進度條 -->
+                            <div class="space-y-1">
+                                <div class="flex justify-between text-[11px] font-mono text-gray-600">
+                                    <span>已安奉：{{ c.occupied_seats }} 盞</span>
+                                    <span>總規模：{{ c.total_capacity }} 盞</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                                    <div class="bg-red-700 h-2 rounded-full transition-all"
+                                         :style="{ width: `${c.total_capacity > 0 ? (c.occupied_seats / c.total_capacity) * 100 : 0}%` }">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-end pt-1">
+                                <button @click="editLantern(c)" class="text-xs text-amber-900 font-bold hover:underline">
+                                    ✏️ 修改參數與燈位數
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ================= 頁籤 2：廟宇執事人員名冊維護 ================= -->
+        <div v-if="activeTab === 'STAFF'" class="space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <!-- 左：建立執事人員 -->
+                <div class="bg-white p-6 rounded-2xl border border-amber-200 shadow-sm space-y-4 h-fit">
+                    <h3 class="font-bold text-sm text-slate-900 border-b pb-2 flex items-center gap-1.5">
+                        <span>➕</span> 登記廟宇執事 / 志工
+                    </h3>
+
+                    <div class="space-y-3 text-xs">
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">人員大名 *</label>
+                            <input v-model="staffForm.name" type="text" placeholder="例：林志遠" class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-1">所屬組織組別 *</label>
+                                <select v-model="staffForm.department" class="w-full border rounded-lg px-3 py-2 bg-white">
+                                    <option value="管理委員會">管理委員會</option>
+                                    <option value="總務組">總務組</option>
+                                    <option value="祭典科儀組">祭典科儀組</option>
+                                    <option value="會計組">會計組</option>
+                                    <option value="義工志工隊">義工志工隊</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-1">職稱頭銜 *</label>
+                                <input v-model="staffForm.title" type="text" placeholder="例：副組長 / 志工" class="w-full border rounded-lg px-3 py-2" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">聯絡電話</label>
+                            <input v-model="staffForm.phone" type="text" placeholder="例：0912-345678" class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">備註職掌說明</label>
+                            <input v-model="staffForm.memo" type="text" placeholder="例：週六上午大殿臨櫃服務" class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+
+                        <button @click="submitStaff"
+                                class="w-full py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white font-bold rounded-xl shadow transition-all">
+                            登錄執事人員名冊
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 右：執事人員清冊 -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-amber-200 shadow-sm space-y-4">
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <h3 class="font-bold text-sm text-slate-900">五公祖師巖 ‧ 現職人員名冊 (共 {{ staffList.length }} 員)</h3>
+                        <button @click="loadStaff" class="text-xs text-amber-800 hover:underline">🔄 重新整理</button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-amber-50 text-amber-950 font-bold border-b border-amber-200">
+                                    <th class="py-2.5 px-3">編號</th>
+                                    <th class="py-2.5 px-3">大名</th>
+                                    <th class="py-2.5 px-3">組織組別</th>
+                                    <th class="py-2.5 px-3">職稱</th>
+                                    <th class="py-2.5 px-3">聯絡電話</th>
+                                    <th class="py-2.5 px-3">備註說明</th>
+                                    <th class="py-2.5 px-3 text-center">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="s in staffList" :key="s.staff_id" class="hover:bg-amber-50/40">
+                                    <td class="py-2.5 px-3 font-mono text-gray-500">{{ s.staff_id }}</td>
+                                    <td class="py-2.5 px-3 font-bold text-slate-800">{{ s.name }}</td>
+                                    <td class="py-2.5 px-3 font-medium text-amber-900">{{ s.department }}</td>
+                                    <td class="py-2.5 px-3">
+                                        <span class="bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-bold text-[11px]">{{ s.title }}</span>
+                                    </td>
+                                    <td class="py-2.5 px-3 font-mono text-gray-600">{{ s.phone || '-' }}</td>
+                                    <td class="py-2.5 px-3 text-gray-500">{{ s.memo || '-' }}</td>
+                                    <td class="py-2.5 px-3 text-center">
+                                        <button @click="deleteStaff(s.staff_id)" class="text-red-600 hover:underline">移除</button>
+                                    </td>
+                                </tr>
+                                <tr v-if="staffList.length === 0">
+                                    <td colspan="7" class="text-center py-8 text-gray-400">目前尚無人員登錄</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ================= 頁籤 3：系統帳號與權限角色表維護 ================= -->
+        <div v-if="activeTab === 'USERS'" class="space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <!-- 左：建立登入帳號 -->
+                <div class="bg-white p-6 rounded-2xl border border-amber-200 shadow-sm space-y-4 h-fit">
+                    <h3 class="font-bold text-sm text-slate-900 border-b pb-2 flex items-center gap-1.5">
+                        <span>➕</span> 建立新系統使用者帳號
+                    </h3>
+
+                    <div class="space-y-3 text-xs">
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">登入帳號 (Username) *</label>
+                            <input v-model="userForm.username" type="text" placeholder="例：vol_wang" class="w-full border rounded-lg px-3 py-2 font-mono" />
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">登入密碼 *</label>
+                            <input v-model="userForm.password" type="password" placeholder="請設定安全密碼" class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">執事真實姓名 *</label>
+                            <input v-model="userForm.realName" type="text" placeholder="例：王小明 師兄" class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">指派權限角色 (Role) *</label>
+                            <select v-model="userForm.role" class="w-full border rounded-lg px-3 py-2 bg-white font-bold text-amber-900">
+                                <option value="VOLUNTEER">臨櫃服務志工 (VOLUNTEER) - 點燈/活動/物資</option>
+                                <option value="ACCOUNTANT">會計出納執事 (ACCOUNTANT) - 財務日記帳/物資</option>
+                                <option value="RITUAL">法會科儀組長 (RITUAL) - 法會排程/物資</option>
+                                <option value="ADMIN">主委 / 系統管理員 (ADMIN) - 全模組存取</option>
+                            </select>
+                        </div>
+
+                        <button @click="submitUser"
+                                class="w-full py-2.5 bg-amber-900 hover:bg-amber-950 text-white font-bold rounded-xl shadow transition-all">
+                            建立系統登入帳號
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 右：帳號清冊與停用/改密碼面盤 -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-amber-200 shadow-sm space-y-4">
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <h3 class="font-bold text-sm text-slate-900">系統授權帳號一覽 (共 {{ userList.length }} 個帳號)</h3>
+                        <button @click="loadUsers" class="text-xs text-amber-800 hover:underline">🔄 重新整理</button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-amber-50 text-amber-950 font-bold border-b border-amber-200">
+                                    <th class="py-2.5 px-3">帳號</th>
+                                    <th class="py-2.5 px-3">使用者大名</th>
+                                    <th class="py-2.5 px-3">系統權限角色</th>
+                                    <th class="py-2.5 px-3">狀態</th>
+                                    <th class="py-2.5 px-3">建立時間</th>
+                                    <th class="py-2.5 px-3 text-center">管理動作</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="u in userList" :key="u.user_id" class="hover:bg-amber-50/40">
+                                    <td class="py-2.5 px-3 font-mono font-bold text-slate-800">{{ u.username }}</td>
+                                    <td class="py-2.5 px-3 font-bold text-amber-900">{{ u.real_name }}</td>
+                                    <td class="py-2.5 px-3">
+                                        <span class="px-2 py-0.5 rounded font-bold text-[10px]"
+                                              :class="{
+                        'bg-red-100 text-red-800': u.role === 'ADMIN',
+                        'bg-blue-100 text-blue-800': u.role === 'ACCOUNTANT',
+                        'bg-purple-100 text-purple-800': u.role === 'RITUAL',
+                        'bg-emerald-100 text-emerald-800': u.role === 'VOLUNTEER'
+                      }">
+                                            {{ u.role }}
+                                        </span>
+                                    </td>
+                                    <td class="py-2.5 px-3">
+                                        <span :class="u.status === 'ACTIVE' ? 'text-emerald-700 font-bold' : 'text-gray-400'">
+                                            {{ u.status === 'ACTIVE' ? '● 正常使用' : '○ 已停用' }}
+                                        </span>
+                                    </td>
+                                    <td class="py-2.5 px-3 font-mono text-gray-500">{{ u.created_at ? u.created_at.split(' ')[0] : '-' }}</td>
+                                    <td class="py-2.5 px-3 text-center space-x-2">
+                                        <button @click="promptResetPassword(u)" class="text-amber-800 hover:underline">重設密碼</button>
+                                        <button v-if="u.username !== 'admin'"
+                                                @click="toggleUserStatus(u)"
+                                                :class="u.status === 'ACTIVE' ? 'text-red-600' : 'text-emerald-600'"
+                                                class="hover:underline">
+                                            {{ u.status === 'ACTIVE' ? '停用' : '啟用' }}
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ================= 頁籤 4：廟宇沿革與大事記維護 ================= -->
+        <div v-if="activeTab === 'HISTORY'" class="space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                <!-- 左：沿革主體文案維護 -->
+                <div class="bg-white p-6 rounded-2xl border border-amber-200 shadow-sm space-y-4">
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <h3 class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+                            <span>🏛️</span> 廟名抬頭與主祀神尊文獻
+                        </h3>
+                        <button @click="loadHistoryData" class="text-xs text-amber-800 hover:underline">🔄 重新整理</button>
+                    </div>
+
+                    <div class="space-y-3 text-xs">
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">廟名與首頁大標題 *</label>
+                            <input v-model="historyForm.title" type="text" class="w-full border rounded-lg px-3 py-2 font-bold text-amber-950" />
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">宗旨副標題 *</label>
+                            <input v-model="historyForm.subtitle" type="text" class="w-full border rounded-lg px-3 py-2 text-gray-600" />
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">開基立廟歷史淵源主文 *</label>
+                            <textarea v-model="historyForm.summaryHtml" rows="6" class="w-full border rounded-lg p-3 leading-relaxed"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">主祀五公菩薩神尊聖紀簡介</label>
+                            <textarea v-model="historyForm.deitiesHtml" rows="4" class="w-full border rounded-lg p-3 leading-relaxed"></textarea>
+                        </div>
+
+                        <button @click="submitHistoryMain"
+                                class="w-full py-2.5 bg-amber-800 hover:bg-amber-900 active:scale-95 text-white font-bold rounded-xl shadow transition-all">
+                            儲存廟宇沿革主文
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 右：大事記時光軸維護 -->
+                <div class="bg-white p-6 rounded-2xl border border-amber-200 shadow-sm space-y-4">
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <h3 class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+                            <span>⏳</span> 百年大事記里程碑節點維護
+                        </h3>
+                        <button @click="resetTimelineForm" class="text-xs text-emerald-800 font-bold hover:underline">➕ 新增節點</button>
+                    </div>
+
+                    <!-- 節點輸入表單 -->
+                    <div class="p-4 bg-amber-50/60 rounded-xl border border-amber-200 space-y-3 text-xs">
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-1">西元年份 *</label>
+                                <input v-model="timelineForm.solarYear" type="text" placeholder="例：1979" class="w-full border rounded px-2 py-1.5 font-mono" />
+                            </div>
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-1">朝代/民國紀年</label>
+                                <input v-model="timelineForm.dynastyEra" type="text" placeholder="例：民國六十八年" class="w-full border rounded px-2 py-1.5" />
+                            </div>
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-1">圖示 Tag</label>
+                                <input v-model="timelineForm.iconTag" type="text" placeholder="🏛️" class="w-full border rounded px-2 py-1.5 text-center" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">事蹟大綱標題 *</label>
+                            <input v-model="timelineForm.eventTitle" type="text" placeholder="例：殿宇重光 ‧ 凌霄起建" class="w-full border rounded px-3 py-1.5 font-bold" />
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">詳細事蹟記敘</label>
+                            <textarea v-model="timelineForm.eventContent" rows="2" placeholder="記敘當時的重要典故、建殿過程或神蹟..." class="w-full border rounded p-2"></textarea>
+                        </div>
+
+                        <div class="flex justify-end gap-2 pt-1">
+                            <button v-if="timelineForm.id" @click="resetTimelineForm" class="px-3 py-1 bg-gray-200 rounded text-gray-700">取消編輯</button>
+                            <button @click="submitTimelineItem" class="px-4 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded font-bold shadow">
+                                {{ timelineForm.id ? '更新此里程碑' : '加入大事記時光軸' }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 既有里程碑清冊 -->
+                    <div class="divide-y divide-gray-100 max-h-72 overflow-y-auto">
+                        <div v-for="item in timelineList" :key="item.id" class="py-2.5 px-2 flex justify-between items-center hover:bg-amber-50/40 text-xs">
+                            <div class="space-y-0.5">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-mono bg-amber-800 text-white px-2 py-0.5 rounded text-[10px]">{{ item.solar_year }}</span>
+                                    <span class="font-bold text-slate-800">{{ item.event_title }}</span>
+                                    <span class="text-gray-400 text-[11px]">({{ item.dynasty_era }})</span>
+                                </div>
+                                <p class="text-gray-500 text-[11px] line-clamp-1">{{ item.event_content }}</p>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <button @click="editTimeline(item)" class="text-amber-800 hover:underline">編輯</button>
+                                <button @click="deleteTimeline(item.id)" class="text-red-600 hover:underline">刪除</button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ================= 5.廟宇聯絡與交通資訊維護 (限 ADMIN) ================= -->
+        <div v-if="activeTab === 'CONTACT'" class="space-y-6">
+            <div v-if="contactForm" class="bg-white p-6 sm:p-8 rounded-3xl border border-amber-200/90 shadow-sm space-y-6">
+                <div class="border-b border-amber-100 pb-3 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <span>📍</span> 廟宇聯絡資訊與參香指引設定
+                        </h2>
+                        <p class="text-xs text-slate-500">更新此處內容後，前台 contact.html 即刻同步生效。</p>
+                    </div>
+                    <button @click="saveContactSettings"
+                            class="px-5 py-2.5 bg-amber-800 hover:bg-amber-900 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow flex items-center gap-1.5">
+                        <span>💾</span> 儲存設定
+                    </button>
+                </div>
+
+                <!-- 表單設定項目 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">廟宇宮址 *</label>
+                        <input v-model="contactForm.address" type="text"
+                               class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700" />
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">服務電話 *</label>
+                        <input v-model="contactForm.phone" type="text"
+                               class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700" />
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Facebook</label>
+                        <input v-model="contactForm.facebook" type="text"
+                               class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700" />
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">傳真專線</label>
+                        <input v-model="contactForm.fax" type="text"
+                               class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700" />
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">服務電子信箱</label>
+                        <input v-model="contactForm.email" type="email"
+                               class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700" />
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block font-bold text-slate-700 mb-1">大殿開放參香時段說明</label>
+                        <textarea v-model="contactForm.openHours" rows="2"
+                                  class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">大眾運輸 / 客運指引</label>
+                        <textarea v-model="contactForm.busGuide" rows="2"
+                                  class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">自行開車指引</label>
+                        <textarea v-model="contactForm.carGuide" rows="2"
+                                  class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700"></textarea>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block font-bold text-slate-700 mb-1">香客停車場指引說明</label>
+                        <textarea v-model="contactForm.parkingGuide" rows="2"
+                                  class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 頁籤 6：五公聖尊聖紀與多相片維護 ================= -->
+        <div v-if="activeTab === 'DEITIES'" class="space-y-6">
+            <div class="bg-white p-6 sm:p-8 rounded-3xl border border-amber-200/90 shadow-sm space-y-6">
+                <div class="border-b border-amber-100 pb-3 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <span>⛩️</span> 五公菩薩聖尊聖紀與法相相簿維護
+                        </h2>
+                        <p class="text-xs text-slate-500">維護五位祖師的尊稱、生平事蹟與多張神尊照片圖說，前台 history.html 點選時即刻同步呈現。</p>
+                    </div>
+                    <button @click="saveDeitiesSettings"
+                            class="px-5 py-2.5 bg-amber-800 hover:bg-amber-900 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow flex items-center gap-1.5">
+                        <span>💾</span> 儲存全體聖尊資料
+                    </button>
+                </div>
+
+                <!-- 雙欄佈局：左側切換神尊，右側編輯該神尊詳情與照片 -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+                    <!-- 左側：五神尊切換標籤 (4 欄) -->
+                    <div class="lg:col-span-4 space-y-2">
+                        <div v-for="(d, idx) in deitiesList" :key="d.id"
+                             @click="currentDeityIndex = idx"
+                             :class="currentDeityIndex === idx ? 'bg-amber-100/80 border-amber-500 text-amber-950 font-bold shadow-sm' : 'bg-white hover:bg-amber-50/50 border-amber-200 text-slate-700'"
+                             class="p-3.5 rounded-2xl border cursor-pointer transition-all flex items-center justify-between text-xs">
+                            <div>
+                                <div class="text-[10px] text-amber-800 font-mono">{{ d.alias }}</div>
+                                <div class="text-sm font-bold mt-0.5">{{ d.name }}</div>
+                            </div>
+                            <span class="text-[11px] bg-white px-2 py-0.5 rounded-full border border-amber-200 text-slate-500">
+                                {{ d.photos?.length || 0 }} 張相片
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 右側：當前選取神尊之詳細資料與相簿編輯 (8 欄) -->
+                    <div v-if="currentDeity" class="lg:col-span-8 bg-amber-50/30 p-5 rounded-2xl border border-amber-200 space-y-4 text-xs">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block font-bold text-slate-700 mb-1">神尊全銜聖號 *</label>
+                                <input v-model="currentDeity.name" type="text"
+                                       class="w-full border border-amber-200 bg-white rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700 font-bold" />
+                            </div>
+                            <div>
+                                <label class="block font-bold text-slate-700 mb-1">簡稱稱號 *</label>
+                                <input v-model="currentDeity.alias" type="text"
+                                       class="w-full border border-amber-200 bg-white rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-slate-700 mb-1">一語宗旨簡述 * (首頁卡片副標題)</label>
+                            <input v-model="currentDeity.summary" type="text"
+                                   class="w-full border border-amber-200 bg-white rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700" />
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-slate-700 mb-1">詳細生平事蹟與佛法行誼傳略 *</label>
+                            <textarea v-model="currentDeity.bio" rows="4"
+                                      class="w-full border border-amber-200 bg-white rounded-xl px-3 py-2 text-slate-800 leading-relaxed outline-none focus:border-amber-700"></textarea>
+                        </div>
+
+                        <!-- 多照片清單動態維護 -->
+                        <div class="space-y-3 pt-2 border-t border-amber-200/80">
+                            <div class="flex justify-between items-center">
+                                <label class="font-bold text-slate-800 flex items-center gap-1">
+                                    <span>📷</span> 神尊寶相照片清單 (支援多張相片與個別說明)
+                                </label>
+                                <button @click="addPhotoToCurrentDeity" type="button"
+                                        class="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-[11px] flex items-center gap-1 transition-all">
+                                    <span>➕</span> 新增相片
+                                </button>
+                            </div>
+
+                            <div v-if="!currentDeity.photos || currentDeity.photos.length === 0" class="text-center py-4 text-slate-400 bg-white rounded-xl border border-dashed border-amber-200">
+                                尚未加入相片，請點擊上方按鈕新增
+                            </div>
+
+                            <!-- 相片項目列表 -->
+                            <div v-for="(photo, pIdx) in currentDeity.photos" :key="pIdx"
+                                 class="p-3 bg-white rounded-xl border border-amber-200 space-y-2 relative">
+                                <div class="flex justify-between items-center text-[11px] text-slate-400 font-mono">
+                                    <span>相片 #{{ pIdx + 1 }}</span>
+                                    <button @click="removePhotoFromCurrentDeity(pIdx)" type="button" class="text-red-600 hover:underline">
+                                        🗑️ 刪除此相片
+                                    </button>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-[11px] text-slate-600 mb-0.5">圖片網址路徑 (URL / 本機路徑) *</label>
+                                        <input v-model="photo.url" type="text" placeholder="例：images/deities/zhi_gong_1.jpg"
+                                               class="w-full border border-amber-200 rounded-lg px-2.5 py-1.5 outline-none font-mono text-xs" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] text-slate-600 mb-0.5">相片說明文字 (Caption) *</label>
+                                        <input v-model="photo.caption" type="text" placeholder="例：本巖開基正殿金身寶相"
+                                               class="w-full border border-amber-200 rounded-lg px-2.5 py-1.5 outline-none text-xs" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 頁籤 7：智慧善語錄維護 (限 ADMIN) ================= -->
+        <div v-if="activeTab === 'QUOTES'" class="space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                <!-- 左側：新增 / 編輯善語錄表單 (5 欄) -->
+                <div class="lg:col-span-5 bg-white p-6 rounded-3xl border border-amber-200 shadow-sm space-y-4 h-fit">
+                    <div class="border-b border-amber-100 pb-2 flex justify-between items-center">
+                        <h3 class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+                            <span>✍️</span> {{ quoteForm.id ? '編輯善語錄' : '新增智慧善語錄' }}
+                        </h3>
+                        <button v-if="quoteForm.id" @click="resetQuoteForm" class="text-xs text-gray-500 hover:underline">
+                            取消重填
+                        </button>
+                    </div>
+
+                    <div class="space-y-3 text-xs">
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">語錄主標題 *</label>
+                            <input v-model="quoteForm.title" type="text" placeholder="例：行善積德 ‧ 福慧自臨"
+                                   class="w-full border border-amber-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700 font-bold" />
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-1">開示尊長 / 出處</label>
+                                <input v-model="quoteForm.author" type="text" placeholder="例：誌公祖師法音"
+                                       class="w-full border border-amber-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700" />
+                            </div>
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-1">主題標籤 (Tag)</label>
+                                <input v-model="quoteForm.tag" type="text" placeholder="例：福慧兼修"
+                                       class="w-full border border-amber-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700" />
+                            </div>
+                        </div>
+
+                        <!-- 善語錄媒體檔案（照片 / 影片）上傳區塊 -->
+                        <div class="space-y-2">
+                            <label class="block font-bold text-xs text-slate-700">
+                                語錄影音配圖 (照片或短影音)
+                            </label>
+
+                            <div class="flex items-center gap-3">
+                                <!-- 檔案選擇按鈕 -->
+                                <input type="file"
+                                       ref="kindFileInput"
+                                       @change="handleKindFileUpload"
+                                       accept="image/*,video/mp4,video/webm"
+                                       class="hidden" id="kind-file-picker" />
+
+                                <label for="kind-file-picker"
+                                       class="cursor-pointer px-3.5 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm">
+                                    <span>📁</span>
+                                    <span>{{ isUploadingMedia ? '正在上傳中...' : '選擇照片或影片上傳' }}</span>
+                                </label>
+
+                                <span class="text-[11px] text-slate-400 font-mono truncate max-w-[200px]">
+                                    {{ currentQuoteForm.imageUrl || '尚未指定檔案' }}
+                                </span>
+                            </div>
+
+                            <!-- 1. 顯示檔案路徑的文字處加上可選串連 ?. -->
+                            <span class="text-[11px] text-slate-400 font-mono truncate max-w-[200px]">
+                                {{ currentQuoteForm?.imageUrl || '尚未指定檔案' }}
+                            </span>
+
+                            <!-- 2. 預覽區塊：確保 currentQuoteForm 存在且 imageUrl 有值才渲染 -->
+                            <div v-if="currentQuoteForm && currentQuoteForm.imageUrl" class="relative mt-2 w-full max-w-sm rounded-xl overflow-hidden border border-amber-200 bg-black/5 p-1">
+                                <!-- 影片預覽 -->
+                                <video v-if="isVideoFile(currentQuoteForm.imageUrl)"
+                                       :src="currentQuoteForm.imageUrl"
+                                       controls
+                                       class="w-full h-44 object-contain rounded-lg bg-black"></video>
+                                <!-- 圖片預覽 -->
+                                <img v-else
+                                     :src="currentQuoteForm.imageUrl"
+                                     class="w-full h-44 object-cover rounded-lg"
+                                     @error="$event.target.src='https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&q=80'" />
+
+                                <button type="button" @click="currentQuoteForm.imageUrl = ''"
+                                        class="absolute top-2 right-2 bg-rose-600/80 hover:bg-rose-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow">
+                                    ✕
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">圖片網址 / 本機路徑 *</label>
+                            <input v-model="quoteForm.imageUrl" type="text" placeholder="例：images/quotes/wisdom_1.jpg"
+                                   class="w-full border border-amber-200 rounded-xl px-3 py-2 font-mono text-slate-800 outline-none focus:border-amber-700" />
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">維護 / 發布日期 *</label>
+                            <input v-model="quoteForm.date" type="date"
+                                   class="w-full border border-amber-200 rounded-xl px-3 py-2 text-slate-800 outline-none font-mono font-bold" />
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">善語錄開示正文 *</label>
+                            <textarea v-model="quoteForm.content" rows="4" placeholder="填寫善語錄內文..."
+                                      class="w-full border border-amber-200 rounded-xl p-3 leading-relaxed text-slate-800 outline-none focus:border-amber-700"></textarea>
+                        </div>
+
+                        <button @click="saveQuoteItem"
+                                class="w-full py-2.5 bg-amber-800 hover:bg-amber-900 active:scale-95 text-white font-bold rounded-xl shadow transition-all flex items-center justify-center gap-1.5">
+                            <span>💾</span> {{ quoteForm.id ? '儲存此筆修改' : '加入善語錄清單' }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 右側：現有善語錄列表清冊 (7 欄) -->
+                <div class="lg:col-span-7 bg-white p-6 rounded-3xl border border-amber-200 shadow-sm space-y-4">
+                    <div class="flex justify-between items-center border-b border-amber-100 pb-2">
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-900 flex items-center gap-2">
+                                <span>🪷</span> 現有善語錄清單 (共 {{ quotesList.length }} 則)
+                            </h3>
+                            <p class="text-[11px] text-gray-500">前台 quotes.html 即時依此清單同步展示</p>
+                        </div>
+                        <button @click="loadQuotesData" class="text-xs text-amber-800 hover:underline">🔄 重新整理</button>
+                    </div>
+
+                    <!-- 清單項目 -->
+                    <div class="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+                        <div v-for="q in quotesList" :key="q.id"
+                             class="p-4 bg-amber-50/40 rounded-2xl border border-amber-200 flex gap-4 items-start justify-between">
+
+                            <div class="flex gap-3 items-start">
+                                <!-- 縮圖 -->
+                                <img :src="q.imageUrl" class="w-16 h-16 rounded-xl object-cover border border-amber-200 shrink-0"
+                                     @error="$event.target.src='https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=200&q=80'" />
+                                <div class="space-y-1">
+                                    <div class="flex items-center gap-2">
+                                        <h4 class="font-bold text-xs text-slate-900">{{ q.title }}</h4>
+                                        <span v-if="q.tag" class="px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 text-[10px] font-bold">{{ q.tag }}</span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-600 line-clamp-2 leading-relaxed">「{{ q.content }}」</p>
+                                    <div class="flex items-center gap-3 text-[10px] text-slate-400 font-mono pt-1">
+                                        <span>✍️ {{ q.author || '五公祖師' }}</span>
+                                        <span>📅 {{ q.date }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col gap-1.5 shrink-0 text-xs font-bold">
+                                <button @click="editQuote(q)" class="text-amber-800 hover:underline">編輯</button>
+                                <button @click="deleteQuote(q.id)" class="text-red-600 hover:underline">刪除</button>
+                            </div>
+
+                        </div>
+
+                        <div v-if="quotesList.length === 0" class="text-center py-10 text-slate-400">
+                            目前尚無善語錄，請從左側建立第一筆語錄。
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+        <script>
+            const { createApp, ref, computed, onMounted } = Vue;
+
+            createApp({
+                setup() {
+                    const activeTab = ref('LANTERN');
+
+                    const lanternConfigs = ref([]);
+                    const staffList = ref([]);
+                    const userList = ref([]);
+
+                    // 在 setup 內增加以下響應式變數與方法：
+                    const nextYear = new Date().getFullYear() + 1;
+                    const batchGenYear = ref(nextYear);
+                    const isGenerating = ref(false);
+
+                    // 善語錄檔案上傳控制狀態
+                    const isUploadingMedia = ref(false);
+
+                    // 產生年度燈位
+                    const triggerBatchGenerate = async (forceOverwrite = false) => {
+                        if (!batchGenYear.value) {
+                            return alert('請輸入欲產生的目標年度（例如 2027）');
+                        }
+
+                        isGenerating.value = true;
+                        try {
+                            const res = await fetch('/api/settings/lantern-configs/generate-year', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    year: Number(batchGenYear.value),
+                                    overwrite: forceOverwrite
+                                })
+                            });
+
+                            const result = await res.json();
+
+                            if (res.status === 409 && result.alreadyExists) {
+                                if (confirm(`${result.message}\n\n是否確認重新整理並補齊該年度尚未建立之空燈位？`)) {
+                                    await triggerBatchGenerate(true);
+                                }
+                                return;
+                            }
+
+                            if (result.success) {
+                                alert(result.message);
+                                await loadLanternConfigs();
+                            } else {
+                                alert(`建立失敗：${result.message}`);
+                            }
+                        } catch (e) {
+                            alert('連線伺服器異常，請檢查伺服器是否正常運行');
+                        } finally {
+                            isGenerating.value = false;
+                        }
+                    };
+                    // 表單資料
+                    const lanternForm = ref({
+                        typeCode: '',
+                        typeName: '',
+                        hallName: '凌霄寶殿',
+                        defaultFee: 600,
+                        totalCapacity: 32,
+                        isEnabled: true
+                    });
+
+                    const staffForm = ref({
+                        name: '',
+                        department: '義工志工隊',
+                        title: '服務志工',
+                        phone: '',
+                        memo: ''
+                    });
+
+                    const userForm = ref({
+                        username: '',
+                        password: '',
+                        realName: '',
+                        role: 'VOLUNTEER'
+                    });
+
+                  
+
+                    // 讀取設定
+                    const loadLanternConfigs = async () => {
+                        try {
+                            const res = await fetch(`${API_BASE}/settings/lantern-configs`);
+                            const d = await res.json();
+                            if (d.success) lanternConfigs.value = d.data;
+                        } catch (e) { console.error(e); }
+                    };
+
+                    const loadStaff = async () => {
+                        try {
+                            const res = await fetch(`${API_BASE}/settings/staff`);
+                            const d = await res.json();
+                            if (d.success) staffList.value = d.data;
+                        } catch (e) { console.error(e); }
+                    };
+
+                    const loadUsers = async () => {
+                        try {
+                            const res = await fetch(`${API_BASE}/settings/users`);
+                            const d = await res.json();
+                            if (d.success) userList.value = d.data;
+                        } catch (e) { console.error(e); }
+                    };
+
+                    // 點燈類別送出
+                    const submitLanternConfig = async () => {
+                        if (!lanternForm.value.typeCode || !lanternForm.value.typeName) {
+                            return alert('請填寫完整代碼與名稱');
+                        }
+                        try {
+                            const res = await fetch(`${API_BASE}/settings/lantern-configs`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(lanternForm.value)
+                            });
+                            const d = await res.json();
+                            if (d.success) {
+                                alert(d.message);
+                                await loadLanternConfigs();
+                            } else {
+                                alert(d.message);
+                            }
+                        } catch (e) { alert('伺服器連線失敗'); }
+                    };
+
+                    const editLantern = (c) => {
+                        lanternForm.value = {
+                            typeCode: c.type_code,
+                            typeName: c.type_name,
+                            hallName: c.hall_name,
+                            defaultFee: c.default_fee,
+                            totalCapacity: c.total_capacity,
+                            isEnabled: c.is_enabled === 1
+                        };
+                    };
+
+                    // 廟務人員送出與刪除
+                    const submitStaff = async () => {
+                        if (!staffForm.value.name || !staffForm.value.title) return alert('請填寫姓名與職稱');
+                        try {
+                            const res = await fetch(`${API_BASE}/settings/staff`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(staffForm.value)
+                            });
+                            const d = await res.json();
+                            if (d.success) {
+                                alert('人員登記成功！');
+                                staffForm.value = { name: '', department: '義工志工隊', title: '服務志工', phone: '', memo: '' };
+                                await loadStaff();
+                            }
+                        } catch (e) { alert('伺服器連線失敗'); }
+                    };
+
+                    const deleteStaff = async (id) => {
+                        if (!confirm('確定要移除此筆執事人員資料嗎？')) return;
+                        try {
+                            const res = await fetch(`${API_BASE}/settings/staff/${id}`, { method: 'DELETE' });
+                            const d = await res.json();
+                            if (d.success) await loadStaff();
+                        } catch (e) { alert('操作失敗'); }
+                    };
+
+                    // 系統帳號管理
+                    const submitUser = async () => {
+                        if (!userForm.value.username || !userForm.value.password || !userForm.value.realName) {
+                            return alert('請填寫完整帳號資訊');
+                        }
+                        try {
+                            const res = await fetch(`${API_BASE}/settings/users`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(userForm.value)
+                            });
+                            const d = await res.json();
+                            if (d.success) {
+                                alert('帳號建立成功！');
+                                userForm.value = { username: '', password: '', realName: '', role: 'VOLUNTEER' };
+                                await loadUsers();
+                            } else {
+                                alert(d.message);
+                            }
+                        } catch (e) { alert('操作失敗'); }
+                    };
+
+                    const toggleUserStatus = async (user) => {
+                        const nextStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+                        try {
+                            const res = await fetch(`${API_BASE}/settings/users/${user.user_id}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ status: nextStatus })
+                            });
+                            const d = await res.json();
+                            if (d.success) await loadUsers();
+                        } catch (e) { alert('操作失敗'); }
+                    };
+
+                    const promptResetPassword = async (user) => {
+                        const newPass = prompt(`請輸入「${user.real_name}」的新密碼：`);
+                        if (!newPass) return;
+                        try {
+                            const res = await fetch(`${API_BASE}/settings/users/${user.user_id}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ password: newPass })
+                            });
+                            const d = await res.json();
+                            if (d.success) alert('密碼重設成功！');
+                        } catch (e) { alert('操作失敗'); }
+                    };
+
+                    // 在 settings.html 的 setup 區段增加：
+                    const historyForm = ref({
+                        title: '',
+                        subtitle: '',
+                        summaryHtml: '',
+                        deitiesHtml: ''
+                    });
+
+                    const timelineList = ref([]);
+                    const timelineForm = ref({
+                        id: null,
+                        solarYear: '',
+                        dynastyEra: '',
+                        iconTag: '🏛️',
+                        eventTitle: '',
+                        eventContent: '',
+                        sortOrder: 0
+                    });
+
+                    const loadHistoryData = async () => {
+                        try {
+                            const res = await fetch(`${API_BASE}/history`);
+                            const d = await res.json();
+                            if (d.success) {
+                                historyForm.value = {
+                                    title: d.data.title || '',
+                                    subtitle: d.data.subtitle || '',
+                                    summaryHtml: d.data.summary_html || '',
+                                    deitiesHtml: d.data.deities_html || ''
+                                };
+                                timelineList.value = d.data.timeline || [];
+                            }
+                        } catch (e) {
+                            console.error('載入沿革設定失敗', e);
+                        }
+                    };
+
+                    const submitHistoryMain = async () => {
+                        try {
+                            const res = await fetch(`${API_BASE}/history/main`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(historyForm.value)
+                            });
+                            const d = await res.json();
+                            alert(d.message);
+                        } catch (e) {
+                            alert('儲存沿革主文失敗');
+                        }
+                    };
+
+                    const resetTimelineForm = () => {
+                        timelineForm.value = {
+                            id: null,
+                            solarYear: '',
+                            dynastyEra: '',
+                            iconTag: '🏛️',
+                            eventTitle: '',
+                            eventContent: '',
+                            sortOrder: timelineList.value.length + 1
+                        };
+                    };
+
+                    const editTimeline = (item) => {
+                        timelineForm.value = {
+                            id: item.id,
+                            solarYear: item.solar_year,
+                            dynastyEra: item.dynasty_era,
+                            iconTag: item.icon_tag || '🏛️',
+                            eventTitle: item.event_title,
+                            eventContent: item.event_content,
+                            sortOrder: item.sort_order || 0
+                        };
+                    };
+
+                    const submitTimelineItem = async () => {
+                        if (!timelineForm.value.solarYear || !timelineForm.value.eventTitle) {
+                            return alert('請填寫年份與事蹟標題');
+                        }
+                        try {
+                            const res = await fetch(`${API_BASE}/history/timeline`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(timelineForm.value)
+                            });
+                            const d = await res.json();
+                            if (d.success) {
+                                resetTimelineForm();
+                                await loadHistoryData();
+                            } else {
+                                alert(d.message);
+                            }
+                        } catch (e) {
+                            alert('儲存里程碑失敗');
+                        }
+                    };
+
+                    const deleteTimeline = async (id) => {
+                        if (!confirm('確定刪除此大事記節點嗎？')) return;
+                        try {
+                            const res = await fetch(`${API_BASE}/history/timeline/${id}`, { method: 'DELETE' });
+                            const d = await res.json();
+                            if (d.success) await loadHistoryData();
+                        } catch (e) {
+                            alert('刪除失敗');
+                        }
+                    };
+
+                    // 確保每個欄位都有初始空字串，防止初次渲染時噴出 reading 'address' 錯誤
+                    const contactForm = ref({
+                        address: '',
+                        phone: '',
+                        fax: '',
+                        email: '',
+                        openHours: '',
+                        busGuide: '',
+                        carGuide: '',
+                        parkingGuide: '',
+                        facebook:''
+                    });
+
+
+
+                    // 載入已儲存之設定
+                    const loadContactSettings = async () => {
+                        try {
+                            const apiBase = '/api';
+                            const res = await fetch(`${apiBase}/settings/contact`);
+                            if (res.ok) {
+                                const d = await res.json();
+                                // 關鍵防呆：只有當 d.data 確實為物件時才合併，不可直接整包覆蓋
+                                if (d.success && d.data && typeof d.data === 'object') {
+                                    contactForm.value = { ...contactForm.value, ...d.data };
+                                    return;
+                                }
+                            }
+
+                        } catch (e) {
+                            console.warn('API 讀取失敗，嘗試讀取本機快取');
+                        }
+
+                        // 嘗試從 localStorage 恢復
+                        try {
+                            const local = localStorage.getItem('temple_contact_info');
+                            if (local) {
+                                const parsed = JSON.parse(local);
+                                if (parsed && typeof parsed === 'object') {
+                                    contactForm.value = { ...contactForm.value, ...parsed };
+                                }
+                            }
+                        } catch (e) {
+                            console.error('快取解析失敗', e);
+                        }
+                    };
+
+                    // 儲存設定
+                    const saveContactSettings = async () => {
+                        try {
+                            const res = await fetch(`${API_BASE}/settings/contact`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(contactForm.value)
+                            });
+                            const d = await res.json();
+                            if (d.success) {
+                                alert('廟宇聯絡資訊已成功儲存！前台已同步更新。');
+                            }
+                        } catch (e) {
+                            // 離線/純前端情境存入 localStorage
+                            localStorage.setItem('temple_contact_info', JSON.stringify(contactForm.value));
+                            alert('設定已儲存於本機資料庫（前台已同步更新）！');
+                        }
+                    };
+
+                    // 在 onMounted 呼叫 loadHistoryData()
+                    onMounted(async () => {
+                        await Promise.all([loadLanternConfigs(), loadStaff(), loadUsers(), loadHistoryData(), loadContactSettings(), loadDeitiesSettings()]);
+                    });
+
+                    // 五位神尊清單與當前選中指標
+                    const deitiesList = ref([]);
+                    const currentDeityIndex = ref(0);
+
+                    // 當前正在編輯的神尊響應式計算屬性
+                    const currentDeity = computed(() => {
+                        if (!deitiesList.value || deitiesList.value.length === 0) return null;
+                        return deitiesList.value[currentDeityIndex.value] || null;
+                    });
+
+                    // 為當前神尊新增一筆照片
+                    const addPhotoToCurrentDeity = () => {
+                        if (!currentDeity.value) return;
+                        if (!currentDeity.value.photos) currentDeity.value.photos = [];
+                        currentDeity.value.photos.push({
+                            url: 'images/deities/sample.jpg',
+                            caption: '神尊寶相說明'
+                        });
+                    };
+
+                    // 移除當前神尊的指定照片
+                    const removePhotoFromCurrentDeity = (pIdx) => {
+                        if (!currentDeity.value || !currentDeity.value.photos) return;
+                        currentDeity.value.photos.splice(pIdx, 1);
+                    };
+
+                    // 載入神尊設定
+                    const loadDeitiesSettings = async () => {
+                        const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api';
+                        try {
+                            const res = await fetch(`${apiBase}/settings/deities`);
+                            if (res.ok) {
+                                const d = await res.json();
+                                if (d.success && Array.isArray(d.data) && d.data.length > 0) {
+                                    deitiesList.value = d.data;
+                                    return;
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('API 載入神明聖紀失敗，嘗試載入預設');
+                        }
+
+                        // 若資料庫查無紀錄，提供預設五神尊基礎結構
+                        deitiesList.value = [
+                            { id: 'zhi_gong', name: '寶誌禪師（誌公祖師）', alias: '誌公大師', summary: '南朝梁代高僧，主慈悲救度與息災解厄', bio: '誌公禪師梁武帝尊為國師，編撰《梁皇寶懺》救度眾生。', photos: [{ url: 'images/deities/zhi_gong_1.jpg', caption: '正殿誌公祖師金身' }] },
+                            { id: 'lang_gong', name: '朗公菩薩', alias: '朗公聖尊', summary: '德高望重，清修苦行，化導一方', bio: '行持苦修，具無礙辯才，化度四方黎民。', photos: [{ url: 'images/deities/lang_gong_1.jpg', caption: '朗公菩薩法相' }] },
+                            { id: 'kang_gong', name: '康公菩薩', alias: '康公尊尊', summary: '身心清泰，主佑信眾體健安康', bio: '以無緣大慈普度眾生，佑護信眾身心康泰。', photos: [{ url: 'images/deities/kang_gong_1.jpg', caption: '康公菩薩慈悲金身' }] },
+                            { id: 'bao_gong', name: '寶公菩薩', alias: '寶公祖師', summary: '智光如寶，庇護善信百業興旺', bio: '代表佛慧珍寶，開示行善積德乃福報之根基。', photos: [{ url: 'images/deities/bao_gong_1.jpg', caption: '寶公菩薩莊嚴寶相' }] },
+                            { id: 'hua_gong', name: '化公菩薩', alias: '化公仙師', summary: '應化無方，解冤釋結平息人間爭端', bio: '千百億化身普施教化，逢凶化吉。', photos: [{ url: 'images/deities/hua_gong_1.jpg', caption: '化公菩薩神尊特寫' }] }
+                        ];
+                    };
+
+                    // 儲存神尊設定至資料庫
+                    const saveDeitiesSettings = async () => {
+                        const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api';
+                        try {
+                            const res = await fetch(`${apiBase}/settings/deities`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(deitiesList.value)
+                            });
+                            const d = await res.json();
+                            if (d.success) {
+                                alert('五位聖尊之聖紀與相片資料已成功儲存！');
+                            } else {
+                                alert(`儲存失敗：${d.message}`);
+                            }
+                        } catch (e) {
+                            alert('伺服器連線異常，儲存失敗');
+                        }
+                    };
+
+                    // 善語錄清單與表單
+                    const quotesList = ref([]);
+                    const quoteForm = ref({
+                        id: null,
+                        title: '',
+                        author: '五公祖師法音',
+                        tag: '福慧兼修',
+                        imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&q=80',
+                        content: '',
+                        date: new Date().toISOString().slice(0, 10) // 預設當前日期 (YYYY-MM-DD)
+                    });
+
+                    const currentQuoteForm  = ref({
+                        id: null,
+                        title: '',
+                        author: '五公祖師法音',
+                        tag: '福慧兼修',
+                        imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&q=80',
+                        content: '',
+                        date: new Date().toISOString().slice(0, 10) // 預設當前日期 (YYYY-MM-DD)
+                    });
+
+                    const resetQuoteForm = () => {
+                        quoteForm.value = {
+                            id: null,
+                            title: '',
+                            author: '五公祖師法音',
+                            tag: '福慧兼修',
+                            imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&q=80',
+                            content: '',
+                            date: new Date().toISOString().slice(0, 10)
+                        };
+                    };
+
+                    const loadQuotesData = async () => {
+                        const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api';
+                        try {
+                            const res = await fetch(`${apiBase}/settings/quotes`);
+                            if (res.ok) {
+                                const d = await res.json();
+                                if (d.success && Array.isArray(d.data)) {
+                                    quotesList.value = d.data;
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('載入善語錄失敗', e);
+                        }
+                    };
+
+                    const saveQuotesToDB = async () => {
+                        const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api';
+                        try {
+                            const res = await fetch(`${apiBase}/settings/quotes`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(quotesList.value)
+                            });
+                            const d = await res.json();
+                            if (d.success) {
+                                alert('善語錄已成功儲存！前台已同步更新。');
+                            } else {
+                                alert(`儲存失敗：${d.message}`);
+                            }
+                        } catch (e) {
+                            alert('伺服器連線異常，儲存失敗');
+                        }
+                    };
+
+                    const saveQuoteItem = async () => {
+                        if (!quoteForm.value.title || !quoteForm.value.content || !quoteForm.value.imageUrl) {
+                            return alert('請完整填寫標題、圖片網址與善語內容！');
+                        }
+
+                        if (quoteForm.value.id) {
+                            // 更新既有項目
+                            const idx = quotesList.value.findIndex(item => item.id === quoteForm.value.id);
+                            if (idx !== -1) {
+                                quotesList.value[idx] = { ...quoteForm.value };
+                            }
+                        } else {
+                            // 新增項目
+                            quotesList.value.unshift({
+                                ...quoteForm.value,
+                                id: Date.now()
+                            });
+                        }
+
+                        await saveQuotesToDB();
+                        resetQuoteForm();
+                    };
+
+                    const editQuote = (q) => {
+                        quoteForm.value = { ...q };
+                    };
+
+                    const deleteQuote = async (id) => {
+                        if (!confirm('確定要刪除這筆善語錄嗎？')) return;
+                        quotesList.value = quotesList.value.filter(item => item.id !== id);
+                        await saveQuotesToDB();
+                    };
+
+                    // 判斷是否為影片
+                    const isVideoFile = (url) => {
+                        if (!url) return false;
+                        return /\.(mp4|webm|mov)$/i.test(url);
+                    };
+
+                    // 處理選擇檔案上傳至 /api/upload/kind-media
+                    // 處理選擇檔案
+                    const handleKindFileUpload = (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+
+                        // 限制檔案大小 (50MB)
+                        if (file.size > 50 * 1024 * 1024) {
+                            alert('檔案過大，請選擇小於 50MB 的照片或影片！');
+                            e.target.value = '';
+                            return;
+                        }
+
+                        isUploadingMedia.value = true;
+
+                        // 使用原生 FileReader 轉為 Base64
+                        const reader = new FileReader();
+                        reader.onload = async () => {
+                            try {
+                                const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api';
+                                const res = await fetch(`${apiBase}/upload/kind-media`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        fileName: file.name,
+                                        fileBase64: reader.result
+                                    })
+                                });
+
+                                const result = await res.json();
+                                if (result.success) {
+                                    // 自動帶入儲存後的 URL
+                                    quoteForm.value.imageUrl = result.fileUrl;
+                                    alert('媒體檔案上傳成功！');
+                                } else {
+                                    alert('上傳失敗：' + result.message);
+                                }
+                            } catch (err) {
+                                console.error('上傳出錯:', err);
+                                alert('上傳失敗，請確認後端已重新啟動！');
+                            } finally {
+                                isUploadingMedia.value = false;
+                                e.target.value = '';
+                            }
+                        };
+
+                        reader.onerror = () => {
+                            alert('讀取檔案失敗');
+                            isUploadingMedia.value = false;
+                            e.target.value = '';
+                        };
+
+                        reader.readAsDataURL(file);
+                    };
+
+                    // 在 onMounted 中呼叫載入：
+                    onMounted(async () => {
+                        await Promise.all([
+                            loadLanternConfigs(),
+                            loadStaff(),
+                            loadUsers(),
+                            loadHistoryData(),
+                            loadContactSettings(),
+                            loadDeitiesSettings(), // 加入載入神尊聖紀
+                            loadQuotesData() // 新增載入善語錄
+                        ]);
+                    });
+
+                    return {
+                        activeTab,
+                        lanternConfigs,
+                        staffList,
+                        userList,
+                        lanternForm,
+                        staffForm,
+                        userForm,
+                        batchGenYear,
+                        isGenerating,
+                        triggerBatchGenerate,
+                        loadLanternConfigs,
+                        loadStaff,
+                        loadUsers,
+                        submitLanternConfig,
+                        editLantern,
+                        submitStaff,
+                        deleteStaff,
+                        submitUser,
+                        toggleUserStatus,
+                        promptResetPassword,
+                        historyForm,
+                        timelineList,
+                        timelineForm,
+                        loadHistoryData,
+                        submitHistoryMain,
+                        resetTimelineForm,
+                        editTimeline,
+                        submitTimelineItem,
+                        deleteTimeline,
+                        // 關鍵修正：必須把 contactForm 與 saveContactSettings 導出給 HTML 模板！
+                        contactForm,
+                        saveContactSettings,
+                        deitiesList,
+                        currentDeityIndex,
+                        currentDeity,
+                        addPhotoToCurrentDeity,
+                        removePhotoFromCurrentDeity,
+                        saveDeitiesSettings,
+                        quotesList,
+                        quoteForm,
+                        resetQuoteForm,
+                        loadQuotesData,
+                        saveQuoteItem,
+                        editQuote,
+                        deleteQuote,
+                        isUploadingMedia,
+                        isVideoFile,
+                        
+                        currentQuoteForm, // 👈 檢查是否有導出
+                        handleKindFileUpload
+                    };
+                }
+            }).mount('#app');
+        </script>
+</body>
+</html>

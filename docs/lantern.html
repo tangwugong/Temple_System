@@ -1,0 +1,554 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>點燈排位查詢與受理 - 五公祖師巖</title>
+    <script src="js/tailwindcss.js"></script>
+    <script src="js/vue.global.prod.js"></script>
+    <script src="js/common.js"></script>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-[#FFFDF7] text-slate-800 min-h-screen" style="background-color: #FFFDF7;">
+    <div id="app" v-cloak class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- 左側：視覺化動態燈牆矩陣與年度狀況看板 -->
+            <div class="lg:col-span-2 space-y-4">
+
+                <!-- 頂部年度切換與說明 -->
+                <div class="bg-white p-4 rounded-xl border border-amber-200 shadow-sm flex flex-wrap justify-between items-center gap-3">
+                    <div>
+                        <h2 class="font-bold text-base text-slate-900 flex items-center gap-2">
+                            <span>🏮</span> 五公祖師巖 ‧ 智慧定址神位矩陣
+                            <span class="text-xs px-2.5 py-0.5 rounded-full bg-amber-800 text-white font-mono font-bold">
+                                {{ selectedYear }} 年度 ({{ getLunarYearGanZhi(selectedYear) }})
+                            </span>
+                        </h2>
+                        <p class="text-xs text-gray-500">
+                            <span v-if="isGuest" class="text-amber-800 font-bold">【訪客查詢模式】僅提供燈位安奉名冊即時查閱，如需點燈請洽大殿服務台</span>
+                            <span v-else>執事操作模式：可點選空位辦理信眾臨櫃開單安奉</span>
+                        </p>
+                    </div>
+
+                    <!-- 年度快捷切換按鈕組 -->
+                    <div class="flex items-center gap-1.5 bg-amber-50 p-1.5 rounded-xl border border-amber-200">
+                        <span class="text-[11px] font-bold text-amber-950 px-1">點燈年度：</span>
+                        <button v-for="yr in yearOptions"
+                                :key="yr"
+                                @click="changeYear(yr)"
+                                :class="selectedYear === yr ? 'bg-amber-800 text-white shadow font-bold' : 'text-amber-900 hover:bg-amber-200/60 font-medium'"
+                                class="px-3 py-1 rounded-lg text-xs font-mono transition-all">
+                            {{ yr }}年
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 依年度顯示各點燈類別狀況卡片 -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div v-for="cat in categorySummaries"
+                         :key="cat.type_code"
+                         @click="selectCategory(cat.type_code)"
+                         :class="currentCategory === cat.type_code ? 'border-amber-800 bg-amber-50/60 ring-2 ring-amber-700/20' : 'border-amber-200 bg-white hover:border-amber-400'"
+                         class="p-3 rounded-xl border shadow-sm cursor-pointer transition-all space-y-2 flex flex-col justify-between">
+
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-bold text-slate-900 truncate">{{ cat.type_name }}</span>
+                            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 font-bold">
+                                {{ cat.type_code }}
+                            </span>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-baseline text-xs font-mono">
+                                <span class="text-slate-500 text-[11px]">已安奉</span>
+                                <span class="font-bold text-amber-900">
+                                    <b class="text-sm font-black text-red-700">{{ cat.occupied_seats || 0 }}</b> / {{ cat.total_capacity }} 盞
+                                </span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-1.5 mt-1 overflow-hidden">
+                                <div class="bg-red-700 h-1.5 rounded-full transition-all"
+                                     :style="{ width: `${cat.total_capacity > 0 ? ((cat.occupied_seats || 0) / cat.total_capacity) * 100 : 0}%` }">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center text-[10px] text-gray-500 pt-1 border-t border-dashed border-gray-200">
+                            <span>空位: <b class="text-emerald-700 font-mono">{{ Math.max(0, cat.total_capacity - (cat.occupied_seats || 0)) }}</b></span>
+                            <span class="font-mono">NT${{ cat.default_fee }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 當前類別燈壁矩陣卡片 -->
+                <div class="bg-white p-5 rounded-xl border border-amber-200 shadow-sm space-y-3">
+                    <div class="flex flex-wrap justify-between items-center border-b border-amber-100 pb-2 gap-2">
+                        <div>
+                            <h3 class="font-bold text-sm text-amber-950 flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-700"></span>
+                                {{ selectedCategoryInfo?.type_name }} ({{ selectedCategoryInfo?.hall_name || '大殿' }})
+                            </h3>
+                            <p class="text-[11px] text-gray-500 font-mono mt-0.5">
+                                年度：<b class="text-amber-900">{{ selectedYear }}</b> ｜
+                                總名額：{{ currentCategorySeats.length }} 席 ｜
+                                剩餘空位：<b class="text-emerald-700 font-mono">{{ currentCategorySeats.filter(s => s.status === 'AVAILABLE').length }}</b> 席
+                            </p>
+                        </div>
+
+                        <div class="flex items-center gap-3 text-xs font-medium">
+                            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-emerald-50 border border-emerald-500 inline-block"></span> 可選空位</span>
+                            <span v-if="!isGuest" class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-amber-400 border border-amber-600 inline-block"></span> 暫選</span>
+                            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-red-800 border border-red-900 inline-block"></span> 已安奉顯名</span>
+                        </div>
+                    </div>
+
+                    <!-- 燈位 8 欄響應式網格 (訪客狀態下禁止點擊空位) -->
+                    <div class="grid grid-cols-4 sm:grid-cols-8 gap-2">
+                        <button v-for="seat in currentCategorySeats"
+                                :key="seat.code"
+                                :disabled="seat.status === 'OCCUPIED' || isGuest"
+                                @click="toggleSeat(seat)"
+                                :class="{
+                'bg-emerald-50/80 border-emerald-300 text-emerald-950': seat.status === 'AVAILABLE',
+                'hover:bg-emerald-100 cursor-pointer': seat.status === 'AVAILABLE' && !isGuest,
+                'cursor-default opacity-80': seat.status === 'AVAILABLE' && isGuest,
+                'bg-amber-400 border-amber-600 text-amber-950 font-bold shadow-md animate-pulse': seat.status === 'LOCKED',
+                'bg-gradient-to-b from-red-800 to-red-900 border-red-950 text-white cursor-not-allowed shadow-inner': seat.status === 'OCCUPIED'
+              }"
+                                class="p-2 border rounded-xl text-center transition-all flex flex-col items-center justify-between min-h-[66px]">
+
+                            <span class="text-[9px] font-mono opacity-80" :class="seat.status === 'OCCUPIED' ? 'text-amber-200' : 'text-gray-500'">
+                                {{ seat.code }}
+                            </span>
+
+                            <!-- 已安奉顯示姓名，未安奉顯示燈位標籤 -->
+                            <div v-if="seat.status === 'OCCUPIED'" class="my-auto text-center">
+                                <span class="text-xs font-black text-amber-300 tracking-wider block truncate max-w-[58px]">
+                                    {{ seat.believerName }}
+                                </span>
+                                <span class="text-[8px] text-amber-100/70 scale-90 block">安奉</span>
+                            </div>
+                            <div v-else class="my-auto">
+                                <span class="text-xs font-bold">{{ seat.label }}</span>
+                            </div>
+
+                            <span class="text-[8px] opacity-60 font-mono">
+                                {{ seat.status === 'OCCUPIED' ? '● 亮燈' : '○ 空位' }}
+                            </span>
+                        </button>
+                    </div>
+
+                    <div v-if="currentCategorySeats.length === 0" class="text-center py-12 text-gray-400 text-xs">
+                        {{ selectedYear }} 年度尚未配置該類別燈位。
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 右側：訪客提示區塊 vs 執事受理點燈面板 -->
+            <!-- 【A】若為訪客 (Guest)：顯示唯讀提示與執事登入引導 -->
+            <div v-if="isGuest" class="bg-white p-6 rounded-xl border border-amber-200 shadow-sm space-y-5 h-fit sticky top-20">
+                <div class="border-b pb-3 space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="text-2xl">🏮</span>
+                        <h3 class="font-bold text-slate-900 text-base">信眾點燈祈福須知</h3>
+                    </div>
+                    <p class="text-xs text-gray-500">本殿提供即時神位顯影查詢，祈求本命元辰光彩</p>
+                </div>
+
+                <div class="space-y-3 text-xs leading-relaxed text-slate-700">
+                    <div class="p-3.5 bg-amber-50 rounded-xl border border-amber-200 space-y-1.5">
+                        <p class="font-bold text-amber-950 flex items-center gap-1">
+                            <span>ℹ️</span> 訪客線上查榜說明
+                        </p>
+                        <p class="text-[11px] text-amber-900/90">
+                            您目前處於<b>信眾公開查證模式</b>。上方可依年度切換查看各殿堂（太歲、光明、文昌、財神等）之安奉大名與剩餘名額。
+                        </p>
+                    </div>
+
+                    <div class="space-y-2 border-l-2 border-amber-700 pl-3">
+                        <h4 class="font-bold text-slate-800">如何辦理點燈安奉？</h4>
+                        <p class="text-gray-600 text-[11px]">
+                            為確保文疏資料填寫正確並開立具字軌之公庫正式收據，點燈作業需由廟方值班執事人員臨櫃登錄。
+                        </p>
+                    </div>
+
+                    <div class="space-y-2 border-l-2 border-emerald-700 pl-3">
+                        <h4 class="font-bold text-slate-800">大殿臨櫃服務時間</h4>
+                        <p class="text-gray-600 text-[11px]">
+                            每日上午 07:00 至 晚間 21:00。<br>
+                            請至五公祖師巖大殿服務台辦理。
+                        </p>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-gray-100 text-center space-y-2">
+                    <p class="text-[11px] text-gray-500">若您為廟方值班執事人員，請登入系統進行作業：</p>
+                    <a href="login.html"
+                       class="block w-full py-2.5 bg-amber-800 hover:bg-amber-900 active:scale-95 text-white font-bold text-xs rounded-xl shadow transition-all">
+                        🔑 執事人員登入辦理點燈
+                    </a>
+                </div>
+            </div>
+
+            <!-- 【B】若為已登入執事：顯示臨櫃選位與結算面板 -->
+            <div v-else class="bg-white p-6 rounded-xl border border-amber-200 shadow-sm space-y-4 flex flex-col justify-between h-fit sticky top-20">
+                <div class="space-y-4">
+                    <div class="border-b pb-2">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-bold text-slate-900 text-base">臨櫃受理點燈安奉</h3>
+                            <span class="text-xs font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-200 font-mono">
+                                {{ selectedYear }} 年度
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-500">執事員：{{ currentUser?.realName }}（支援帶入 CRM 資料）</p>
+                    </div>
+
+                    <!-- 快速查找信眾 (CRM) -->
+                    <div class="p-3 bg-amber-50/80 rounded-xl border border-amber-200 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="block text-xs font-bold text-amber-950 flex items-center gap-1">
+                                <span>🔍</span> 快速查找信眾 (CRM)
+                            </label>
+                            <span v-if="selectedBelieverTag" class="text-[10px] text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded font-medium">
+                                已帶入: {{ selectedBelieverTag }}
+                            </span>
+                        </div>
+
+                        <div class="relative">
+                            <input v-model="searchKeyword"
+                                   @focus="isSearching = true"
+                                   type="text"
+                                   placeholder="輸入姓名、手機快速搜尋..."
+                                   class="w-full border border-amber-300 rounded-lg px-3 py-1.5 text-xs bg-white focus:ring-1 focus:ring-amber-500 outline-none" />
+
+                            <div v-if="isSearching && searchSuggestions.length > 0"
+                                 class="absolute left-0 right-0 top-full mt-1 bg-white border border-amber-200 rounded-lg shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-gray-100 text-xs">
+                                <div v-for="b in searchSuggestions"
+                                     :key="b.id"
+                                     @click="selectBeliever(b)"
+                                     class="p-2.5 hover:bg-amber-50 cursor-pointer flex justify-between items-center transition-colors">
+                                    <div>
+                                        <span class="font-bold text-slate-900">{{ b.name }}</span>
+                                        <span class="text-[10px] bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded ml-1.5 font-medium">{{ b.relationship }}</span>
+                                        <p class="text-[10px] text-gray-500 font-mono mt-0.5">📞 {{ b.phone }} ｜ 戶號: {{ b.familyCode }}</p>
+                                    </div>
+                                    <span class="text-amber-800 text-xs font-bold">帶入 ➔</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <select @change="onSelectDropdown($event.target.value)" class="w-full border border-amber-200 rounded-lg px-2.5 py-1.5 text-xs bg-white text-gray-700 outline-none">
+                                <option value="">-- 或點選下拉清單直接選擇 --</option>
+                                <option v-for="b in allBelievers" :key="b.id" :value="b.id">
+                                    {{ b.name }}（{{ b.relationship }}）- {{ b.phone }} / 戶號: {{ b.familyCode }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">安奉善信大名 *</label>
+                        <input v-model="posForm.name" type="text" placeholder="例：林大寶" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 focus:bg-white outline-none focus:border-amber-700" />
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">聯絡電話 *</label>
+                        <input v-model="posForm.phone" type="text" placeholder="例：0912-345678" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 focus:bg-white outline-none focus:border-amber-700" />
+                    </div>
+
+                    <!-- 已選定燈位明細 -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">已選定安奉燈位 ({{ selectedSeats.length }} 盞)</label>
+                        <div v-if="selectedSeats.length > 0" class="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 bg-gray-50 rounded-lg border">
+                            <span v-for="s in selectedSeats"
+                                  :key="s.code"
+                                  class="bg-amber-100 text-amber-900 text-xs px-2.5 py-1 rounded-md border border-amber-300 font-mono flex items-center gap-1">
+                                <span class="font-bold">{{ s.code }}</span>
+                                <span>({{ s.label }})</span>
+                                <span class="text-[10px] text-red-700 font-bold">NT${{ s.fee }}</span>
+                            </span>
+                        </div>
+                        <div v-else class="text-xs text-gray-400 py-3 text-center border border-dashed rounded-lg">
+                            尚未在左側點選空位
+                        </div>
+                    </div>
+
+                    <!-- 結算明細區塊 -->
+                    <div class="p-4 bg-amber-50/80 rounded-xl border border-amber-200 text-xs space-y-1.5">
+                        <div class="flex justify-between text-gray-600">
+                            <span>點燈年度：</span>
+                            <span class="font-mono font-bold text-slate-800">{{ selectedYear }} 年度</span>
+                        </div>
+                        <div v-for="cat in categorySummaries" :key="cat.type_code" class="flex justify-between text-gray-600">
+                            <span>{{ cat.type_name }}：</span>
+                            <span class="font-mono">
+                                {{ selectedSeats.filter(s => s.code.startsWith(cat.type_code + '-')).length }} 盞
+                            </span>
+                        </div>
+                        <div class="flex justify-between font-bold text-amber-950 border-t border-amber-200 pt-2 text-sm">
+                            <span>應繳緣金總計：</span>
+                            <span class="text-red-700 font-mono text-base">NT$ {{ totalFee.toLocaleString() }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button @click="submitOrder"
+                        :disabled="selectedSeats.length === 0 || !posForm.name"
+                        class="w-full py-3 bg-amber-800 hover:bg-amber-900 active:scale-95 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold text-xs rounded-xl shadow transition-all mt-4">
+                    確認結算並點亮 {{ selectedYear }} 年度燈位
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const currentUser = ref(null);
+                const isGuest = computed(() => !currentUser.value || currentUser.value.role === 'GUEST');
+
+                const currentYear = new Date().getFullYear();
+                const selectedYear = ref(currentYear);
+                const yearOptions = ref([currentYear - 1, currentYear, currentYear + 1]);
+
+                const allSeats = ref([]);
+                const categorySummaries = ref([]);
+                const currentCategory = ref('T');
+                const posForm = ref({ name: '', phone: '' });
+
+                const allBelievers = ref([]);
+                const searchKeyword = ref('');
+                const isSearching = ref(false);
+                const selectedBelieverTag = ref('');
+
+                const getLunarYearGanZhi = (year) => {
+                    const tianGan = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+                    const diZhi = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+                    const tg = tianGan[(year - 4) % 10];
+                    const dz = diZhi[(year - 4) % 12];
+                    return `${tg}${dz}年`;
+                };
+
+                const loadCategoriesSummary = async (year) => {
+                    try {
+                        const res = await fetch(`${API_BASE}/lanterns/categories-summary?year=${year}`);
+                        const data = await res.json();
+                        if (data.success && data.data.length > 0) {
+                            categorySummaries.value = data.data;
+                            const exists = data.data.some(c => c.type_code === currentCategory.value);
+                            if (!exists) currentCategory.value = data.data[0].type_code;
+                        }
+                    } catch (e) {
+                        console.warn('載入年度類別統計失敗', e);
+                    }
+                };
+
+                const loadSeatsByYear = async (year) => {
+                    try {
+                        const res = await fetch(`${API_BASE}/lanterns?year=${year}`);
+                        const data = await res.json();
+                        if (data.success) {
+                            allSeats.value = data.data.map(d => ({
+                                code: d.seat_code,
+                                label: d.seat_label,
+                                status: d.status,
+                                fee: Number(d.fee) || 600,
+                                believerName: d.assigned_believer_name || ''
+                            }));
+                        }
+                    } catch (e) {
+                        console.error('載入燈位失敗', e);
+                    }
+                };
+
+                const changeYear = async (yr) => {
+                    selectedYear.value = yr;
+                    allSeats.value = [];
+                    await Promise.all([
+                        loadCategoriesSummary(yr),
+                        loadSeatsByYear(yr)
+                    ]);
+                };
+
+                const selectCategory = async (typeCode) => {
+                    currentCategory.value = typeCode;
+                    await Promise.all([
+                        loadCategoriesSummary(selectedYear.value),
+                        loadSeatsByYear(selectedYear.value)
+                    ]);
+                };
+
+                // 僅已登入者載入 CRM 信眾名冊
+                const loadBelievers = async () => {
+                    if (isGuest.value) return;
+                    try {
+                        const res = await fetch(`${API_BASE}/households`);
+                        const data = await res.json();
+                        if (data.success) {
+                            const list = [];
+                            data.data.forEach(h => {
+                                list.push({
+                                    id: `H-${h.familyCode}`,
+                                    name: h.name,
+                                    phone: h.phone,
+                                    relationship: '戶長',
+                                    familyCode: h.familyCode
+                                });
+                                if (h.members && h.members.length > 0) {
+                                    h.members.forEach(m => {
+                                        list.push({
+                                            id: m.id,
+                                            name: m.name,
+                                            phone: m.phone || h.phone,
+                                            relationship: m.relationship || '家眷',
+                                            familyCode: h.familyCode
+                                        });
+                                    });
+                                }
+                            });
+                            allBelievers.value = list;
+                        }
+                    } catch (e) {
+                        console.error('載入信眾失敗', e);
+                    }
+                };
+
+                const selectedCategoryInfo = computed(() => {
+                    return categorySummaries.value.find(c => c.type_code === currentCategory.value) || {};
+                });
+
+                const currentCategorySeats = computed(() => {
+                    const prefix = `${currentCategory.value}-`;
+                    return allSeats.value.filter(s => s.code.startsWith(prefix));
+                });
+
+                const selectedSeats = computed(() => allSeats.value.filter(s => s.status === 'LOCKED'));
+
+                const totalFee = computed(() => {
+                    return selectedSeats.value.reduce((sum, s) => sum + (s.fee || 600), 0);
+                });
+
+                const searchSuggestions = computed(() => {
+                    if (!searchKeyword.value.trim()) return [];
+                    const kw = searchKeyword.value.trim().toLowerCase();
+                    return allBelievers.value.filter(b =>
+                        b.name.toLowerCase().includes(kw) ||
+                        b.phone.includes(kw) ||
+                        b.familyCode.toLowerCase().includes(kw)
+                    );
+                });
+
+                const selectBeliever = (b) => {
+                    posForm.value.name = b.name;
+                    posForm.value.phone = b.phone;
+                    selectedBelieverTag.value = `${b.name} (${b.relationship})`;
+                    searchKeyword.value = '';
+                    isSearching.value = false;
+                };
+
+                const onSelectDropdown = (bId) => {
+                    if (!bId) return;
+                    const b = allBelievers.value.find(item => item.id === bId);
+                    if (b) selectBeliever(b);
+                };
+
+                // 點擊燈位：訪客直接停用
+                const toggleSeat = (seat) => {
+                    if (isGuest.value) {
+                        alert('訪客僅提供燈位查閱，臨櫃點燈請洽廟方執事！');
+                        return;
+                    }
+                    if (seat.status === 'AVAILABLE') seat.status = 'LOCKED';
+                    else if (seat.status === 'LOCKED') seat.status = 'AVAILABLE';
+                };
+
+                // 執事送出開單
+                const submitOrder = async () => {
+                    if (isGuest.value) {
+                        alert('訪客無法執行開單作業！');
+                        return;
+                    }
+                    if (!posForm.value.name) {
+                        alert('請填寫安奉善信姓名');
+                        return;
+                    }
+                    const codes = selectedSeats.value.map(s => s.code);
+                    try {
+                        const res = await fetch(`${API_BASE}/lanterns/order`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                seatCodes: codes,
+                                believerName: posForm.value.name,
+                                phone: posForm.value.phone,
+                                year: selectedYear.value
+                            })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            alert(`安奉登記成功！公庫收據：${data.recordNo}，已為「${posForm.value.name}」點亮 ${selectedYear.value} 年度共 ${codes.length} 盞燈。`);
+                            posForm.value = { name: '', phone: '' };
+                            selectedBelieverTag.value = '';
+                            await Promise.all([
+                                loadCategoriesSummary(selectedYear.value),
+                                loadSeatsByYear(selectedYear.value)
+                            ]);
+                        } else {
+                            alert(`安奉失敗：${data.message}`);
+                        }
+                    } catch (e) {
+                        alert('連線伺服器異常');
+                    }
+                };
+
+                onMounted(async () => {
+                    currentUser.value = getCurrentUser();
+                    await Promise.all([
+                        loadCategoriesSummary(selectedYear.value),
+                        loadSeatsByYear(selectedYear.value),
+                        loadBelievers()
+                    ]);
+                });
+
+                return {
+                    currentUser,
+                    isGuest,
+                    selectedYear,
+                    yearOptions,
+                    allSeats,
+                    categorySummaries,
+                    currentCategory,
+                    selectedCategoryInfo,
+                    currentCategorySeats,
+                    selectedSeats,
+                    totalFee,
+                    posForm,
+                    allBelievers,
+                    searchKeyword,
+                    isSearching,
+                    searchSuggestions,
+                    selectedBelieverTag,
+                    getLunarYearGanZhi,
+                    changeYear,
+                    selectCategory,
+                    selectBeliever,
+                    onSelectDropdown,
+                    toggleSeat,
+                    submitOrder
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

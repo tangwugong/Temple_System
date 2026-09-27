@@ -1,0 +1,1102 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>年度法會活動 - 五公祖師巖</title>
+    <script src="js/tailwindcss.js"></script>
+    <script src="js/vue.global.prod.js"></script>
+    <script src="js/common.js"></script>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-amber-50/40 text-slate-800 min-h-screen">
+    <div id="app" v-cloak class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+
+        <!-- 頂部功能橫條 -->
+        <div class="flex flex-wrap justify-between items-center bg-white p-5 rounded-2xl border border-amber-200 shadow-sm gap-4">
+            <div>
+                <h2 class="font-bold text-lg sm:text-xl text-slate-900 flex items-center gap-2">
+                    <span>📅</span> 五公祖師巖 ‧ 年度法會活動管理
+                </h2>
+                <p class="text-xs text-gray-500 mt-1">支援法會排程、信眾公開登記、會計收費審核入帳、疏文大榜匯出與影音心得交流</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+                <span class="text-xs bg-amber-100 text-amber-900 px-3 py-1.5 rounded-full font-bold font-mono">
+                    目前籌辦：{{ events.length }} 檔法會
+                </span>
+
+                <!-- 僅 ADMIN, RITUAL 可規劃新活動 -->
+                <div v-if="canManageEvent">
+                    <button @click="openAddModal"
+                            class="px-4 py-2 bg-amber-800 hover:bg-amber-900 active:scale-95 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center gap-1.5">
+                        <span>➕</span> 規劃新活動
+                    </button>
+                </div>
+
+                <div class="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-xs font-bold text-slate-800">
+                    <span>👤 {{ currentUser?.realName || currentUser?.username || '訪客善信' }}</span>
+                    <span class="text-amber-700 font-mono">({{ currentUser?.role || 'GUEST' }})</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 活動卡片列表 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div v-for="e in events"
+                 :key="e.id"
+                 class="bg-white rounded-2xl border border-amber-200 shadow-sm p-5 space-y-3 flex flex-col justify-between hover:shadow-md transition-shadow">
+
+                <div class="space-y-2">
+                    <div class="flex justify-between items-start">
+                        <span class="px-2 py-0.5 rounded text-[11px] font-bold"
+                              :class="{
+                                'bg-emerald-100 text-emerald-800': e.status === 'OPEN',
+                                'bg-blue-100 text-blue-800': e.status === 'PREPARING',
+                                'bg-gray-100 text-gray-600': e.status === 'COMPLETED'
+                              }">
+                            {{ e.status === 'OPEN' ? '受理登記中' : (e.status === 'PREPARING' ? '籌備中' : '圓滿結束') }}
+                        </span>
+                        <span class="text-xs font-mono bg-amber-50 px-2 py-0.5 rounded border border-amber-200 text-amber-900">
+                            {{ e.hall }}
+                        </span>
+                    </div>
+
+                    <h3 class="font-bold text-base text-slate-900">{{ e.name }}</h3>
+                    <p class="text-xs text-gray-500 font-mono">📅 國曆：{{ e.solarDate }} ｜ 農曆：{{ e.lunarDate }}</p>
+                    <p class="text-xs text-gray-600 line-clamp-2 bg-amber-50/50 p-2.5 rounded-xl border border-amber-100">
+                        {{ e.description || '暫無活動內容說明' }}
+                    </p>
+
+                    <!-- 席次進度條 -->
+                    <div class="space-y-1 my-2">
+                        <div class="flex justify-between text-[11px] font-medium text-gray-600">
+                            <span>登記進度</span>
+                            <span class="font-mono text-amber-900">{{ e.currentQuota }} / {{ e.maxQuota }} 席 ({{ Math.round((e.currentQuota / (e.maxQuota || 1)) * 100) }}%)</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                            <div :class="e.currentQuota >= e.maxQuota ? 'bg-red-600' : 'bg-amber-600'"
+                                 class="h-1.5 rounded-full transition-all"
+                                 :style="{ width: `${Math.min(100, (e.currentQuota / (e.maxQuota || 1)) * 100)}%` }">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3 pt-2">
+                    <div class="flex justify-between items-center text-xs font-bold pt-2 border-t border-dashed border-gray-200">
+                        <span>每席緣金：<b class="text-red-700 font-mono text-sm">NT$ {{ Number(e.fee).toLocaleString() }}</b></span>
+                        <span>評價：<b class="text-amber-600 font-bold">★ {{ calculateAvgRating(e) }}</b> ({{ e.feedbacks ? e.feedbacks.length : 0 }})</span>
+                    </div>
+
+                    <!-- 操作按鈕列 -->
+                    <div class="grid grid-cols-3 gap-1.5">
+                        <button @click="openRosterModal(e)"
+                                class="py-2 bg-white hover:bg-amber-50 border border-amber-300 text-amber-900 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 shadow-sm">
+                            <span>👥</span> 名冊
+                            <span class="text-[10px] bg-amber-200 px-1.5 py-0.2 rounded-full font-mono">{{ e.currentQuota }}</span>
+                        </button>
+
+                        <button @click="openRegisterModal(e)"
+                                :disabled="e.status !== 'OPEN' || e.currentQuota >= e.maxQuota"
+                                class="py-2 bg-amber-800 hover:bg-amber-900 active:scale-95 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-0.5">
+                            <span>✍️</span> 登記
+                        </button>
+
+                        <button @click="openDetailModal(e)"
+                                class="py-2 bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-0.5">
+                            <span>🎬</span> 影音回饋
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="events.length === 0" class="col-span-full py-16 text-center text-gray-400 bg-white rounded-2xl border">
+                五公祖師巖目前尚未建檔年度活動。
+            </div>
+        </div>
+
+        <!-- ================= 彈窗 1：參加人員清冊與會計核定 Modal ================= -->
+        <div v-if="showRosterModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div class="bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[88vh] animate-in fade-in zoom-in-95 duration-200">
+                <div class="bg-amber-900 px-6 py-4 text-white flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-base">參加人員清冊 — {{ activeEvent?.name }}</h3>
+                        <p class="text-xs text-amber-200 font-mono">
+                            承辦：{{ activeEvent?.hall }} ｜ 共計登記：{{ filteredRoster.length }} 筆 ｜ 席次上限：{{ activeEvent?.maxQuota }} 席
+                        </p>
+                    </div>
+                    <button @click="showRosterModal = false" class="text-amber-200 hover:text-white text-xl">✕</button>
+                </div>
+
+                <div class="p-4 border-b bg-gray-50 flex flex-wrap justify-between items-center gap-3">
+                    <input v-model="rosterSearch"
+                           type="text"
+                           placeholder="🔍 搜尋信眾姓名、手機或疏文抬頭..."
+                           class="w-72 border rounded-xl px-3 py-1.5 text-xs bg-white focus:border-amber-700 outline-none" />
+
+                    <div class="flex items-center gap-2">
+                        <span v-if="isAccountant" class="text-xs bg-blue-100 text-blue-900 border border-blue-200 px-2.5 py-1 rounded-lg font-bold">
+                            💼 會計核銷審核中
+                        </span>
+                        <button @click="exportRosterFile"
+                                class="px-3.5 py-1.5 text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-xl font-bold flex items-center gap-1 shadow-sm">
+                            <span>📜</span> 下載疏文大榜清冊 (.txt)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-y-auto flex-1 p-4">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-amber-50 text-amber-950 font-bold border-b border-amber-200">
+                                <th class="py-2.5 px-3">流水號</th>
+                                <th class="py-2.5 px-3">報名善信</th>
+                                <th class="py-2.5 px-3">聯絡電話</th>
+                                <th class="py-2.5 px-3">疏文上表抬頭</th>
+                                <th class="py-2.5 px-3 text-center">席次</th>
+                                <th class="py-2.5 px-3 text-right">緣金</th>
+                                <th class="py-2.5 px-3 text-center">供品處置</th>
+                                <th class="py-2.5 px-3 text-center">繳費狀態</th>
+                                <th class="py-2.5 px-3 text-center">會計核銷 / 操作</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr v-for="item in filteredRoster" :key="item.regId" class="hover:bg-amber-50/40">
+                                <td class="py-2.5 px-3 font-mono text-gray-500">{{ item.regId }}</td>
+                                <td class="py-2.5 px-3 font-bold text-slate-800">{{ item.name }}</td>
+                                <td class="py-2.5 px-3 font-mono text-gray-600">{{ item.phone }}</td>
+                                <td class="py-2.5 px-3">
+                                    <span class="font-medium text-slate-900">{{ item.targetName || '-' }}</span>
+                                    <span class="text-[10px] text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded ml-1">{{ item.category }}</span>
+                                </td>
+                                <td class="py-2.5 px-3 text-center font-bold font-mono text-slate-800">{{ item.seats }}</td>
+                                <td class="py-2.5 px-3 text-right font-mono font-bold text-red-700">NT$ {{ Number(item.amount).toLocaleString() }}</td>
+                                <td class="py-2.5 px-3 text-center">
+                                    <span v-if="item.offering === 'DONATE_CHARITY'" class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[11px]">代捐慈善</span>
+                                    <span v-else class="px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-[11px]">信眾自領</span>
+                                </td>
+
+                                <td class="py-2.5 px-3 text-center">
+                                    <span :class="item.pay_status === 'PAID' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-amber-100 text-amber-800 border-amber-200'"
+                                          class="px-2 py-0.5 rounded-full border text-[10px] font-bold">
+                                        {{ item.pay_status === 'PAID' ? '● 已入帳' : '○ 待核定' }}
+                                    </span>
+                                </td>
+
+                                <td class="py-2.5 px-3 text-center">
+                                    <div v-if="isAccountant && item.pay_status !== 'PAID'" class="flex justify-center items-center gap-1.5">
+                                        <button @click="verifyPayment(item)"
+                                                class="px-2.5 py-1 bg-blue-700 hover:bg-blue-800 active:scale-95 text-white font-bold rounded text-[11px] shadow-sm">
+                                            確認收費
+                                        </button>
+                                        <button v-if="canManageEvent" @click="cancelRegistration(item)" class="text-red-500 hover:underline text-[10px]">
+                                            取消
+                                        </button>
+                                    </div>
+                                    <div v-else-if="item.pay_status === 'PAID'" class="text-[10px] font-mono text-emerald-700 font-bold">
+                                        {{ item.receipt_no || '已核發收據' }}
+                                    </div>
+                                    <div v-else class="text-gray-400 text-[11px]">
+                                        等待會計核定
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr v-if="filteredRoster.length === 0">
+                                <td colspan="9" class="text-center py-10 text-gray-400">目前查無符合之報名名單</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="bg-gray-50 px-6 py-3 border-t flex justify-end">
+                    <button @click="showRosterModal = false" class="px-5 py-2 bg-amber-800 hover:bg-amber-900 text-white font-bold text-xs rounded-xl">
+                        關閉名冊
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 彈窗 2：信眾報名登記 Modal ================= -->
+        <div v-if="showRegisterModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+                <div class="bg-amber-900 px-6 py-4 text-white flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-base">信眾法會報名登記</h3>
+                        <p class="text-xs text-amber-200 font-mono">{{ activeEvent?.name }}（{{ activeEvent?.hall }}）</p>
+                    </div>
+                    <button @click="showRegisterModal = false" class="text-amber-200 hover:text-white text-xl">✕</button>
+                </div>
+
+                <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
+                    <!-- 快速查找信眾 (CRM) 區塊：非訪客時呈現 (已修復整合) -->
+                    <div v-if="!isGuest" class="p-3.5 bg-amber-50 rounded-xl border border-amber-200 space-y-2.5">
+                        <div class="flex justify-between items-center">
+                            <label class="block font-bold text-amber-950 flex items-center gap-1">
+                                <span>🔍</span> 快速查找信眾建檔 (CRM)
+                            </label>
+                            <span v-if="selectedBelieverTag" class="text-[10px] text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded font-medium">
+                                已帶入: {{ selectedBelieverTag }}
+                            </span>
+                        </div>
+
+                        <div class="relative">
+                            <input v-model="crmKeyword"
+                                   @focus="isSearchingCrm = true"
+                                   type="text"
+                                   placeholder="輸入姓名、手機快速搜尋既有信眾..."
+                                   class="w-full border border-amber-300 rounded-xl px-3 py-2 text-xs bg-white focus:ring-1 focus:ring-amber-500 outline-none" />
+
+                            <div v-if="isSearchingCrm && crmSuggestions.length > 0"
+                                 class="absolute left-0 right-0 top-full mt-1 bg-white border border-amber-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-gray-100 text-xs">
+                                <div v-for="b in crmSuggestions"
+                                     :key="b.id"
+                                     @click="selectBelieverForReg(b)"
+                                     class="p-2.5 hover:bg-amber-50 cursor-pointer flex justify-between items-center transition-colors">
+                                    <div>
+                                        <span class="font-bold text-slate-900">{{ b.name }}</span>
+                                        <span class="text-[10px] bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded ml-1.5 font-medium">{{ b.relationship || '本人' }}</span>
+                                        <p class="text-[10px] text-gray-500 font-mono mt-0.5">📞 {{ b.phone }} ｜ 戶號: {{ b.family_code || b.familyCode || '未設' }}</p>
+                                    </div>
+                                    <span class="text-amber-800 font-bold">帶入 ➔</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">報名善信姓名 *</label>
+                            <input v-model="regForm.applicantName" type="text" placeholder="例：林大寶" class="w-full border rounded-xl px-3 py-2 bg-gray-50 focus:bg-white outline-none focus:border-amber-700 font-bold" />
+                        </div>
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">聯絡手機 *</label>
+                            <input v-model="regForm.contactPhone" type="text" placeholder="例：0912-345678" class="w-full border rounded-xl px-3 py-2 bg-gray-50 focus:bg-white outline-none focus:border-amber-700 font-mono" />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">祈福／拔薦類別</label>
+                            <select v-model="regForm.category" class="w-full border rounded-xl px-3 py-2 bg-white">
+                                <option value="闔家祈安消災">闔家祈安消災</option>
+                                <option value="堂上歷代祖先">堂上歷代祖先</option>
+                                <option value="個人本命元辰">個人本命元辰</option>
+                                <option value="個人冤親債主">個人冤親債主</option>
+                                <option value="地基主福佑">地基主福佑</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">登記席次／普桌數 *</label>
+                            <input v-model.number="regForm.seats" type="number" min="1" :max="activeEvent ? (activeEvent.maxQuota - activeEvent.currentQuota) : 10" class="w-full border rounded-xl px-3 py-2 font-mono font-bold" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">疏文上表抬頭對象</label>
+                        <input v-model="regForm.targetName" type="text" placeholder="例：林大寶闔家 / 堂上林氏歷代九玄七祖" class="w-full border rounded-xl px-3 py-2" />
+                    </div>
+
+                    <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 space-y-2">
+                        <div>
+                            <label class="block font-bold text-amber-950 mb-1">法會普品處置方式</label>
+                            <div class="flex gap-4 text-xs mt-1">
+                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                    <input type="radio" value="DONATE_CHARITY" v-model="regForm.offering" />
+                                    <span class="text-emerald-800 font-bold">委託廟方代捐弱勢慈善</span>
+                                </label>
+                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                    <input type="radio" value="TAKE_AWAY" v-model="regForm.offering" />
+                                    <span>法會圓滿後領回平安</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 border-t border-amber-200 flex justify-between items-center">
+                            <span class="font-bold text-amber-950">應繳納緣金總額：</span>
+                            <span class="text-base font-black text-red-700 font-mono">
+                                NT$ {{ ((activeEvent?.fee || 0) * (regForm.seats || 1)).toLocaleString() }}
+                            </span>
+                        </div>
+                        <p class="text-[10px] text-gray-500 font-mono">※ 線上登記送出後狀態為「待核定」，繳費後將由會計執事開立入帳收據。</p>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 px-6 py-3 border-t flex justify-end gap-2 text-xs">
+                    <button @click="showRegisterModal = false" class="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-xl">取消</button>
+                    <button @click="submitRegistration" class="px-5 py-2 bg-amber-800 hover:bg-amber-900 active:scale-95 text-white font-bold rounded-xl shadow">
+                        確認送出報名
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 彈窗 3：活動紀實與信眾回饋 Modal ================= -->
+        <div v-if="showDetailModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
+                <div class="bg-emerald-900 px-6 py-4 text-white flex justify-between items-center">
+                    <div>
+                        <span class="text-xs bg-emerald-800 px-2 py-0.5 rounded text-emerald-200 font-mono">{{ activeEvent?.id }}</span>
+                        <h3 class="font-bold text-lg mt-0.5">{{ activeEvent?.name }} ‧ 活動紀實與信眾交流</h3>
+                    </div>
+                    <button @click="showDetailModal = false" class="text-emerald-200 hover:text-white text-xl">✕</button>
+                </div>
+
+                <div class="p-6 space-y-6 overflow-y-auto flex-1 text-xs">
+                    <!-- 活動簡介 -->
+                    <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-200 space-y-1.5">
+                        <div class="flex flex-wrap justify-between text-gray-600 font-mono gap-2">
+                            <span>🏛️ 承辦殿堂：<b class="text-slate-800">{{ activeEvent?.hall }}</b></span>
+                            <span>📅 日期：{{ activeEvent?.solarDate }}（農曆{{ activeEvent?.lunarDate }}）</span>
+                            <span>👥 已登記席次：{{ activeEvent?.currentQuota }} / {{ activeEvent?.maxQuota }} 席</span>
+                        </div>
+                        <p class="text-slate-700 leading-relaxed pt-2 border-t border-emerald-200">
+                            {{ activeEvent?.description || '本活動尚無文字紀實說明。' }}
+                        </p>
+                    </div>
+
+                    <!-- 信眾回饋填寫區 -->
+                    <div class="bg-white p-4 rounded-xl border border-amber-200 shadow-sm space-y-3">
+                        <h4 class="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                            <span>✍️</span> 留下您的參贊心得與法會影音紀錄
+                        </h4>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-1">信眾姓名 / 身分 *</label>
+                                <input v-model="feedbackForm.author" type="text" placeholder="例：陳大德 善士" class="w-full border rounded-xl px-3 py-1.5" />
+                            </div>
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-1">法會滿意度評價 *</label>
+                                <select v-model.number="feedbackForm.rating" class="w-full border rounded-xl px-3 py-1.5 bg-white font-bold text-amber-700">
+                                    <option :value="5">★★★★★ 非常圓滿殊勝 (5星)</option>
+                                    <option :value="4">★★★★☆ 吉祥順遂 (4星)</option>
+                                    <option :value="3">★★★☆☆ 平順如常 (3星)</option>
+                                    <option :value="2">★★☆☆☆ 需再精進 (2星)</option>
+                                    <option :value="1">★☆☆☆☆ 待改善 (1星)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">心得感應與建議事項 *</label>
+                            <textarea v-model="feedbackForm.comment" rows="2" placeholder="分享參與法會的心得感想..." class="w-full border rounded-xl px-3 py-1.5"></textarea>
+                        </div>
+
+                        <!-- YouTube 連結輸入與即時解析 -->
+                        <div class="p-3 bg-red-50/60 rounded-xl border border-red-200 space-y-2">
+                            <div class="flex justify-between items-center">
+                                <label class="font-bold text-red-950 flex items-center gap-1.5">
+                                    <span class="text-red-600 font-bold">▶</span> YouTube 影片分享 (可貼上完整網址、短網址或 Shorts)
+                                </label>
+                                <span v-if="feedbackForm.youtubeId" class="text-[10px] text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded font-bold">
+                                    ✓ 已解析影片 ID: {{ feedbackForm.youtubeId }}
+                                </span>
+                            </div>
+
+                            <div class="flex gap-2">
+                                <input v-model="feedbackForm.youtubeUrl"
+                                       @input="handleYoutubeInput"
+                                       type="text"
+                                       placeholder="例：https://www.youtube.com/watch?v=..."
+                                       class="flex-1 border border-red-300 rounded-xl px-3 py-1.5 text-xs bg-white focus:ring-1 focus:ring-red-500 outline-none font-mono" />
+
+                                <button v-if="feedbackForm.youtubeUrl"
+                                        @click="clearYoutubeUrl"
+                                        class="px-2.5 py-1 bg-gray-200 hover:bg-gray-300 rounded-xl text-gray-700 font-bold">
+                                    清除
+                                </button>
+                            </div>
+
+                            <div v-if="feedbackForm.youtubeId" class="mt-2 rounded-xl overflow-hidden border border-red-300 aspect-video max-w-md bg-black">
+                                <iframe :src="`https://www.youtube.com/embed/${feedbackForm.youtubeId}`"
+                                        class="w-full h-full"
+                                        frameborder="0"
+                                        allowfullscreen>
+                                </iframe>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button @click="submitFeedback"
+                                    :disabled="isUploading"
+                                    class="px-5 py-2 bg-amber-800 hover:bg-amber-900 active:scale-95 disabled:bg-gray-400 text-white rounded-xl font-bold shadow">
+                                送出回饋心得
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 信眾回饋查詢與過濾工具列 -->
+                    <div class="space-y-3">
+                        <div class="flex flex-wrap justify-between items-center gap-2 border-b border-gray-200 pb-2">
+                            <h4 class="font-bold text-slate-900 text-sm flex items-center gap-1">
+                                <span>💬</span> 歷來信眾評價與影音紀實
+                            </h4>
+                            <span class="font-bold text-amber-900 font-mono">
+                                平均星等：★ {{ calculateAvgRating(activeEvent) }} (共 {{ activeEvent?.feedbacks ? activeEvent.feedbacks.length : 0 }} 則)
+                            </span>
+                        </div>
+
+                        <!-- 搜尋與篩選列 -->
+                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-200 flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex flex-wrap items-center gap-2 flex-1">
+                                <input v-model="feedbackSearchKw"
+                                       type="text"
+                                       placeholder="🔍 搜尋作者大名、感應心得關鍵字..."
+                                       class="border rounded-lg px-3 py-1.5 text-xs bg-white w-60 outline-none focus:border-emerald-700" />
+
+                                <select v-model="feedbackFilterRating" class="border rounded-lg px-2.5 py-1.5 bg-white font-medium text-slate-700 outline-none">
+                                    <option value="ALL">全部星等評價</option>
+                                    <option value="5">★★★★★ (5星)</option>
+                                    <option value="4">★★★★☆ (4星以上)</option>
+                                    <option value="3">★★★☆☆ (3星以下)</option>
+                                </select>
+
+                                <label class="flex items-center gap-1 text-slate-700 cursor-pointer font-bold select-none">
+                                    <input type="checkbox" v-model="feedbackOnlyVideo" class="rounded text-emerald-700" />
+                                    <span>僅看附影音影片</span>
+                                </label>
+                            </div>
+
+                            <span class="text-[11px] text-gray-500 font-mono">
+                                篩選結果：{{ filteredFeedbacks.length }} 筆
+                            </span>
+                        </div>
+
+                        <!-- 歷史回饋清單展示 -->
+                        <div class="space-y-3">
+                            <div v-for="(fb, idx) in filteredFeedbacks"
+                                 :key="idx"
+                                 class="p-4 bg-gray-50 rounded-2xl border border-gray-200 space-y-2.5">
+                                <div class="flex justify-between items-center">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-slate-800 text-sm">{{ fb.author }}</span>
+                                        <span class="text-amber-600 font-bold">★ {{ fb.rating }}.0</span>
+                                    </div>
+                                    <span class="text-[10px] text-gray-400 font-mono">{{ fb.date }}</span>
+                                </div>
+                                <p class="text-slate-700 leading-relaxed">{{ fb.comment }}</p>
+                                <div v-if="fb.youtubeId" class="pt-2">
+                                    <div class="rounded-xl overflow-hidden border border-gray-300 aspect-video max-w-lg bg-black shadow-md">
+                                        <iframe :src="`https://www.youtube.com/embed/${fb.youtubeId}`" class="w-full h-full" frameborder="0" allowfullscreen></iframe>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div v-if="filteredFeedbacks.length === 0" class="text-center py-8 text-gray-400 bg-white rounded-xl border border-dashed border-gray-200">
+                                查無符合條件之信眾回饋紀錄。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 px-6 py-3 border-t flex justify-end">
+                    <button @click="showDetailModal = false" class="px-5 py-2 bg-emerald-900 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl">
+                        關閉視窗
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- ================= 彈窗 4：規劃新活動 Modal (僅 ADMIN, RITUAL 可開啟) ================= -->
+        <div v-if="canManageEvent && showAddModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+                <div class="bg-amber-900 px-6 py-4 text-white flex justify-between items-center">
+                    <h3 class="font-bold text-base">規劃新增年度法會活動 (主委/科儀專用)</h3>
+                    <button @click="showAddModal = false" class="text-amber-200 hover:text-white text-xl">✕</button>
+                </div>
+
+                <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">活動代碼 *</label>
+                            <input v-model="addForm.id" type="text" class="w-full border rounded-xl px-3 py-2 font-mono bg-gray-50" />
+                        </div>
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">活動狀態</label>
+                            <select v-model="addForm.status" class="w-full border rounded-xl px-3 py-2 bg-white">
+                                <option value="OPEN">受理登記中 (OPEN)</option>
+                                <option value="PREPARING">籌備中 (PREPARING)</option>
+                                <option value="COMPLETED">圓滿結束 (COMPLETED)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">法會／活動名稱 *</label>
+                        <input v-model="addForm.name" type="text" placeholder="例：五公祖師聖誕祈安植福大法會" class="w-full border rounded-xl px-3 py-2 text-sm font-bold" />
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">承辦殿堂/地點</label>
+                            <input v-model="addForm.hall" type="text" placeholder="祖師殿" class="w-full border rounded-xl px-3 py-2" />
+                        </div>
+                        <div>
+                            <label class="block font-bold text-amber-900 mb-1">國曆日期 * (日曆選擇)</label>
+                            <input v-model="addForm.solarDate"
+                                   @change="onSolarDateChange"
+                                   type="date"
+                                   class="w-full border-2 border-amber-400 rounded-xl px-2 py-1.5 font-mono bg-amber-50/40 text-slate-800" />
+                        </div>
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">農曆對照 (自動換算)</label>
+                            <input v-model="addForm.lunarDate" type="text" class="w-full border rounded-xl px-3 py-2 bg-gray-50 font-medium" />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">每席/每份緣金 (NT$) *</label>
+                            <input v-model.number="addForm.fee" type="number" min="0" step="100" class="w-full border rounded-xl px-3 py-2 font-bold font-mono text-red-700 text-sm" />
+                        </div>
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">開放席次上限 *</label>
+                            <input v-model.number="addForm.maxQuota" type="number" min="1" class="w-full border rounded-xl px-3 py-2 font-mono text-sm" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">活動宗旨與內容說明</label>
+                        <textarea v-model="addForm.description" rows="3" placeholder="請填寫法會科儀介紹或注意事項..." class="w-full border rounded-xl px-3 py-2"></textarea>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 px-6 py-3 border-t flex justify-end gap-2 text-xs">
+                    <button @click="showAddModal = false" class="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-xl">取消</button>
+                    <button @click="submitAddEvent" class="px-5 py-2 bg-amber-800 hover:bg-amber-900 active:scale-95 text-white font-bold rounded-xl shadow">
+                        確認儲存活動
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const currentUser = ref(null);
+                const isGuest = computed(() => !currentUser.value || currentUser.value.role === 'GUEST');
+
+                const getBaseUrl = () => {
+                    let base = (typeof getApiBase === 'function') ? getApiBase() : ((typeof API_BASE !== 'undefined') ? API_BASE : '/api');
+                    return base.replace(/\/+$/, '');
+                };
+
+                const canManageEvent = computed(() => {
+                    return !isGuest.value && ['ADMIN', 'RITUAL'].includes(currentUser.value?.role);
+                });
+
+                const isAccountant = computed(() => {
+                    return !isGuest.value && ['ADMIN', 'ACCOUNTANT'].includes(currentUser.value?.role);
+                });
+
+                const events = ref([]);
+                const showAddModal = ref(false);
+                const showRegisterModal = ref(false);
+                const showDetailModal = ref(false);
+                const showRosterModal = ref(false);
+
+                const activeEvent = ref(null);
+                const rosterList = ref([]);
+                const rosterSearch = ref('');
+
+                // CRM 相關變數
+                const allBelievers = ref([]);
+                const crmKeyword = ref('');
+                const isSearchingCrm = ref(false);
+                const selectedBelieverTag = ref('');
+                const isUploading = ref(false);
+
+                // 搜尋信眾建議名單（真實過濾）
+                const crmSuggestions = computed(() => {
+                    if (!crmKeyword.value.trim()) return [];
+                    const kw = crmKeyword.value.trim().toLowerCase();
+                    return allBelievers.value.filter(b =>
+                        (b.name && b.name.toLowerCase().includes(kw)) ||
+                        (b.phone && b.phone.includes(kw))
+                    ).slice(0, 10);
+                });
+
+                // 點選信眾自動帶入
+                const selectBelieverForReg = (b) => {
+                    regForm.value.applicantName = b.name || '';
+                    regForm.value.contactPhone = b.phone || '';
+                    regForm.value.targetName = `${b.name}闔家`;
+                    selectedBelieverTag.value = `${b.name} (${b.phone || '無電話'})`;
+                    isSearchingCrm.value = false;
+                    crmKeyword.value = '';
+                };
+
+                const loadBelievers = async () => {
+                    if (isGuest.value) return;
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/believers`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data.success && Array.isArray(data.data)) {
+                                allBelievers.value = data.data;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('載入信眾 CRM 資料失敗:', e);
+                    }
+                };
+
+                const filteredRoster = computed(() => {
+                    if (!rosterSearch.value) return rosterList.value;
+                    const kw = rosterSearch.value.trim().toLowerCase();
+                    return rosterList.value.filter(r =>
+                        (r.name && r.name.toLowerCase().includes(kw)) ||
+                        (r.phone && r.phone.includes(kw)) ||
+                        (r.targetName && r.targetName.toLowerCase().includes(kw)) ||
+                        (r.regId && r.regId.toLowerCase().includes(kw))
+                    );
+                });
+
+                const addForm = ref({
+                    id: '',
+                    name: '',
+                    hall: '祖師殿',
+                    solarDate: '',
+                    lunarDate: '',
+                    fee: 1200,
+                    maxQuota: 300,
+                    status: 'OPEN',
+                    description: ''
+                });
+
+                const regForm = ref({
+                    applicantName: '',
+                    contactPhone: '',
+                    category: '闔家祈安消災',
+                    targetName: '',
+                    seats: 1,
+                    offering: 'DONATE_CHARITY'
+                });
+
+                const feedbackForm = ref({
+                    author: '',
+                    rating: 5,
+                    comment: '',
+                    youtubeUrl: '',
+                    youtubeId: '',
+                    mediaUrl: ''
+                });
+
+                const extractYoutubeId = (url) => {
+                    if (!url) return '';
+                    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|shorts\/|watch\?v=|&v=)([^#&?]*).*/;
+                    const match = url.trim().match(regExp);
+                    return (match && match[2].length === 11) ? match[2] : '';
+                };
+
+                const handleYoutubeInput = () => {
+                    feedbackForm.value.youtubeId = extractYoutubeId(feedbackForm.value.youtubeUrl);
+                };
+
+                const clearYoutubeUrl = () => {
+                    feedbackForm.value.youtubeUrl = '';
+                    feedbackForm.value.youtubeId = '';
+                };
+
+                const solarToLunarChinese = (solarDateStr) => {
+                    if (!solarDateStr) return '';
+                    try {
+                        const [y, m, d] = solarDateStr.split('-').map(Number);
+                        const dateObj = new Date(y, m - 1, d);
+                        const formatter = new Intl.DateTimeFormat('zh-TW-u-ca-chinese', {
+                            year: 'numeric',
+                            month: 'numeric',
+                            day: 'numeric'
+                        });
+                        const parts = formatter.formatToParts(dateObj);
+                        let lYear = '', lMonth = '', lDay = '';
+                        parts.forEach(p => {
+                            if (p.type === 'year') lYear = p.value;
+                            if (p.type === 'month') lMonth = p.value;
+                            if (p.type === 'day') lDay = p.value;
+                        });
+
+                        const monthMap = { '1': '正月', '2': '二月', '3': '三月', '4': '四月', '5': '五月', '6': '六月', '7': '七月', '8': '八月', '9': '九月', '10': '十月', '11': '十一月', '12': '臘月' };
+                        const dayMap = ['', '初一', '初二', '初三', '初四', '初五', '初六', '初七', '初八', '初九', '初十', '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十', '廿一', '廿二', '廿三', '廿四', '廿五', '廿六', '廿七', '廿八', '廿九', '三十'];
+
+                        return `${lYear}年 ${monthMap[lMonth] || lMonth + '月'}${dayMap[lDay] || lDay + '日'}`;
+                    } catch (e) {
+                        return '';
+                    }
+                };
+
+                const loadEvents = async () => {
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/events`);
+                        const data = await res.json();
+                        if (data.success) events.value = data.data;
+                    } catch (e) {
+                        console.error('載入活動失敗', e);
+                    }
+                };
+
+                const loadRoster = async (eventId) => {
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/events/${eventId}/roster`);
+                        if (!res.ok) throw new Error(`HTTP 錯誤狀態: ${res.status}`);
+
+                        const data = await res.json();
+                        if (data.success && Array.isArray(data.data)) {
+                            rosterList.value = data.data.map(r => ({
+                                regId: r.regId || r.reg_id || '無編號',
+                                name: r.name || '未填寫',
+                                phone: r.phone || '',
+                                targetName: r.targetName || r.target_name || '',
+                                category: r.category || '闔家祈安消災',
+                                seats: Number(r.seats) || 1,
+                                amount: Number(r.amount) || 0,
+                                offering: r.offering || 'DONATE_CHARITY',
+                                pay_status: r.pay_status || 'PENDING',
+                                receipt_no: r.receipt_no || ''
+                            }));
+                        } else {
+                            rosterList.value = [];
+                        }
+                    } catch (e) {
+                        console.error('[events.html] 讀取名冊失敗:', e);
+                        rosterList.value = [];
+                    }
+                };
+
+                const openRosterModal = async (e) => {
+                    activeEvent.value = e;
+                    rosterSearch.value = '';
+                    await loadRoster(e.id);
+                    showRosterModal.value = true;
+                };
+
+                const verifyPayment = async (item) => {
+                    if (!isAccountant.value) {
+                        alert('【權限不足】僅限會計出納人員可執行收費核定！');
+                        return;
+                    }
+                    if (!confirm(`確認信眾「${item.name}」已繳納法會緣金 NT$ ${item.amount} 嗎？`)) return;
+
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/events/roster/${item.regId}/verify-pay`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                role: currentUser.value?.role,
+                                verifiedBy: currentUser.value?.realName || currentUser.value?.username || '會計組'
+                            })
+                        });
+                        const result = await res.json();
+                        if (result.success) {
+                            alert(result.message);
+                            await loadRoster(activeEvent.value.id);
+                        } else {
+                            alert(`核銷失敗：${result.message}`);
+                        }
+                    } catch (e) {
+                        alert('伺服器連線失敗');
+                    }
+                };
+
+                const cancelRegistration = async (item) => {
+                    if (!confirm(`確定要取消善信「${item.name}」的報名嗎？`)) return;
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/events/register/${item.regId}`, { method: 'DELETE' });
+                        const result = await res.json();
+                        if (result.success) {
+                            alert('已成功取消登記');
+                            await loadRoster(activeEvent.value.id);
+                            await loadEvents();
+                        }
+                    } catch (e) {
+                        alert('操作失敗');
+                    }
+                };
+
+                const onSolarDateChange = () => {
+                    if (addForm.value.solarDate) {
+                        addForm.value.lunarDate = solarToLunarChinese(addForm.value.solarDate);
+                    }
+                };
+
+                const openAddModal = () => {
+                    if (!canManageEvent.value) {
+                        alert('【權限不足】僅限主委與法會科儀組長可規劃新活動！');
+                        return;
+                    }
+                    const now = new Date();
+                    const defaultSolar = now.toISOString().split('T')[0];
+                    const currentYear = now.getFullYear();
+                    addForm.value = {
+                        id: `EVT-${currentYear}-${(events.value.length + 1).toString().padStart(3, '0')}`,
+                        name: '',
+                        hall: '祖師殿',
+                        solarDate: defaultSolar,
+                        lunarDate: solarToLunarChinese(defaultSolar),
+                        fee: 1200,
+                        maxQuota: 300,
+                        status: 'OPEN',
+                        description: ''
+                    };
+                    showAddModal.value = true;
+                };
+
+                const submitAddEvent = async () => {
+                    if (!canManageEvent.value) return;
+                    if (!addForm.value.name || !addForm.value.solarDate) {
+                        alert('請填寫活動名稱與國曆日期');
+                        return;
+                    }
+
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/events`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                ...addForm.value,
+                                role: currentUser.value?.role
+                            })
+                        });
+                        const result = await res.json();
+                        if (result.success) {
+                            alert('活動建立成功！');
+                            showAddModal.value = false;
+                            await loadEvents();
+                        } else {
+                            alert(`建立失敗：${result.message}`);
+                        }
+                    } catch (e) {
+                        alert('伺服器連線失敗');
+                    }
+                };
+
+                const openRegisterModal = (e) => {
+                    activeEvent.value = e;
+                    regForm.value = {
+                        applicantName: currentUser.value?.realName || '',
+                        contactPhone: '',
+                        category: '闔家祈安消災',
+                        targetName: '',
+                        seats: 1,
+                        offering: 'DONATE_CHARITY'
+                    };
+                    crmKeyword.value = '';
+                    selectedBelieverTag.value = '';
+                    isSearchingCrm.value = false;
+                    showRegisterModal.value = true;
+                };
+
+                const submitRegistration = async () => {
+                    if (!regForm.value.applicantName || !regForm.value.contactPhone) {
+                        alert('請填寫姓名與聯絡手機！');
+                        return;
+                    }
+
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/events/register`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                eventId: activeEvent.value.id,
+                                ...regForm.value
+                            })
+                        });
+                        const result = await res.json();
+                        if (result.success) {
+                            alert(`報名登記完成！開單編號：${result.regId}。請至本巖或線上轉帳繳費，會計確認入帳後將正式立案。`);
+                            showRegisterModal.value = false;
+                            await loadEvents();
+                        } else {
+                            alert(`報名失敗：${result.message}`);
+                        }
+                    } catch (e) {
+                        alert('伺服器連線失敗');
+                    }
+                };
+
+                //const openDetailModal = (e) => {
+                //    activeEvent.value = e;
+                //    feedbackForm.value = {
+                //        author: currentUser.value?.realName || '',
+                //        rating: 5,
+                //        comment: '',
+                //        youtubeUrl: '',
+                //        youtubeId: '',
+                //        mediaUrl: ''
+                //    };
+                //    showDetailModal.value = true;
+                //};
+
+                const submitFeedback = async () => {
+                    if (!feedbackForm.value.author || !feedbackForm.value.comment) {
+                        alert('請填寫大名與心得內容');
+                        return;
+                    }
+
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/events/feedback`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                eventId: activeEvent.value.id,
+                                ...feedbackForm.value
+                            })
+                        });
+                        const result = await res.json();
+                        if (result.success) {
+                            alert('感謝您的寶貴回饋！');
+                            showDetailModal.value = false;
+                            await loadEvents();
+                        }
+                    } catch (e) {
+                        alert('送出失敗');
+                    }
+                };
+
+                const exportRosterFile = () => {
+                    if (filteredRoster.value.length === 0) return alert('目前無名冊可供匯出');
+                    const lines = filteredRoster.value.map(r =>
+                        `${r.regId} | ${r.name} | 手機:${r.phone} | 抬頭:${r.targetName || '闔家'} | 席次:${r.seats} | 緣金:${r.amount} | 狀態:${r.pay_status === 'PAID' ? '已入帳' : '未入帳'}`
+                    );
+                    const content = `\uFEFF五公祖師巖 疏文大榜清冊\n活動：${activeEvent.value.name}\n-----------------------------------------\n` + lines.join('\n');
+                    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `五公祖師巖_疏文大榜_${activeEvent.value.name}.txt`;
+                    a.click();
+                };
+
+                const calculateAvgRating = (e) => {
+                    if (!e || !e.feedbacks || e.feedbacks.length === 0) return '5.0';
+                    const total = e.feedbacks.reduce((sum, fb) => sum + fb.rating, 0);
+                    return (total / e.feedbacks.length).toFixed(1);
+                };
+
+                // 回饋查詢與篩選變數
+                const feedbackSearchKw = ref('');
+                const feedbackFilterRating = ref('ALL');
+                const feedbackOnlyVideo = ref(false);
+
+                // 即時計算符合條件的回饋清單
+                const filteredFeedbacks = computed(() => {
+                    const list = activeEvent.value?.feedbacks || [];
+                    return list.filter(item => {
+                        // 1. 關鍵字比對 (姓名與留言心得)
+                        const kw = feedbackSearchKw.value.trim().toLowerCase();
+                        const matchKw = !kw ||
+                            (item.author && item.author.toLowerCase().includes(kw)) ||
+                            (item.comment && item.comment.toLowerCase().includes(kw));
+
+                        // 2. 星等比對
+                        let matchRating = true;
+                        if (feedbackFilterRating.value === '5') {
+                            matchRating = item.rating === 5;
+                        } else if (feedbackFilterRating.value === '4') {
+                            matchRating = item.rating >= 4;
+                        } else if (feedbackFilterRating.value === '3') {
+                            matchRating = item.rating <= 3;
+                        }
+
+                        // 3. 僅看影音
+                        const matchVideo = !feedbackOnlyVideo.value || !!item.youtubeId;
+
+                        return matchKw && matchRating && matchVideo;
+                    });
+                });
+
+                // 打開彈窗時重設搜尋條件，並自後端讀取最新回饋
+                const openDetailModal = async (e) => {
+                    activeEvent.value = e;
+                    feedbackSearchKw.value = '';
+                    feedbackFilterRating.value = 'ALL';
+                    feedbackOnlyVideo.value = false;
+
+                    feedbackForm.value = {
+                        author: currentUser.value?.realName || '',
+                        rating: 5,
+                        comment: '',
+                        youtubeUrl: '',
+                        youtubeId: '',
+                        mediaUrl: ''
+                    };
+
+                    // 透過專用 API 讀取該活動最新回饋
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/events/${e.id}/feedbacks`);
+                        if (res.ok) {
+                            const result = await res.json();
+                            if (result.success && Array.isArray(result.data)) {
+                                activeEvent.value.feedbacks = result.data;
+                            }
+                        }
+                    } catch (err) {
+                        console.warn('載入活動回饋失敗:', err);
+                    }
+
+                    showDetailModal.value = true;
+                };
+
+                onMounted(() => {
+                    currentUser.value = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+                    loadEvents();
+                    loadBelievers();
+                });
+
+                return {
+                    currentUser,
+                    isGuest,
+                    canManageEvent,
+                    isAccountant,
+                    events,
+                    showAddModal,
+                    showRegisterModal,
+                    showDetailModal,
+                    showRosterModal,
+                    activeEvent,
+                    rosterList,
+                    rosterSearch,
+                    filteredRoster,
+                    allBelievers,
+                    crmKeyword,
+                    isSearchingCrm,
+                    crmSuggestions,
+                    selectBelieverForReg,
+                    selectedBelieverTag,
+                    addForm,
+                    regForm,
+                    feedbackForm,
+                    isUploading,
+                    handleYoutubeInput,
+                    clearYoutubeUrl,
+                    calculateAvgRating,
+                    onSolarDateChange,
+                    openAddModal,
+                    submitAddEvent,
+                    openRegisterModal,
+                    submitRegistration,
+                  
+                    submitFeedback,
+                    openRosterModal,
+                    verifyPayment,
+                    cancelRegistration,
+                    exportRosterFile,
+                    // ... 原有屬性
+                    feedbackSearchKw,
+                    feedbackFilterRating,
+                    feedbackOnlyVideo,
+                    filteredFeedbacks,
+                    openDetailModal
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
