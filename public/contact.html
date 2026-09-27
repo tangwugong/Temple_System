@@ -1,0 +1,466 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>五公祖師巖 - 廟宇聯絡資訊與參香指引</title>
+    <!-- Tailwind CSS -->
+    <script src="js/tailwindcss.js"></script>
+    <!-- Vue 3 -->
+    <script src="js/vue.global.prod.js"></script>
+    <!-- 共用設定檔 -->
+    <script src="js/common.js"></script>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-[#FDFBF7] text-slate-800 min-h-screen selection:bg-amber-800 selection:text-white">
+    <div id="app" v-cloak class="max-w-7xl mx-auto px-4 py-6 sm:py-8 space-y-6">
+
+        <!-- 頂部導航列 -->
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-amber-200/90 shadow-sm flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="p-2 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-200 text-amber-900 transition-colors text-sm font-bold flex items-center gap-1">
+                    <span>⬅️</span> 返回大廳
+                </a>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
+                        <span>⛩️</span> 五公祖師巖 ‧ 廟宇聯絡與交通指引
+                    </h1>
+                    <p class="text-xs text-slate-500">宮務諮詢 ‧ 參香指引 ‧ 善信交流</p>
+                </div>
+            </div>
+
+            <!-- 身分顯示標籤 -->
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-950 font-bold">
+                <span>👤 {{ currentUser?.realName || currentUser?.username || '訪客善信' }}</span>
+                <span class="text-amber-700">({{ roleTitle }})</span>
+            </div>
+        </div>
+
+        <!-- 主要資訊區塊：左側聯絡與交通（7 欄），右側線上諮詢留話（5 欄） -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- 左側：核心聯絡卡片與交通指引 -->
+            <div class="lg:col-span-7 space-y-6">
+
+                <!-- 基本聯絡資訊 -->
+                <div class="bg-white p-6 sm:p-8 rounded-3xl border border-amber-200/90 shadow-sm space-y-5">
+                    <div class="border-b border-amber-100 pb-3">
+                        <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <span>📍</span> 宮址與聯絡專線
+                        </h2>
+                        <p class="text-xs text-slate-500">如有法會報名、點燈安奉或公務參訪，歡迎隨時洽詢。</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                        <div class="p-4 bg-amber-50/50 rounded-2xl border border-amber-100 space-y-1">
+                            <span class="font-bold text-amber-950">📞 服務電話</span>
+                            <p class="text-sm font-mono font-bold text-slate-800">{{ info.phone || '暫無資料' }}</p>
+                            <p class="text-slate-500 text-[11px]">服務時間：08:00 - 18:00</p>
+                        </div>
+
+                        <div class="p-4 bg-amber-50/50 rounded-2xl border border-amber-100 space-y-1">
+                            <span class="font-bold text-amber-950">📠 傳真專線</span>
+                            <p class="text-sm font-mono font-bold text-slate-800">{{ info.fax || '暫無資料' }}</p>
+                            <p class="text-slate-500 text-[11px]">全天候接收公文與疏文對照</p>
+                        </div>
+
+                        <div class="p-4 bg-amber-50/50 rounded-2xl border border-amber-100 space-y-1">
+                            <span class="font-bold text-amber-950">📧 電子郵件</span>
+                            <p class="text-sm font-mono font-bold text-slate-800">{{ info.email || '暫無資料' }}</p>
+                            <p class="text-slate-500 text-[11px]">一般公務洽詢與資料收發</p>
+                        </div>
+
+                        <div class="p-4 bg-amber-50/50 rounded-2xl border border-amber-100 space-y-1">
+                            <span class="font-bold text-amber-950">🏛️ 殿宇宮址</span>
+                            <p class="text-xs font-bold text-slate-800">{{ info.address || '五公祖師巖本殿' }}</p>
+                            <p class="text-slate-500 text-[11px]">鄰近五公岩風景區登山步道口</p>
+                        </div>
+
+                        <!-- 官方 Facebook 粉絲專頁 -->
+                        <div class="sm:col-span-2 p-4 bg-blue-50/60 rounded-2xl border border-blue-100 flex flex-wrap justify-between items-center gap-3">
+                            <div class="space-y-0.5">
+                                <span class="font-bold text-blue-950 flex items-center gap-1.5">
+                                    <span>📘</span> 官方 Facebook 粉絲專頁
+                                </span>
+                                <p class="text-slate-500 text-[11px]">追蹤本巖最新法會科儀動態、節慶活動與即時公告</p>
+                            </div>
+                            <a :href="info.facebook || '#'" target="_blank" rel="noopener noreferrer"
+                               :class="info.facebook ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-200 text-gray-400 pointer-events-none'"
+                               class="px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5">
+                                <span>前往粉專</span>
+                                <span>➔</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- 開放時間 -->
+                    <div class="p-4 bg-gradient-to-r from-amber-900 to-amber-950 text-white rounded-2xl space-y-2 text-xs">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-amber-300 flex items-center gap-1.5">
+                                <span>🕰️</span> 殿堂開放參香時段
+                            </span>
+                            <span class="text-[11px] px-2 py-0.5 rounded bg-amber-800/80 border border-amber-500/50 text-amber-200">全年無休</span>
+                        </div>
+                        <p class="text-slate-200 leading-relaxed whitespace-pre-line">{{ info.openHours }}</p>
+                    </div>
+                </div>
+
+                <!-- 交通指引與停車資訊 -->
+                <div class="bg-white p-6 sm:p-8 rounded-3xl border border-amber-200/90 shadow-sm space-y-4">
+                    <div class="border-b border-amber-100 pb-3">
+                        <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <span>🚗</span> 參香交通資訊
+                        </h2>
+                    </div>
+
+                    <div class="space-y-3 text-xs">
+                        <div class="flex gap-3">
+                            <span class="p-2 bg-amber-100 text-amber-900 rounded-xl font-bold shrink-0 h-fit">客運 / 公車</span>
+                            <p class="text-slate-600 leading-relaxed">{{ info.busGuide }}</p>
+                        </div>
+
+                        <div class="flex gap-3">
+                            <span class="p-2 bg-amber-100 text-amber-900 rounded-xl font-bold shrink-0 h-fit">自行開車</span>
+                            <p class="text-slate-600 leading-relaxed">{{ info.carGuide }}</p>
+                        </div>
+
+                        <div class="flex gap-3">
+                            <span class="p-2 bg-amber-100 text-amber-900 rounded-xl font-bold shrink-0 h-fit">香客停車場</span>
+                            <p class="text-slate-600 leading-relaxed">{{ info.parkingGuide }}</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 右側：線上諮詢留言表單與回覆進度查詢 -->
+            <div class="lg:col-span-5 bg-white p-6 sm:p-8 rounded-3xl border border-amber-200/90 shadow-sm space-y-5 flex flex-col justify-between">
+                <div class="space-y-4">
+
+                    <!-- 分頁導航切換鈕 (修復補齊) -->
+                    <div class="flex border-b border-amber-200 pb-2 gap-4">
+                        <button type="button"
+                                @click="activeTab = 'form'"
+                                :class="activeTab === 'form' ? 'border-b-2 border-amber-800 text-amber-900 font-bold' : 'text-slate-400 hover:text-slate-600'"
+                                class="pb-2 text-xs sm:text-sm transition-all flex items-center gap-1.5">
+                            <span>✍️</span> 善信線上諮詢
+                        </button>
+                        <button type="button"
+                                @click="activeTab = 'query'"
+                                :class="activeTab === 'query' ? 'border-b-2 border-amber-800 text-amber-900 font-bold' : 'text-slate-400 hover:text-slate-600'"
+                                class="pb-2 text-xs sm:text-sm transition-all flex items-center gap-1.5">
+                            <span>🔍</span> 查閱留言與回覆
+                        </button>
+                    </div>
+
+                    <!-- 分頁 1：填寫諮詢表單 (補上 v-if="activeTab === 'form'") -->
+                    <div v-if="activeTab === 'form'" class="space-y-3">
+                        <p class="text-xs text-slate-500">宮務執事人員收到訊息後，將於 1-2 個工作天內主動與您聯繫。</p>
+
+                        <form @submit.prevent="submitInquiry" class="space-y-3 text-xs">
+                            <div>
+                                <label class="block font-bold text-slate-700 mb-1">您的尊姓大名 *</label>
+                                <input v-model="inquiryForm.name" required type="text" placeholder="例：林大明 居士"
+                                       class="w-full border border-amber-200 bg-amber-50/30 rounded-xl px-3 py-2 text-slate-800 focus:border-amber-700 outline-none" />
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block font-bold text-slate-700 mb-1">聯絡電話 *</label>
+                                    <input v-model="inquiryForm.phone" required type="tel" placeholder="例：0912-345-678"
+                                           class="w-full border border-amber-200 bg-amber-50/30 rounded-xl px-3 py-2 text-slate-800 focus:border-amber-700 outline-none" />
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-700 mb-1">電子郵件</label>
+                                    <input v-model="inquiryForm.email" type="email" placeholder="信箱（選填）"
+                                           class="w-full border border-amber-200 bg-amber-50/30 rounded-xl px-3 py-2 text-slate-800 focus:border-amber-700 outline-none" />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block font-bold text-slate-700 mb-1">諮詢事項類別</label>
+                                <select v-model="inquiryForm.category"
+                                        class="w-full border border-amber-200 bg-white rounded-xl px-3 py-2 text-slate-800 outline-none">
+                                    <option value="點燈與太歲安奉">點燈與太歲安奉</option>
+                                    <option value="年度法會登記">年度法會登記</option>
+                                    <option value="白米物資代捐">白米物資代捐</option>
+                                    <option value="隨喜香油與功德">隨喜香油與功德</option>
+                                    <option value="其他宮務諮詢">其他宮務諮詢</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block font-bold text-slate-700 mb-1">諮詢或祈願內容說明 *</label>
+                                <textarea v-model="inquiryForm.message" required rows="4" placeholder="請填寫您欲諮詢的事項細節..."
+                                          class="w-full border border-amber-200 bg-amber-50/30 rounded-xl px-3 py-2 leading-relaxed text-slate-800 outline-none"></textarea>
+                            </div>
+
+                            <button type="submit"
+                                    :disabled="isSubmitting"
+                                    class="w-full py-3 bg-amber-800 hover:bg-amber-900 active:scale-95 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                                <span>📨</span>
+                                <span>{{ isSubmitting ? '正在傳送諮詢單...' : '送出線上諮詢單' }}</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- 分頁 2：信眾輸入電話查閱進度 (接續 v-else) -->
+                    <div v-else class="space-y-4 text-xs">
+                        <p class="text-slate-500">輸入留言時登記的「聯絡電話」，即可查閱歷史紀錄與執事回覆。</p>
+
+                        <div class="flex gap-2">
+                            <input v-model="searchPhone" type="tel" placeholder="請輸入您的聯絡電話..."
+                                   @keyup.enter="searchMyInquiries"
+                                   class="flex-1 border border-slate-300 bg-slate-50 rounded-xl px-3 py-2 text-slate-800 focus:bg-white focus:border-amber-700 outline-none" />
+                            <button type="button" @click="searchMyInquiries" :disabled="isSearching"
+                                    class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl transition-all shadow-sm shrink-0">
+                                {{ isSearching ? '查詢中...' : '查詢' }}
+                            </button>
+                        </div>
+
+                        <!-- 查詢結果展示清單 -->
+                        <div v-if="hasSearched" class="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                            <div v-if="myInquiries.length === 0" class="text-center py-10 text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                                查無該電話號碼的留言紀錄，請確認電話號碼是否正確。
+                            </div>
+
+                            <div v-for="item in myInquiries" :key="item.id"
+                                 class="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">
+                                        {{ item.category }}
+                                    </span>
+                                    <span :class="item.status === 'PENDING' ? 'bg-amber-50 text-amber-800 border-amber-300' : 'bg-emerald-50 text-emerald-700 border-emerald-200'"
+                                          class="px-2 py-0.5 rounded font-bold text-[10px] border">
+                                        {{ item.status === 'PENDING' ? '⏳ 執事處理中' : '✅ 已回覆結案' }}
+                                    </span>
+                                </div>
+
+                                <!-- 信眾提問內容 -->
+                                <div class="text-slate-700 leading-relaxed bg-white p-2.5 rounded-xl border border-slate-100">
+                                    <span class="font-bold text-slate-500 block text-[10px] mb-0.5">我的提問：</span>
+                                    {{ item.message }}
+                                </div>
+
+                                <!-- 廟方回覆內容 -->
+                                <div v-if="item.reply_note" class="p-3 bg-amber-50/60 border border-amber-200 rounded-xl space-y-1">
+                                    <span class="font-bold text-amber-900 flex items-center gap-1 text-[11px]">
+                                        <span>⛩️</span> 廟方執事回覆：
+                                    </span>
+                                    <p class="text-slate-800 leading-relaxed font-serif whitespace-pre-wrap">
+                                        {{ item.reply_note }}
+                                    </p>
+                                </div>
+                                <div v-else class="text-[11px] text-slate-400 italic">
+                                    執事人員正安排聯絡或回覆，請耐心稍候。
+                                </div>
+
+                                <div class="text-[10px] text-slate-400 text-right font-mono">
+                                    {{ item.created_at }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-center text-[11px] text-amber-900 font-serif">
+                    南無五公祖師天尊 慈航普渡 庇佑吉祥
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 頁尾宣告 -->
+        <div class="text-center text-[11px] text-slate-400 font-mono pt-4">
+            五公祖師巖 宮務數位管理平台 ‧ 歲次丙午年
+        </div>
+
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const currentUser = ref(null);
+                const isSubmitting = ref(false);
+
+                // 分頁控制：'form' 填單 / 'query' 查詢
+                const activeTab = ref('form');
+                const searchPhone = ref('');
+                const isSearching = ref(false);
+                const hasSearched = ref(false);
+                const myInquiries = ref([]);
+
+                // 預設資料（防呆備援）
+                const info = ref({
+                    address: '',
+                    phone: '',
+                    fax: '',
+                    email: '',
+                    facebook: '',
+                    openHours: '每日上午 07:00 至 晚間 21:00。\n逢初一、十五及特定大型科儀日，延長開放至 22:00。',
+                    busGuide: '搭乘市區公車至「五公祖師巖站」下車，步行約 3 分鐘即可抵達山門牌樓。',
+                    carGuide: '國道經由交流道下交流道後，沿著五公聖道直行約 2 公里即可抵達。',
+                    parkingGuide: '本巖備有信眾專用第一、第二免費停車場，提供小客車與大型遊覽車停放。'
+                });
+
+                const inquiryForm = ref({
+                    name: '',
+                    phone: '',
+                    email: '',
+                    category: '點燈與太歲安奉',
+                    message: ''
+                });
+
+                // 安全取得當前使用者
+                const fetchUser = () => {
+                    if (typeof getCurrentUser === 'function') {
+                        return getCurrentUser();
+                    }
+                    try {
+                        const saved = localStorage.getItem('temple_user');
+                        return saved ? JSON.parse(saved) : { role: 'GUEST', username: '訪客' };
+                    } catch (e) {
+                        return { role: 'GUEST', username: '訪客' };
+                    }
+                };
+
+                // 讀取聯絡設定資料
+                const loadInfo = async () => {
+                    let apiBase = (typeof API_BASE !== 'undefined' && API_BASE) ? API_BASE : '/api';
+                    apiBase = apiBase.replace(/\/+$/, '');
+
+                    try {
+                        const res = await fetch(`${apiBase}/settings/contact`);
+                        if (!res.ok) throw new Error(`HTTP 狀態碼異常: ${res.status}`);
+
+                        const resData = await res.json();
+                        if (resData.success && resData.data) {
+                            let received = resData.data;
+                            if (typeof received === 'string') {
+                                received = JSON.parse(received);
+                            }
+
+                            info.value = {
+                                ...info.value,
+                                ...received
+                            };
+                        }
+                    } catch (err) {
+                        console.warn('[contact.html] 讀取 system_settings 失敗:', err);
+                    }
+                };
+
+                const roleTitle = computed(() => {
+                    const role = currentUser.value?.role || 'GUEST';
+                    if (typeof ROLE_NAMES !== 'undefined' && ROLE_NAMES[role]) {
+                        return ROLE_NAMES[role];
+                    }
+                    const map = {
+                        ADMIN: '主委/管理員',
+                        RITUAL: '科儀法師',
+                        ACCOUNTANT: '會計出納',
+                        VOLUNTEER: '服務志工',
+                        GUEST: '訪客善信'
+                    };
+                    return map[role] || '訪客善信';
+                });
+
+                // 送出線上諮詢
+                const submitInquiry = async () => {
+                    if (!inquiryForm.value.name || !inquiryForm.value.phone || !inquiryForm.value.message) {
+                        alert('請完整填寫姓名、電話與諮詢內容！');
+                        return;
+                    }
+
+                    isSubmitting.value = true;
+                    let apiBase = (typeof API_BASE !== 'undefined' && API_BASE) ? API_BASE : '/api';
+                    apiBase = apiBase.replace(/\/+$/, '');
+
+                    try {
+                        const res = await fetch(`${apiBase}/inquiries`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(inquiryForm.value)
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            alert(`感謝 ${inquiryForm.value.name} 善信！留言已傳送至廟方執事，我們將盡速聯繫您。`);
+                            // 自動將電話填入查詢欄位並導引至查詢標籤
+                            searchPhone.value = inquiryForm.value.phone;
+                            inquiryForm.value.message = '';
+                            activeTab.value = 'query';
+                            await searchMyInquiries();
+                            return;
+                        } else {
+                            alert('送出失敗：' + data.message);
+                        }
+                    } catch (e) {
+                        console.error('線上諮詢傳送錯誤:', e);
+                        alert('伺服器連線異常，請確認後端 server.js 是否正常運作！');
+                    } finally {
+                        isSubmitting.value = false;
+                    }
+                };
+
+                // 執行電話查詢
+                const searchMyInquiries = async () => {
+                    if (!searchPhone.value.trim()) {
+                        alert('請輸入聯絡電話！');
+                        return;
+                    }
+
+                    isSearching.value = true;
+                    hasSearched.value = true;
+                    let apiBase = (typeof API_BASE !== 'undefined' && API_BASE) ? API_BASE : '/api';
+                    apiBase = apiBase.replace(/\/+$/, '');
+
+                    try {
+                        const res = await fetch(`${apiBase}/inquiries/my?phone=${encodeURIComponent(searchPhone.value.trim())}`);
+                        const result = await res.json();
+                        if (result.success && Array.isArray(result.data)) {
+                            myInquiries.value = result.data;
+                        } else {
+                            myInquiries.value = [];
+                        }
+                    } catch (e) {
+                        console.error('查詢失敗:', e);
+                        alert('伺服器連線異常，請稍後再試！');
+                    } finally {
+                        isSearching.value = false;
+                    }
+                };
+
+                onMounted(() => {
+                    currentUser.value = fetchUser();
+                    if (currentUser.value?.realName) {
+                        inquiryForm.value.name = currentUser.value.realName;
+                    }
+                    loadInfo();
+                });
+
+                return {
+                    currentUser,
+                    roleTitle,
+                    info,
+                    inquiryForm,
+                    isSubmitting,
+                    submitInquiry,
+                    activeTab,
+                    searchPhone,
+                    isSearching,
+                    hasSearched,
+                    myInquiries,
+                    searchMyInquiries
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
