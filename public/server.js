@@ -20,7 +20,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // 1. 設定 SQLite 執行資料夾與資料庫路徑：D:\DB\sqlite\temple.db
 // =========================================================================
 // 使用 path.join 或雙反斜線避免 Windows 轉義字元報錯
-const dbDir = path.normalize('D:/DB/sqlite');
+const dbDir = path.normalize('');
 const dbPath = path.join(dbDir, 'temple.db');
 
 // 防呆機制：若 D:\DB\sqlite 資料夾尚未建立，自動建立目錄
