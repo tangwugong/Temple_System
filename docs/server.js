@@ -579,14 +579,14 @@ if (lanternCount === 0) {
         for (let i = 1; i <= 100; i++) {
             const num = i.toString().padStart(3, '0');
             const isOccupied = (i === 3 || i === 7);
-            //const name = i === 3 ? '林大寶' : (i === 7 ? '陳小美' : null);
+            const name = i === 3 ? '林大寶' : (i === 7 ? '陳小美' : null);
             insertSeat.run(`T-${num}`, '五公祖師巖', `太歲${num}`, isOccupied ? 'OCCUPIED' : 'AVAILABLE', name);
         }
         // 2. 初始化 32 盞光明燈 (L-001 ~ L-032)
         for (let i = 1; i <= 100; i++) {
             const num = i.toString().padStart(3, '0');
             const isOccupied = (i === 2 || i === 5);
-            //const name = i === 2 ? '張素珍' : (i === 5 ? '王嘉明' : null);
+            const name = i === 2 ? '張素珍' : (i === 5 ? '王嘉明' : null);
             insertSeat.run(`L-${num}`, '五公祖師巖', `光明${num}`, isOccupied ? 'OCCUPIED' : 'AVAILABLE', name);
         }
     });
