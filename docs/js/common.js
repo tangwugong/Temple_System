@@ -1,6 +1,6 @@
 ﻿// public/js/common.js
 
-const API_BASE = '/api';
+const API_BASE  = 'https://temple-api-1mft.onrender.com';
 
 // 訪客白名單頁面
 const GUEST_ALLOWED_PAGES = ['index.html', 'history.html', 'lantern.html', 'events.html', 'login.html', 'manual.html', 'contact.html','quotes.html'];
