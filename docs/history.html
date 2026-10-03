@@ -190,7 +190,7 @@
         createApp({
             setup() {
                // const getApiBase = () => (typeof API_BASE !== 'undefined' && API_BASE) ? API_BASE : 'https://temple-api-1mft.onrender.com/api';
-                typeof API_BASE = 'https://temple-api-1mft.onrender.com/api';
+                const API_BASE = 'https://temple-api-1mft.onrender.com/api';
                 const getApiBase = () => 'https://temple-api-1mft.onrender.com/api';
                 const historyData = ref({
                     title: '',
