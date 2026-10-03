@@ -280,7 +280,9 @@
 
                 const loadHistory = async () => {
                     try {
-                        const res = await fetch(`${API_BASE}/history`);
+                        //const res = await fetch(`${API_BASE}/history`);
+                        const res = await fetch(`https://temple-api-1mft.onrender.com/api/history`);
+                        
                         const d = await res.json();
                         if (d.success) historyData.value = d.data;
                     } catch (e) {
