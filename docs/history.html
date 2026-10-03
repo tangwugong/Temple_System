@@ -293,7 +293,9 @@
                 // 載入神尊資料：以系統參數維護的資料為主
                 const loadDeitiesData = async () => {
                     try {
-                        const res = await fetch(`${getApiBase()}/settings/deities`);
+                        //`https://temple-api-1mft.onrender.com/api/
+                        //const res = await fetch(`https://temple-api-1mft.onrender.com/api/settings/deities`);
+                        const res = await fetch(`https://temple-api-1mft.onrender.com/api/settings/deities`);
                         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
                         const d = await res.json();
