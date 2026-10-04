@@ -2269,10 +2269,13 @@ app.get('/api/settings/deities', (req, res) => {
         const stmt = db.prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'deities_info'");
         const row = stmt.get();
         if (row && row.setting_value) {
+            console.log('[系統提示] 找到資料:', row.setting_value);
             //console.log('[系統提示] Get Deities_info data。');
             const data = JSON.parse(row.setting_value);
             //console.log(row.setting_value);
             return res.json({ success: true, data });
+        }else {
+            console.log('[系統提示] 資料庫中找不到 setting_key = "deities_info"');
         }
         res.json({ success: true, data: [] });
     } catch (err) {
