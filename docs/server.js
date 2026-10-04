@@ -2266,7 +2266,7 @@ app.post('/api/inquiries', (req, res) => {
 // 取得五公聖紀與相簿資料（公開/後台共用）
 app.get('/api/settings/deities', (req, res) => {
     try {
-        const stmt = db.prepare("SELECT setting_value FROM system_settings");// WHERE setting_key = 'deities_info'");
+        const stmt = db.prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'deities_info'");
         const row = stmt.get();
         if (row && row.setting_value) {
             console.log('[系統提示] 找到資料:', row.setting_value);
