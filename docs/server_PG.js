@@ -575,6 +575,66 @@ app.delete('/api/events/register/:regId', async (req, res) => {
 // =========================================================================
 // 5. 點燈模組 API
 // =========================================================================
+// --- [A] 點燈類別與燈位數量維護 ---
+app.get('/api/settings/lantern-configs', (req, res) => {
+    try {
+        const list = db.prepare(`
+      SELECT 
+        c.*, 
+        (SELECT COUNT(*) FROM lantern_seat s WHERE s.seat_code LIKE c.type_code || '-%') as actual_seats,
+        (SELECT COUNT(*) FROM lantern_seat s WHERE s.seat_code LIKE c.type_code || '-%' AND s.status = 'OCCUPIED') as occupied_seats
+      FROM lantern_config c
+    `).all();
+        res.json({ success: true, data: list });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.post('/api/settings/lantern-configs', (req, res) => {
+    try {
+        const { typeCode, typeName, hallName, defaultFee, totalCapacity, isEnabled } = req.body;
+        if (!typeCode || !typeName || !totalCapacity) {
+            return res.status(400).json({ success: false, message: '類別代碼、名稱與數量為必填' });
+        }
+
+        const code = typeCode.toUpperCase().trim();
+        const capacity = Number(totalCapacity);
+        const fee = Number(defaultFee) || 600;
+
+        const tx = db.transaction(() => {
+            // 1. 寫入或更新設定檔
+            db.prepare(`
+        INSERT INTO lantern_config (type_code, type_name, hall_name, default_fee, total_capacity, is_enabled)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(type_code) DO UPDATE SET
+          type_name = excluded.type_name,
+          hall_name = excluded.hall_name,
+          default_fee = excluded.default_fee,
+          total_capacity = excluded.total_capacity,
+          is_enabled = excluded.is_enabled
+      `).run(code, typeName, hallName || '凌霄寶殿', fee, capacity, isEnabled ? 1 : 0);
+
+            // 2. 動態檢查並補足燈位資料表中的燈位數量
+            const currentCount = db.prepare(`SELECT COUNT(*) as count FROM lantern_seat WHERE seat_code LIKE ?`).get(`${code}-%`).count;
+            if (capacity > currentCount) {
+                const insertSeat = db.prepare(`
+          INSERT OR IGNORE INTO lantern_seat (seat_code, hall_name, seat_label, status, fee)
+          VALUES (?, ?, ?, 'AVAILABLE', ?)
+        `);
+                for (let i = currentCount + 1; i <= capacity; i++) {
+                    const num = i.toString().padStart(3, '0');
+                    insertSeat.run(`${code}-${num}`, hallName || '凌霄寶殿', `${typeName.slice(0, 2)}${num}`, fee);
+                }
+            }
+        });
+
+        tx();
+        res.json({ success: true, message: '點燈規格與燈位矩陣更新成功' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 
 app.get('/api/lanterns', async (req, res) => {
     const client = await pool.connect();
