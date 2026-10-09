@@ -579,22 +579,28 @@ app.delete('/api/events/register/:regId', async (req, res) => {
 // 5. 點燈模組 API
 // =========================================================================
 // --- [A] 點燈類別與燈位數量維護 ---
-app.get('/api/settings/lantern-configs', (req, res) => {
+app.get('/api/settings/lantern-configs', async (req, res) => {
     try {
-        const list = db.prepare(`
-      SELECT 
-        c.*, 
-        (SELECT COUNT(*) FROM lantern_seat s WHERE s.seat_code LIKE c.type_code || '-%') as actual_seats,
-        (SELECT COUNT(*) FROM lantern_seat s WHERE s.seat_code LIKE c.type_code || '-%' AND s.status = 'OCCUPIED') as occupied_seats
-      FROM lantern_config c
-    `).all();
-        res.json({ success: true, data: list });
+        const { rows } = await pool.query(`
+            SELECT 
+                c.type_code,
+                c.type_name,
+                c.hall_name,
+                c.default_fee::float AS default_fee,
+                c.total_capacity,
+                c.is_enabled,
+                (SELECT COUNT(*)::int FROM lantern_seat s WHERE s.seat_code LIKE c.type_code || '-%') AS actual_seats,
+                (SELECT COUNT(*)::int FROM lantern_seat s WHERE s.seat_code LIKE c.type_code || '-%' AND s.status = 'OCCUPIED') AS occupied_seats
+            FROM lantern_config c
+        `);
+        res.json({ success: true, data: rows });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
 });
 
-app.post('/api/settings/lantern-configs', (req, res) => {
+app.post('/api/settings/lantern-configs', async (req, res) => {
+    const client = await pool.connect(); // 取得專屬連線以進行 Transaction
     try {
         const { typeCode, typeName, hallName, defaultFee, totalCapacity, isEnabled } = req.body;
         if (!typeCode || !typeName || !totalCapacity) {
@@ -604,38 +610,54 @@ app.post('/api/settings/lantern-configs', (req, res) => {
         const code = typeCode.toUpperCase().trim();
         const capacity = Number(totalCapacity);
         const fee = Number(defaultFee) || 600;
+        const currentYear = new Date().getFullYear(); // 取得當前年度
 
-        const tx = db.transaction(() => {
-            // 1. 寫入或更新設定檔
-            db.prepare(`
-        INSERT INTO lantern_config (type_code, type_name, hall_name, default_fee, total_capacity, is_enabled)
-        VALUES (?, ?, ?, ?, ?, ?)
-        ON CONFLICT(type_code) DO UPDATE SET
-          type_name = excluded.type_name,
-          hall_name = excluded.hall_name,
-          default_fee = excluded.default_fee,
-          total_capacity = excluded.total_capacity,
-          is_enabled = excluded.is_enabled
-      `).run(code, typeName, hallName || '凌霄寶殿', fee, capacity, isEnabled ? 1 : 0);
+        await client.query('BEGIN'); // 開啟交易 (對應原本的 db.transaction)
 
-            // 2. 動態檢查並補足燈位資料表中的燈位數量
-            const currentCount = db.prepare(`SELECT COUNT(*) as count FROM lantern_seat WHERE seat_code LIKE ?`).get(`${code}-%`).count;
-            if (capacity > currentCount) {
-                const insertSeat = db.prepare(`
-          INSERT OR IGNORE INTO lantern_seat (seat_code, hall_name, seat_label, status, fee)
-          VALUES (?, ?, ?, 'AVAILABLE', ?)
-        `);
-                for (let i = currentCount + 1; i <= capacity; i++) {
-                    const num = i.toString().padStart(3, '0');
-                    insertSeat.run(`${code}-${num}`, hallName || '凌霄寶殿', `${typeName.slice(0, 2)}${num}`, fee);
-                }
+        // 1. 寫入或更新設定檔 (PostgreSQL 的 UPSERT 語法)
+        await client.query(`
+            INSERT INTO lantern_config (type_code, type_name, hall_name, default_fee, total_capacity, is_enabled)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (type_code) DO UPDATE SET
+                type_name = EXCLUDED.type_name,
+                hall_name = EXCLUDED.hall_name,
+                default_fee = EXCLUDED.default_fee,
+                total_capacity = EXCLUDED.total_capacity,
+                is_enabled = EXCLUDED.is_enabled
+        `, [code, typeName, hallName || '凌霄寶殿', fee, capacity, isEnabled ? 1 : 0]);
+
+        // 2. 動態檢查並補足燈位資料表中的燈位數量
+        const countRes = await client.query(
+            'SELECT COUNT(*)::int AS count FROM lantern_seat WHERE seat_code LIKE $1 AND lantern_year = $2',
+            [`${code}-%`, currentYear]
+        );
+        const currentCount = countRes.rows[0].count;
+
+        if (capacity > currentCount) {
+            const insertSeatSql = `
+                INSERT INTO lantern_seat (seat_code, lantern_year, hall_name, seat_label, status, fee)
+                VALUES ($1, $2, $3, $4, 'AVAILABLE', $5)
+                ON CONFLICT (seat_code, lantern_year) DO NOTHING
+            `;
+            for (let i = currentCount + 1; i <= capacity; i++) {
+                const num = i.toString().padStart(3, '0');
+                await client.query(insertSeatSql, [
+                    `${code}-${num}`,
+                    currentYear,
+                    hallName || '凌霄寶殿',
+                    `${typeName.slice(0, 2)}${num}`,
+                    fee
+                ]);
             }
-        });
+        }
 
-        tx();
+        await client.query('COMMIT'); // 提交交易
         res.json({ success: true, message: '點燈規格與燈位矩陣更新成功' });
     } catch (err) {
+        await client.query('ROLLBACK'); // 若有錯誤則復原
         res.status(500).json({ success: false, message: err.message });
+    } finally {
+        client.release(); // 釋放連線回連線池
     }
 });
 
