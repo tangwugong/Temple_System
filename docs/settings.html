@@ -209,9 +209,12 @@
                                 </div>
                             </div>
 
-                            <div class="flex justify-end pt-1">
+                            <div class="flex justify-end gap-4 pt-1">
                                 <button @click="editLantern(c)" class="text-xs text-amber-900 font-bold hover:underline">
-                                    ✏️ 修改參數與燈位數
+                                    ✏️ 修改
+                                </button>
+                                <button @click="deleteLantern(c.type_code, c.occupied_seats)" class="text-xs text-red-600 font-bold hover:underline">
+                                    🗑️ 刪除規格
                                 </button>
                             </div>
                         </div>
@@ -1062,6 +1065,38 @@
                     };
                 };
 
+                const deleteLantern = async (typeCode, occupiedSeats) => {
+                    // 前端防呆攔截
+                    if (occupiedSeats > 0) {
+                        return alert(`⚠️ 警告：該規格目前尚有 ${occupiedSeats} 盞燈位已被安奉，為避免帳務與信眾資料遺失，請先將相關燈位退單重置後再進行刪除！`);
+                    }
+
+                    if (!confirm(`確定要徹底刪除代碼為「${typeCode}」的點燈規格與所有相關的空燈位嗎？\n\n(此操作無法復原！)`)) return;
+
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/settings/lantern-configs/${typeCode}`, {
+                            method: 'DELETE'
+                        });
+                        const d = await res.json();
+
+                        if (d.success) {
+                            alert(d.message);
+                            await loadLanternConfigs(); // 重新載入畫面
+
+                            // 若使用者正在編輯這個已被刪除的規格，則清空表單
+                            if (lanternForm.value.typeCode === typeCode) {
+                                lanternForm.value = {
+                                    typeCode: '', typeName: '', hallName: '祖師殿', defaultFee: 600, totalCapacity: 32, isEnabled: true
+                                };
+                            }
+                        } else {
+                            alert(`刪除失敗：${d.message}`);
+                        }
+                    } catch (e) {
+                        alert('伺服器連線異常，刪除失敗');
+                    }
+                };
+
                 const triggerBatchGenerate = async (forceOverwrite = false) => {
                     if (!batchGenYear.value) return alert('請輸入目標年度');
                     isGenerating.value = true;
@@ -1575,6 +1610,7 @@
                     loadUsers,
                     submitLanternConfig,
                     editLantern,
+                    deleteLantern,
                     submitStaff,
                     deleteStaff,
                     submitUser,
