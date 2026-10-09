@@ -1561,7 +1561,7 @@
                             const result = await res.json();
                             if (result.success) {
                                 // 自動將上傳完成的路徑填入對應相片項目
-                                currentDeity.value.photos[photoIndex].url = result.fileUrl;
+                                currentDeity.value.photos[photoIndex].url = reader.result;//result.fileUrl;
                                 alert('神尊相片上傳成功！');
                             } else {
                                 alert('上傳失敗：' + result.message);
