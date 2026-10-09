@@ -661,6 +661,46 @@ app.post('/api/settings/lantern-configs', async (req, res) => {
     }
 });
 
+// --- [A-2] 刪除指定點燈類別與關聯的空燈位 ---
+app.delete('/api/settings/lantern-configs/:typeCode', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const { typeCode } = req.params;
+        const code = typeCode.toUpperCase().trim();
+
+        await client.query('BEGIN'); // 開啟交易
+
+        // 1. 嚴格檢查防呆：是否有已安奉的燈位
+        const checkRes = await client.query(`
+            SELECT COUNT(*)::int AS count 
+            FROM lantern_seat 
+            WHERE seat_code LIKE $1 AND status = 'OCCUPIED'
+        `, [`${code}-%`]);
+
+        if (checkRes.rows[0].count > 0) {
+            throw new Error(`該點燈類別目前還有 ${checkRes.rows[0].count} 盞燈位已被信眾安奉，為保障信眾權益，無法刪除此規格！請先將相關燈位退單。`);
+        }
+
+        // 2. 刪除關聯的空燈位
+        await client.query('DELETE FROM lantern_seat WHERE seat_code LIKE $1', [`${code}-%`]);
+
+        // 3. 刪除規格檔
+        const result = await client.query('DELETE FROM lantern_config WHERE type_code = $1', [code]);
+
+        if (result.rowCount === 0) {
+            throw new Error('查無此點燈規格代碼');
+        }
+
+        await client.query('COMMIT');
+        res.json({ success: true, message: `點燈規格「${code}」與其關聯的空燈位已成功刪除！` });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        res.status(400).json({ success: false, message: err.message });
+    } finally {
+        client.release();
+    }
+});
+
 app.get('/api/lanterns', async (req, res) => {
     const client = await pool.connect();
     try {
