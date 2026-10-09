@@ -1553,6 +1553,60 @@ app.post('/api/settings/deities', async (req, res) => {
         res.status(500).json({ success: false, message: '資料庫寫入失敗: ' + err.message });
     }
 });
+// =========================================================================
+// 信眾快速查詢 API (對應 believer_member 與 family_household) - PostgreSQL 版
+// =========================================================================
+app.get('/api/believers/search', async (req, res) => {
+    try {
+        const keyword = (req.query.q || '').trim();
+        console.log('[信眾查詢 API] 收到關鍵字:', keyword);
+
+        if (!keyword) {
+            return res.json({ success: true, data: [] });
+        }
+
+        const param = `%${keyword}%`;
+
+        // 1. Postgres 使用 $1 作為參數，且支援 ILIKE (不區分大小寫的 LIKE)
+        // 2. camelCase 別名必須加上雙引號，例如 AS "familyCode"
+        const sql = `
+            SELECT 
+                bm.member_id AS id,
+                bm.name,
+                COALESCE(bm.phone, '') AS phone,
+                bm.relationship,
+                bm.zodiac,
+                bm.family_code AS "familyCode",
+                COALESCE(fh.address, '') AS address
+            FROM believer_member bm
+            LEFT JOIN family_household fh ON bm.family_code = fh.family_code
+            WHERE bm.name ILIKE $1 
+               OR bm.phone ILIKE $1 
+               OR bm.id_number ILIKE $1
+            ORDER BY bm.created_at DESC
+            LIMIT 10
+        `;
+
+        // 假設 db 是從 'pg' 套件建立的 pool (例如 const db = new Pool(...))
+        // 必須使用 await 來等待非同步查詢結果
+        const result = await db.query(sql, [param]);
+        const believers = result.rows; // Postgres 的查詢結果資料會放在 .rows 裡面
+
+        console.log(`[信眾查詢 API] 查詢成功，共回傳 ${believers.length} 筆`);
+
+        res.json({
+            success: true,
+            data: believers
+        });
+
+    } catch (err) {
+        console.error('❌ [信眾查詢 SQL Error]:', err.message);
+        res.status(500).json({
+            success: false,
+            message: '資料庫查詢失敗: ' + err.message
+        });
+    }
+});
 // 啟動伺服器
 const PORT = process.env.PORT || 3000;
 initDatabase().then(() => {
