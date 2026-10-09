@@ -1005,6 +1005,89 @@ app.patch('/api/settings/users/:userId', async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 });
+
+// =========================================================================
+// 2. 廟宇沿革 API 路由
+// =========================================================================
+
+// 取得沿革總體資訊 (包含基本文案與時光軸)
+app.get('/api/history', async (req, res) => {
+    try {
+        // 取得主文案 (沒有資料時給空物件)
+        const mainRes = await pool.query('SELECT * FROM temple_history WHERE id = $1', ['MAIN']);
+        const main = mainRes.rows[0] || {};
+
+        // 取得時光軸列表
+        const timelineRes = await pool.query('SELECT * FROM temple_timeline ORDER BY sort_order ASC, solar_year ASC');
+
+        res.json({ success: true, data: { ...main, timeline: timelineRes.rows } });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// 維護沿革主內文 (後台)
+app.post('/api/history/main', async (req, res) => {
+    try {
+        const { title, subtitle, summaryHtml, deitiesHtml } = req.body;
+
+        // PostgreSQL 的 UPSERT 語法 (ON CONFLICT DO UPDATE)
+        await pool.query(`
+            INSERT INTO temple_history (id, title, subtitle, summary_html, deities_html, updated_at)
+            VALUES ('MAIN', $1, $2, $3, $4, CURRENT_TIMESTAMP)
+            ON CONFLICT (id) DO UPDATE SET
+                title = EXCLUDED.title,
+                subtitle = EXCLUDED.subtitle,
+                summary_html = EXCLUDED.summary_html,
+                deities_html = EXCLUDED.deities_html,
+                updated_at = CURRENT_TIMESTAMP
+        `, [title, subtitle, summaryHtml, deitiesHtml]);
+
+        res.json({ success: true, message: '廟宇沿革主文更新成功！' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// 新增/修改大事記里程碑
+app.post('/api/history/timeline', async (req, res) => {
+    try {
+        const { id, dynastyEra, solarYear, eventTitle, eventContent, iconTag, sortOrder } = req.body;
+
+        if (!eventTitle || !solarYear) {
+            return res.status(400).json({ success: false, message: '請填寫年份與事蹟標題' });
+        }
+
+        if (id) {
+            // 有帶 ID 表示更新
+            await pool.query(`
+                UPDATE temple_timeline 
+                SET dynasty_era = $1, solar_year = $2, event_title = $3, event_content = $4, icon_tag = $5, sort_order = $6
+                WHERE id = $7
+            `, [dynastyEra || '', solarYear, eventTitle, eventContent || '', iconTag || '🏛️', Number(sortOrder) || 0, id]);
+        } else {
+            // 無 ID 表示新增
+            await pool.query(`
+                INSERT INTO temple_timeline (dynasty_era, solar_year, event_title, event_content, icon_tag, sort_order)
+                VALUES ($1, $2, $3, $4, $5, $6)
+            `, [dynastyEra || '', solarYear, eventTitle, eventContent || '', iconTag || '🏛️', Number(sortOrder) || 0]);
+        }
+
+        res.json({ success: true, message: '歷史大事記儲存成功！' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// 刪除大事記
+app.delete('/api/history/timeline/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM temple_timeline WHERE id = $1', [req.params.id]);
+        res.json({ success: true, message: '里程碑已刪除' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 // =========================================================================
 // 6. 財務日記帳與傳票 API
 // =========================================================================
