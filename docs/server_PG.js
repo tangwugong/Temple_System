@@ -701,6 +701,82 @@ app.delete('/api/settings/lantern-configs/:typeCode', async (req, res) => {
     }
 });
 
+// 一鍵依指定年度，為所有啟用的點燈類別建立完整燈位資料
+app.post('/api/settings/lantern-configs/generate-year', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const { year, overwrite } = req.body;
+        const targetYear = parseInt(year, 10);
+
+        if (!targetYear || targetYear < 2000 || targetYear > 2100) {
+            return res.status(400).json({ success: false, message: '請提供有效的民國/西元年度' });
+        }
+
+        // 1. 取得所有啟用的點燈類別規格
+        const activeRes = await client.query('SELECT * FROM lantern_config WHERE is_enabled = 1');
+        const activeConfigs = activeRes.rows;
+        if (!activeConfigs || activeConfigs.length === 0) {
+            return res.status(400).json({ success: false, message: '目前無任何啟用的點燈類別規格，請先建立或啟用規格！' });
+        }
+
+        // 2. 檢查該年度既有燈位數
+        const existRes = await client.query('SELECT COUNT(*)::int AS cnt FROM lantern_seat WHERE lantern_year = $1', [targetYear]);
+        const existCount = existRes.rows[0].cnt;
+
+        if (existCount > 0 && !overwrite) {
+            return res.status(409).json({
+                success: false,
+                alreadyExists: true,
+                message: `${targetYear} 年度目前已有 ${existCount} 筆燈位紀錄。若要補齊缺漏或重新重置，請點選確認進行補齊。`
+            });
+        }
+
+        let generatedTotal = 0;
+
+        // 3. 使用交易批量插入
+        await client.query('BEGIN');
+
+        const insertSeatSql = `
+            INSERT INTO lantern_seat (seat_code, lantern_year, hall_name, seat_label, status, fee)
+            VALUES ($1, $2, $3, $4, 'AVAILABLE', $5)
+            ON CONFLICT (seat_code, lantern_year) DO NOTHING
+        `;
+
+        for (const cfg of activeConfigs) {
+            const capacity = Number(cfg.total_capacity) || 32;
+            const fee = Number(cfg.default_fee) || 600;
+
+            for (let i = 1; i <= capacity; i++) {
+                const num = i.toString().padStart(3, '0');
+                const seatCode = `${cfg.type_code}-${num}`;
+                const seatLabel = `${cfg.type_name.slice(0, 2)}${num}`;
+
+                const result = await client.query(insertSeatSql, [seatCode, targetYear, cfg.hall_name, seatLabel, fee]);
+                // 如果是新插入的，rowCount 會是 1；如果是遇到衝突忽略的，rowCount 會是 0
+                if (result.rowCount > 0) {
+                    generatedTotal++;
+                }
+            }
+        }
+
+        await client.query('COMMIT');
+
+        console.log(`[點燈年度初始化] 已為 ${targetYear} 年度成功產生/補齊 ${generatedTotal} 盞燈位。`);
+
+        res.json({
+            success: true,
+            message: `【${targetYear} 年度】燈位矩陣建立完成！共新增/補齊 ${generatedTotal} 盞燈位。`,
+            generatedTotal
+        });
+    } catch (err) {
+        await client.query('ROLLBACK').catch(() => { }); // 忽略 rollback 可能發生的錯誤
+        console.error('批次產生燈位失敗：', err);
+        res.status(500).json({ success: false, message: `建立失敗：${err.message}` });
+    } finally {
+        client.release();
+    }
+});
+
 app.get('/api/lanterns', async (req, res) => {
     const client = await pool.connect();
     try {
