@@ -18,6 +18,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // =========================================================================
 // 1. 設定 PostgreSQL 連線池 (Database Name: Temple)
 // =========================================================================
+process.env.PGTZ = 'Asia/Taipei';
 const pool = new Pool({
     //host: process.env.PGHOST || 'localhost',
     //port: Number(process.env.PGPORT) || 5432,
@@ -46,10 +47,12 @@ const pool = new Pool({
     connectionTimeoutMillis: 5000,
 });
 
-// 強制設定連線階段為台灣時區
-pool.on('connect', (client) => {
-    client.query("SET TIME ZONE 'Asia/Taipei'");
-});
+//// 強制設定連線階段為台灣時區
+//pool.on('connect', (client) => {
+//    client.query("SET TIME ZONE 'Asia/Taipei'");
+//});
+
+
 
 // =========================================================================
 // 2. 初始化資料表結構與預設種子資料
