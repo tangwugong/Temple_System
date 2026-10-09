@@ -1406,7 +1406,7 @@ if (!fs.existsSync(uploadDeityDir)) {
     console.log(`[系統提示] 已建立神尊法相目錄：${uploadDeityDir}`);
 }
 
-/ 2. 神尊專屬相片上傳
+// 2. 神尊專屬相片上傳
 app.post('/api/upload/deity-photo', (req, res) => {
     try {
         const { fileBase64 } = req.body;
