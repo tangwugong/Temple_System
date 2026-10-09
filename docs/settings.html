@@ -5,6 +5,26 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>系統參數維護 - 五公祖師巖</title>
+    <!-- 身分與權限守衛 (限 ADMIN 管理員) -->
+    <script>
+        (function () {
+            try {
+                const token = localStorage.getItem('temple_token');
+                const userStr = localStorage.getItem('temple_user');
+                if (!token || !userStr) {
+                    window.location.replace('login.html');
+                    return;
+                }
+                const user = JSON.parse(userStr);
+                if (!user || user.role !== 'ADMIN') {
+                    alert('【權限不足】系統參數設定僅限主任委員與系統管理員存取！');
+                    window.location.replace('index.html');
+                }
+            } catch (e) {
+                window.location.replace('login.html');
+            }
+        })();
+    </script>
     <script src="js/tailwindcss.js"></script>
     <script src="js/vue.global.prod.js"></script>
     <script src="js/common.js"></script>
@@ -14,59 +34,59 @@
         }
     </style>
 </head>
-<body class="bg-[#FFFDF7] text-slate-800 min-h-screen" style="background-color: #FFFDF7;">
-    <div id="app" v-cloak class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+<body class="bg-[#FFFDF7] text-slate-800 min-h-screen">
+    <div id="app" v-cloak class="max-w-7xl mx-auto px-4 py-6 sm:py-8 space-y-6">
 
         <!-- 頂部標題列 -->
-        <div class="bg-white p-6 rounded-2xl border border-amber-200 shadow-sm flex flex-wrap justify-between items-center gap-4">
+        <div class="bg-white p-5 sm:p-6 rounded-2xl border border-amber-200 shadow-sm flex flex-wrap justify-between items-center gap-4">
             <div class="flex items-center gap-3">
                 <span class="text-3xl p-2.5 bg-amber-100 rounded-xl">⚙️</span>
                 <div>
-                    <h1 class="text-xl font-black text-slate-900">五公祖師巖 ‧ 系統核心參數維護</h1>
-                    <p class="text-xs text-gray-500">管理殿堂點燈規格、廟宇執事組織架構與系統登入帳號安全權限</p>
+                    <h1 class="text-lg sm:text-xl font-black text-slate-900">五公祖師巖 ‧ 系統核心參數維護</h1>
+                    <p class="text-xs text-gray-500">管理殿堂點燈規格、廟宇執事組織架構、系統帳號安全權限與文獻設定</p>
                 </div>
             </div>
-            <span class="text-xs bg-red-100 text-red-800 font-bold px-3 py-1.5 rounded-lg border border-red-200">
+            <span class="text-xs bg-red-100 text-red-800 font-bold px-3 py-1.5 rounded-xl border border-red-200">
                 🛡️ 管理員專用權限專區 (ADMIN)
             </span>
         </div>
 
         <!-- 功能頁籤分流 (Tab 切換) -->
-        <div class="flex border-b border-amber-200 space-x-2 bg-white px-4 rounded-t-xl">
+        <div class="flex border-b border-amber-200 space-x-1 sm:space-x-2 bg-white px-4 rounded-t-2xl overflow-x-auto text-xs sm:text-sm font-bold">
             <button @click="activeTab = 'LANTERN'"
-                    :class="activeTab === 'LANTERN' ? 'border-b-2 border-amber-800 text-amber-900 font-bold' : 'text-gray-500 hover:text-amber-800'"
-                    class="py-3 px-4 text-xs flex items-center gap-1.5 transition-all">
-                <span>🏮</span> 1. 點燈類別與燈位數量
+                    :class="activeTab === 'LANTERN' ? 'border-b-2 border-amber-800 text-amber-900' : 'text-gray-500 hover:text-amber-800'"
+                    class="py-3 px-3 flex items-center gap-1.5 transition-all whitespace-nowrap">
+                <span>🏮</span> 點燈規格與燈位
             </button>
             <button @click="activeTab = 'STAFF'"
-                    :class="activeTab === 'STAFF' ? 'border-b-2 border-amber-800 text-amber-900 font-bold' : 'text-gray-500 hover:text-amber-800'"
-                    class="py-3 px-4 text-xs flex items-center gap-1.5 transition-all">
-                <span>👥</span> 2. 廟宇執事人員名冊
+                    :class="activeTab === 'STAFF' ? 'border-b-2 border-amber-800 text-amber-900' : 'text-gray-500 hover:text-amber-800'"
+                    class="py-3 px-3 flex items-center gap-1.5 transition-all whitespace-nowrap">
+                <span>👥</span> 廟宇執事人員名冊
             </button>
             <button @click="activeTab = 'USERS'"
-                    :class="activeTab === 'USERS' ? 'border-b-2 border-amber-800 text-amber-900 font-bold' : 'text-gray-500 hover:text-amber-800'"
-                    class="py-3 px-4 text-xs flex items-center gap-1.5 transition-all">
-                <span>🔑</span> 3. 系統帳號與權限角色
+                    :class="activeTab === 'USERS' ? 'border-b-2 border-amber-800 text-amber-900' : 'text-gray-500 hover:text-amber-800'"
+                    class="py-3 px-3 flex items-center gap-1.5 transition-all whitespace-nowrap">
+                <span>🔑</span> 系統帳號與權限角色
             </button>
             <button @click="activeTab = 'HISTORY'"
-                    :class="activeTab === 'HISTORY' ? 'border-b-2 border-amber-800 text-amber-900 font-bold' : 'text-gray-500 hover:text-amber-800'"
-                    class="py-3 px-4 text-xs flex items-center gap-1.5 transition-all">
-                <span>📜</span> 4. 廟宇沿革與時光軸維護
+                    :class="activeTab === 'HISTORY' ? 'border-b-2 border-amber-800 text-amber-900' : 'text-gray-500 hover:text-amber-800'"
+                    class="py-3 px-3 flex items-center gap-1.5 transition-all whitespace-nowrap">
+                <span>📜</span> 沿革與大事記
             </button>
             <button @click="activeTab = 'CONTACT'"
-                    :class="activeTab === 'CONTACT' ? 'border-b-2 border-amber-800 text-amber-900 font-bold' : 'text-gray-500 hover:text-amber-800'"
-                    class="py-3 px-4 text-xs flex items-center gap-1.5 transition-all">
-                <span>📜</span> 5. 廟宇聯絡資訊維護
+                    :class="activeTab === 'CONTACT' ? 'border-b-2 border-amber-800 text-amber-900' : 'text-gray-500 hover:text-amber-800'"
+                    class="py-3 px-3 flex items-center gap-1.5 transition-all whitespace-nowrap">
+                <span>📞</span> 殿堂聯絡與交通
             </button>
             <button @click="activeTab = 'DEITIES'"
-                    :class="activeTab === 'DEITIES' ? 'border-b-2 border-amber-800 text-amber-900 font-bold' : 'text-gray-500 hover:text-amber-800'"
-                    class="py-3 px-4 text-xs flex items-center gap-1.5 transition-all">
-                <span>⛩️</span> 6. 五公聖尊聖紀維護
+                    :class="activeTab === 'DEITIES' ? 'border-b-2 border-amber-800 text-amber-900' : 'text-gray-500 hover:text-amber-800'"
+                    class="py-3 px-3 flex items-center gap-1.5 transition-all whitespace-nowrap">
+                <span>⛩️</span> 五公聖尊聖紀
             </button>
             <button @click="activeTab = 'QUOTES'"
-                    :class="activeTab === 'QUOTES' ? 'border-b-2 border-amber-800 text-amber-900 font-bold' : 'text-gray-500 hover:text-amber-800'"
-                    class="py-3 px-4 text-xs flex items-center gap-1.5 transition-all">
-                <span>🪷</span> 7. 智慧善語錄維護
+                    :class="activeTab === 'QUOTES' ? 'border-b-2 border-amber-800 text-amber-900' : 'text-gray-500 hover:text-amber-800'"
+                    class="py-3 px-3 flex items-center gap-1.5 transition-all whitespace-nowrap">
+                <span>🪷</span> 智慧善語錄
             </button>
         </div>
 
@@ -84,27 +104,27 @@
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="block font-bold text-gray-700 mb-1">代碼前綴 * (如 T, L)</label>
-                                <input v-model="lanternForm.typeCode" type="text" maxlength="3" uppercase placeholder="例：W" class="w-full border rounded-lg px-3 py-2 font-mono uppercase font-bold" />
+                                <input v-model="lanternForm.typeCode" type="text" maxlength="3" placeholder="例：W" class="w-full border rounded-xl px-3 py-2 font-mono uppercase font-bold" />
                             </div>
                             <div>
                                 <label class="block font-bold text-gray-700 mb-1">承辦殿堂</label>
-                                <input v-model="lanternForm.hallName" type="text" placeholder="文昌殿" class="w-full border rounded-lg px-3 py-2" />
+                                <input v-model="lanternForm.hallName" type="text" placeholder="文昌殿" class="w-full border rounded-xl px-3 py-2" />
                             </div>
                         </div>
 
                         <div>
                             <label class="block font-bold text-gray-700 mb-1">點燈名稱 (全銜) *</label>
-                            <input v-model="lanternForm.typeName" type="text" placeholder="例：文昌智慧金榜燈" class="w-full border rounded-lg px-3 py-2" />
+                            <input v-model="lanternForm.typeName" type="text" placeholder="例：文昌智慧金榜燈" class="w-full border rounded-xl px-3 py-2" />
                         </div>
 
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="block font-bold text-gray-700 mb-1">每盞緣金 (NT$) *</label>
-                                <input v-model.number="lanternForm.defaultFee" type="number" min="100" step="100" class="w-full border rounded-lg px-3 py-2 font-mono font-bold text-red-700" />
+                                <input v-model.number="lanternForm.defaultFee" type="number" min="100" step="50" class="w-full border rounded-xl px-3 py-2 font-mono font-bold text-red-700" />
                             </div>
                             <div>
                                 <label class="block font-bold text-gray-700 mb-1">總燈位上限數 *</label>
-                                <input v-model.number="lanternForm.totalCapacity" type="number" min="8" step="8" class="w-full border rounded-lg px-3 py-2 font-mono font-bold text-amber-900" />
+                                <input v-model.number="lanternForm.totalCapacity" type="number" min="8" step="8" class="w-full border rounded-xl px-3 py-2 font-mono font-bold text-amber-900" />
                             </div>
                         </div>
 
@@ -124,7 +144,6 @@
 
                 <!-- 右：現有燈壁清冊與即時安奉率 -->
                 <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-amber-200 shadow-sm space-y-4">
-                    <!-- 一鍵依年度初始化燈位控制列 -->
                     <div class="bg-amber-50/80 border border-amber-300 rounded-xl p-4 flex flex-wrap justify-between items-center gap-3">
                         <div>
                             <h4 class="font-bold text-xs text-amber-950 flex items-center gap-1.5">
@@ -215,13 +234,13 @@
                     <div class="space-y-3 text-xs">
                         <div>
                             <label class="block font-bold text-gray-700 mb-1">人員大名 *</label>
-                            <input v-model="staffForm.name" type="text" placeholder="例：林志遠" class="w-full border rounded-lg px-3 py-2" />
+                            <input v-model="staffForm.name" type="text" placeholder="例：林志遠" class="w-full border rounded-xl px-3 py-2" />
                         </div>
 
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="block font-bold text-gray-700 mb-1">所屬組織組別 *</label>
-                                <select v-model="staffForm.department" class="w-full border rounded-lg px-3 py-2 bg-white">
+                                <select v-model="staffForm.department" class="w-full border rounded-xl px-3 py-2 bg-white">
                                     <option value="管理委員會">管理委員會</option>
                                     <option value="總務組">總務組</option>
                                     <option value="祭典科儀組">祭典科儀組</option>
@@ -231,18 +250,18 @@
                             </div>
                             <div>
                                 <label class="block font-bold text-gray-700 mb-1">職稱頭銜 *</label>
-                                <input v-model="staffForm.title" type="text" placeholder="例：副組長 / 志工" class="w-full border rounded-lg px-3 py-2" />
+                                <input v-model="staffForm.title" type="text" placeholder="例：副組長 / 志工" class="w-full border rounded-xl px-3 py-2" />
                             </div>
                         </div>
 
                         <div>
                             <label class="block font-bold text-gray-700 mb-1">聯絡電話</label>
-                            <input v-model="staffForm.phone" type="text" placeholder="例：0912-345678" class="w-full border rounded-lg px-3 py-2" />
+                            <input v-model="staffForm.phone" type="text" placeholder="例：0912-345678" class="w-full border rounded-xl px-3 py-2" />
                         </div>
 
                         <div>
                             <label class="block font-bold text-gray-700 mb-1">備註職掌說明</label>
-                            <input v-model="staffForm.memo" type="text" placeholder="例：週六上午大殿臨櫃服務" class="w-full border rounded-lg px-3 py-2" />
+                            <input v-model="staffForm.memo" type="text" placeholder="例：週六上午大殿臨櫃服務" class="w-full border rounded-xl px-3 py-2" />
                         </div>
 
                         <button @click="submitStaff"
@@ -310,22 +329,22 @@
                     <div class="space-y-3 text-xs">
                         <div>
                             <label class="block font-bold text-gray-700 mb-1">登入帳號 (Username) *</label>
-                            <input v-model="userForm.username" type="text" placeholder="例：vol_wang" class="w-full border rounded-lg px-3 py-2 font-mono" />
+                            <input v-model="userForm.username" type="text" placeholder="例：vol_wang" class="w-full border rounded-xl px-3 py-2 font-mono" />
                         </div>
 
                         <div>
                             <label class="block font-bold text-gray-700 mb-1">登入密碼 *</label>
-                            <input v-model="userForm.password" type="password" placeholder="請設定安全密碼" class="w-full border rounded-lg px-3 py-2" />
+                            <input v-model="userForm.password" type="password" placeholder="請設定安全密碼" class="w-full border rounded-xl px-3 py-2 font-mono" />
                         </div>
 
                         <div>
                             <label class="block font-bold text-gray-700 mb-1">執事真實姓名 *</label>
-                            <input v-model="userForm.realName" type="text" placeholder="例：王小明 師兄" class="w-full border rounded-lg px-3 py-2" />
+                            <input v-model="userForm.realName" type="text" placeholder="例：王小明 師兄" class="w-full border rounded-xl px-3 py-2" />
                         </div>
 
                         <div>
                             <label class="block font-bold text-gray-700 mb-1">指派權限角色 (Role) *</label>
-                            <select v-model="userForm.role" class="w-full border rounded-lg px-3 py-2 bg-white font-bold text-amber-900">
+                            <select v-model="userForm.role" class="w-full border rounded-xl px-3 py-2 bg-white font-bold text-amber-900">
                                 <option value="VOLUNTEER">臨櫃服務志工 (VOLUNTEER) - 點燈/活動/物資</option>
                                 <option value="ACCOUNTANT">會計出納執事 (ACCOUNTANT) - 財務日記帳/物資</option>
                                 <option value="RITUAL">法會科儀組長 (RITUAL) - 法會排程/物資</option>
@@ -340,7 +359,7 @@
                     </div>
                 </div>
 
-                <!-- 右：帳號清冊與停用/改密碼面盤 -->
+                <!-- 右：帳號清冊 -->
                 <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-amber-200 shadow-sm space-y-4">
                     <div class="flex justify-between items-center border-b pb-2">
                         <h3 class="font-bold text-sm text-slate-900">系統授權帳號一覽 (共 {{ userList.length }} 個帳號)</h3>
@@ -366,11 +385,11 @@
                                     <td class="py-2.5 px-3">
                                         <span class="px-2 py-0.5 rounded font-bold text-[10px]"
                                               :class="{
-                        'bg-red-100 text-red-800': u.role === 'ADMIN',
-                        'bg-blue-100 text-blue-800': u.role === 'ACCOUNTANT',
-                        'bg-purple-100 text-purple-800': u.role === 'RITUAL',
-                        'bg-emerald-100 text-emerald-800': u.role === 'VOLUNTEER'
-                      }">
+                                                'bg-red-100 text-red-800': u.role === 'ADMIN',
+                                                'bg-blue-100 text-blue-800': u.role === 'ACCOUNTANT',
+                                                'bg-purple-100 text-purple-800': u.role === 'RITUAL',
+                                                'bg-emerald-100 text-emerald-800': u.role === 'VOLUNTEER'
+                                              }">
                                             {{ u.role }}
                                         </span>
                                     </td>
@@ -379,7 +398,7 @@
                                             {{ u.status === 'ACTIVE' ? '● 正常使用' : '○ 已停用' }}
                                         </span>
                                     </td>
-                                    <td class="py-2.5 px-3 font-mono text-gray-500">{{ u.created_at ? u.created_at.split(' ')[0] : '-' }}</td>
+                                    <td class="py-2.5 px-3 font-mono text-gray-500">{{ u.created_at ? u.created_at.split('T')[0] : '-' }}</td>
                                     <td class="py-2.5 px-3 text-center space-x-2">
                                         <button @click="promptResetPassword(u)" class="text-amber-800 hover:underline">重設密碼</button>
                                         <button v-if="u.username !== 'admin'"
@@ -414,22 +433,22 @@
                     <div class="space-y-3 text-xs">
                         <div>
                             <label class="block font-bold text-gray-700 mb-1">廟名與首頁大標題 *</label>
-                            <input v-model="historyForm.title" type="text" class="w-full border rounded-lg px-3 py-2 font-bold text-amber-950" />
+                            <input v-model="historyForm.title" type="text" class="w-full border rounded-xl px-3 py-2 font-bold text-amber-950" />
                         </div>
 
                         <div>
                             <label class="block font-bold text-gray-700 mb-1">宗旨副標題 *</label>
-                            <input v-model="historyForm.subtitle" type="text" class="w-full border rounded-lg px-3 py-2 text-gray-600" />
+                            <input v-model="historyForm.subtitle" type="text" class="w-full border rounded-xl px-3 py-2 text-gray-600" />
                         </div>
 
                         <div>
                             <label class="block font-bold text-gray-700 mb-1">開基立廟歷史淵源主文 *</label>
-                            <textarea v-model="historyForm.summaryHtml" rows="6" class="w-full border rounded-lg p-3 leading-relaxed"></textarea>
+                            <textarea v-model="historyForm.summaryHtml" rows="6" class="w-full border rounded-xl p-3 leading-relaxed"></textarea>
                         </div>
 
                         <div>
                             <label class="block font-bold text-gray-700 mb-1">主祀五公菩薩神尊聖紀簡介</label>
-                            <textarea v-model="historyForm.deitiesHtml" rows="4" class="w-full border rounded-lg p-3 leading-relaxed"></textarea>
+                            <textarea v-model="historyForm.deitiesHtml" rows="4" class="w-full border rounded-xl p-3 leading-relaxed"></textarea>
                         </div>
 
                         <button @click="submitHistoryMain"
@@ -506,9 +525,9 @@
             </div>
         </div>
 
-        <!-- ================= 5.廟宇聯絡與交通資訊維護 (限 ADMIN) ================= -->
+        <!-- ================= 頁籤 5：廟宇聯絡資訊維護 ================= -->
         <div v-if="activeTab === 'CONTACT'" class="space-y-6">
-            <div v-if="contactForm" class="bg-white p-6 sm:p-8 rounded-3xl border border-amber-200/90 shadow-sm space-y-6">
+            <div class="bg-white p-6 sm:p-8 rounded-3xl border border-amber-200/90 shadow-sm space-y-6">
                 <div class="border-b border-amber-100 pb-3 flex justify-between items-center">
                     <div>
                         <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
@@ -522,65 +541,65 @@
                     </button>
                 </div>
 
-                <!-- 表單設定項目 -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                     <div>
                         <label class="block font-bold text-slate-700 mb-1">廟宇宮址 *</label>
                         <input v-model="contactForm.address" type="text"
-                               class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700" />
+                               class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700 font-bold" />
                     </div>
 
                     <div>
                         <label class="block font-bold text-slate-700 mb-1">服務電話 *</label>
                         <input v-model="contactForm.phone" type="text"
-                               class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700" />
-                    </div>
-                    <div>
-                        <label class="block font-bold text-slate-700 mb-1">Facebook</label>
-                        <input v-model="contactForm.facebook" type="text"
-                               class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700" />
+                               class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700 font-mono" />
                     </div>
 
                     <div>
                         <label class="block font-bold text-slate-700 mb-1">傳真專線</label>
                         <input v-model="contactForm.fax" type="text"
-                               class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700" />
+                               class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700 font-mono" />
                     </div>
 
                     <div>
                         <label class="block font-bold text-slate-700 mb-1">服務電子信箱</label>
                         <input v-model="contactForm.email" type="email"
-                               class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700" />
+                               class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700 font-mono" />
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block font-bold text-slate-700 mb-1">官方 Facebook 粉絲專頁網址</label>
+                        <input v-model="contactForm.facebook" type="text" placeholder="https://www.facebook.com/..."
+                               class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700 font-mono" />
                     </div>
 
                     <div class="md:col-span-2">
                         <label class="block font-bold text-slate-700 mb-1">大殿開放參香時段說明</label>
                         <textarea v-model="contactForm.openHours" rows="2"
-                                  class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700"></textarea>
+                                  class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700 leading-relaxed"></textarea>
                     </div>
 
                     <div>
                         <label class="block font-bold text-slate-700 mb-1">大眾運輸 / 客運指引</label>
                         <textarea v-model="contactForm.busGuide" rows="2"
-                                  class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700"></textarea>
+                                  class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700 leading-relaxed"></textarea>
                     </div>
 
                     <div>
                         <label class="block font-bold text-slate-700 mb-1">自行開車指引</label>
                         <textarea v-model="contactForm.carGuide" rows="2"
-                                  class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700"></textarea>
+                                  class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700 leading-relaxed"></textarea>
                     </div>
 
                     <div class="md:col-span-2">
                         <label class="block font-bold text-slate-700 mb-1">香客停車場指引說明</label>
                         <textarea v-model="contactForm.parkingGuide" rows="2"
-                                  class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700"></textarea>
+                                  class="w-full border border-amber-200 bg-amber-50/20 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700 leading-relaxed"></textarea>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- ================= 頁籤 6：五公聖尊聖紀與多相片維護 ================= -->
+        <!-- ================= 頁籤 6：五公聖尊聖紀與法相相簿維護 ================= -->
         <div v-if="activeTab === 'DEITIES'" class="space-y-6">
             <div class="bg-white p-6 sm:p-8 rounded-3xl border border-amber-200/90 shadow-sm space-y-6">
                 <div class="border-b border-amber-100 pb-3 flex justify-between items-center">
@@ -588,7 +607,7 @@
                         <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
                             <span>⛩️</span> 五公菩薩聖尊聖紀與法相相簿維護
                         </h2>
-                        <p class="text-xs text-slate-500">維護五位祖師的尊稱、生平事蹟與多張神尊照片圖說，前台 history.html 點選時即刻同步呈現。</p>
+                        <p class="text-xs text-slate-500">維護五位祖師的尊稱、生平事蹟與多張神尊照片圖說，前台 history.html 即刻同步呈現。</p>
                     </div>
                     <button @click="saveDeitiesSettings"
                             class="px-5 py-2.5 bg-amber-800 hover:bg-amber-900 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow flex items-center gap-1.5">
@@ -596,9 +615,7 @@
                     </button>
                 </div>
 
-                <!-- 雙欄佈局：左側切換神尊，右側編輯該神尊詳情與照片 -->
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
                     <!-- 左側：五神尊切換標籤 (4 欄) -->
                     <div class="lg:col-span-4 space-y-2">
                         <div v-for="(d, idx) in deitiesList" :key="d.id"
@@ -615,7 +632,7 @@
                         </div>
                     </div>
 
-                    <!-- 右側：當前選取神尊之詳細資料與相簿編輯 (8 欄) -->
+                    <!-- 右側：當前選取神尊之詳細資料與相簿 (8 欄) -->
                     <div v-if="currentDeity" class="lg:col-span-8 bg-amber-50/30 p-5 rounded-2xl border border-amber-200 space-y-4 text-xs">
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
@@ -631,7 +648,7 @@
                         </div>
 
                         <div>
-                            <label class="block font-bold text-slate-700 mb-1">一語宗旨簡述 * (首頁卡片副標題)</label>
+                            <label class="block font-bold text-slate-700 mb-1">一語宗旨簡述 *</label>
                             <input v-model="currentDeity.summary" type="text"
                                    class="w-full border border-amber-200 bg-white rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-amber-700" />
                         </div>
@@ -642,53 +659,121 @@
                                       class="w-full border border-amber-200 bg-white rounded-xl px-3 py-2 text-slate-800 leading-relaxed outline-none focus:border-amber-700"></textarea>
                         </div>
 
-                        <!-- 多照片清單動態維護 -->
+                        <!-- 多照片清單維護 -->
+                        <!-- 多照片清單維護 -->
                         <div class="space-y-3 pt-2 border-t border-amber-200/80">
                             <div class="flex justify-between items-center">
                                 <label class="font-bold text-slate-800 flex items-center gap-1">
-                                    <span>📷</span> 神尊寶相照片清單 (支援多張相片與個別說明)
+                                    <span>📷</span> 神尊寶相照片清單 (支援本機上傳與即時預覽)
                                 </label>
                                 <button @click="addPhotoToCurrentDeity" type="button"
                                         class="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-[11px] flex items-center gap-1 transition-all">
-                                    <span>➕</span> 新增相片
+                                    <span>➕</span> 新增相片欄位
                                 </button>
                             </div>
 
-                            <div v-if="!currentDeity.photos || currentDeity.photos.length === 0" class="text-center py-4 text-slate-400 bg-white rounded-xl border border-dashed border-amber-200">
-                                尚未加入相片，請點擊上方按鈕新增
+                            <div v-if="!currentDeity.photos || currentDeity.photos.length === 0" class="text-center py-6 text-slate-400 bg-white rounded-xl border border-dashed border-amber-200">
+                                尚未加入相片，請點擊上方按鈕新增相片
                             </div>
 
-                            <!-- 相片項目列表 -->
+                            <!-- 相片項目卡片 -->
                             <div v-for="(photo, pIdx) in currentDeity.photos" :key="pIdx"
-                                 class="p-3 bg-white rounded-xl border border-amber-200 space-y-2 relative">
-                                <div class="flex justify-between items-center text-[11px] text-slate-400 font-mono">
-                                    <span>相片 #{{ pIdx + 1 }}</span>
+                                 class="p-3.5 bg-white rounded-2xl border border-amber-200 space-y-3 relative shadow-sm">
+
+                                <div class="flex justify-between items-center text-[11px] text-slate-400 font-mono border-b pb-2">
+                                    <span class="font-bold text-amber-900">相片 #{{ pIdx + 1 }}</span>
                                     <button @click="removePhotoFromCurrentDeity(pIdx)" type="button" class="text-red-600 hover:underline">
                                         🗑️ 刪除此相片
                                     </button>
                                 </div>
 
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div>
-                                        <label class="block text-[11px] text-slate-600 mb-0.5">圖片網址路徑 (URL / 本機路徑) *</label>
-                                        <input v-model="photo.url" type="text" placeholder="例：images/deities/zhi_gong_1.jpg"
-                                               class="w-full border border-amber-200 rounded-lg px-2.5 py-1.5 outline-none font-mono text-xs" />
+                                <div class="flex flex-col sm:flex-row gap-4 items-start">
+                                    <!-- 預覽縮圖 -->
+                                    <div class="w-24 h-24 rounded-xl border border-amber-200 bg-amber-50/50 overflow-hidden shrink-0 flex items-center justify-center relative">
+                                        <img v-if="photo.url" :src="photo.url"
+                                             class="w-full h-full object-cover"
+                                             @error="$event.target.src='https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=200&q=80'" />
+                                        <span v-else class="text-[10px] text-slate-400 text-center px-1">尚未選擇照片</span>
                                     </div>
-                                    <div>
-                                        <label class="block text-[11px] text-slate-600 mb-0.5">相片說明文字 (Caption) *</label>
-                                        <input v-model="photo.caption" type="text" placeholder="例：本巖開基正殿金身寶相"
-                                               class="w-full border border-amber-200 rounded-lg px-2.5 py-1.5 outline-none text-xs" />
+
+                                    <!-- 控制輸入區 -->
+                                    <div class="flex-1 space-y-2.5 w-full">
+                                        <!-- 上傳與路徑選擇 -->
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-slate-700 mb-1">照片檔案來源 *</label>
+                                            <div class="flex items-center gap-2">
+                                                <input type="file"
+                                                       :id="`deity-file-${pIdx}`"
+                                                       @change="(e) => handleDeityPhotoUpload(e, pIdx)"
+                                                       accept="image/*"
+                                                       class="hidden" />
+
+                                                <label :for="`deity-file-${pIdx}`"
+                                                       class="cursor-pointer px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-xs font-bold transition-all flex items-center gap-1 shrink-0 border border-amber-300">
+                                                    <span>📁</span> 選擇本機照片上傳
+                                                </label>
+
+                                                <input v-model="photo.url" type="text" placeholder="例：/images/Deities/xxx.jpg 或網路網址"
+                                                       class="flex-1 border border-amber-200 rounded-lg px-2.5 py-1.5 outline-none font-mono text-xs focus:border-amber-700 bg-slate-50" />
+                                            </div>
+                                        </div>
+
+                                        <!-- 說明文字 -->
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-slate-700 mb-1">相片說明文字 (圖說 Caption) *</label>
+                                            <input v-model="photo.caption" type="text" placeholder="例：本巖開基正殿金身寶相"
+                                                   class="w-full border border-amber-200 rounded-lg px-2.5 py-1.5 outline-none text-xs focus:border-amber-700" />
+                                        </div>
                                     </div>
                                 </div>
+
                             </div>
                         </div>
+                        <!--<div class="space-y-3 pt-2 border-t border-amber-200/80">
+        <div class="flex justify-between items-center">
+            <label class="font-bold text-slate-800 flex items-center gap-1">
+                <span>📷</span> 神尊寶相照片清單
+            </label>
+            <button @click="addPhotoToCurrentDeity" type="button"
+                    class="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-[11px] flex items-center gap-1 transition-all">
+                <span>➕</span> 新增相片
+            </button>
+        </div>
+
+        <div v-if="!currentDeity.photos || currentDeity.photos.length === 0" class="text-center py-4 text-slate-400 bg-white rounded-xl border border-dashed border-amber-200">
+            尚未加入相片，請點擊上方按鈕新增
+        </div>
+
+        <div v-for="(photo, pIdx) in currentDeity.photos" :key="pIdx"
+             class="p-3 bg-white rounded-xl border border-amber-200 space-y-2 relative">
+            <div class="flex justify-between items-center text-[11px] text-slate-400 font-mono">
+                <span>相片 #{{ pIdx + 1 }}</span>
+                <button @click="removePhotoFromCurrentDeity(pIdx)" type="button" class="text-red-600 hover:underline">
+                    🗑️ 刪除此相片
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[11px] text-slate-600 mb-0.5">圖片網址路徑 *</label>
+                    <input v-model="photo.url" type="text" placeholder="例：images/deities/zhi_gong_1.jpg"
+                           class="w-full border border-amber-200 rounded-lg px-2.5 py-1.5 outline-none font-mono text-xs" />
+                </div>
+                <div>
+                    <label class="block text-[11px] text-slate-600 mb-0.5">相片說明文字 (Caption) *</label>
+                    <input v-model="photo.caption" type="text" placeholder="例：本巖開基正殿金身寶相"
+                           class="w-full border border-amber-200 rounded-lg px-2.5 py-1.5 outline-none text-xs" />
+                </div>
+            </div>
+        </div>
+    </div>-->
 
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- ================= 頁籤 7：智慧善語錄維護 (限 ADMIN) ================= -->
+        <!-- ================= 頁籤 7：智慧善語錄維護 ================= -->
         <div v-if="activeTab === 'QUOTES'" class="space-y-6">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
@@ -723,14 +808,13 @@
                             </div>
                         </div>
 
-                        <!-- 善語錄媒體檔案（照片 / 影片）上傳區塊 -->
+                        <!-- 善語錄媒體檔案（照片 / 影片）上傳區塊 (全面統一綁定 quoteForm) -->
                         <div class="space-y-2">
                             <label class="block font-bold text-xs text-slate-700">
                                 語錄影音配圖 (照片或短影音)
                             </label>
 
                             <div class="flex items-center gap-3">
-                                <!-- 檔案選擇按鈕 -->
                                 <input type="file"
                                        ref="kindFileInput"
                                        @change="handleKindFileUpload"
@@ -744,29 +828,22 @@
                                 </label>
 
                                 <span class="text-[11px] text-slate-400 font-mono truncate max-w-[200px]">
-                                    {{ currentQuoteForm.imageUrl || '尚未指定檔案' }}
+                                    {{ quoteForm.imageUrl || '尚未指定檔案' }}
                                 </span>
                             </div>
 
-                            <!-- 1. 顯示檔案路徑的文字處加上可選串連 ?. -->
-                            <span class="text-[11px] text-slate-400 font-mono truncate max-w-[200px]">
-                                {{ currentQuoteForm?.imageUrl || '尚未指定檔案' }}
-                            </span>
-
-                            <!-- 2. 預覽區塊：確保 currentQuoteForm 存在且 imageUrl 有值才渲染 -->
-                            <div v-if="currentQuoteForm && currentQuoteForm.imageUrl" class="relative mt-2 w-full max-w-sm rounded-xl overflow-hidden border border-amber-200 bg-black/5 p-1">
-                                <!-- 影片預覽 -->
-                                <video v-if="isVideoFile(currentQuoteForm.imageUrl)"
-                                       :src="currentQuoteForm.imageUrl"
+                            <!-- 預覽區塊 -->
+                            <div v-if="quoteForm.imageUrl" class="relative mt-2 w-full max-w-sm rounded-xl overflow-hidden border border-amber-200 bg-black/5 p-1">
+                                <video v-if="isVideoFile(quoteForm.imageUrl)"
+                                       :src="quoteForm.imageUrl"
                                        controls
                                        class="w-full h-44 object-contain rounded-lg bg-black"></video>
-                                <!-- 圖片預覽 -->
                                 <img v-else
-                                     :src="currentQuoteForm.imageUrl"
+                                     :src="quoteForm.imageUrl"
                                      class="w-full h-44 object-cover rounded-lg"
                                      @error="$event.target.src='https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&q=80'" />
 
-                                <button type="button" @click="currentQuoteForm.imageUrl = ''"
+                                <button type="button" @click="quoteForm.imageUrl = ''"
                                         class="absolute top-2 right-2 bg-rose-600/80 hover:bg-rose-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow">
                                     ✕
                                 </button>
@@ -775,7 +852,7 @@
 
                         <div>
                             <label class="block font-bold text-gray-700 mb-1">圖片網址 / 本機路徑 *</label>
-                            <input v-model="quoteForm.imageUrl" type="text" placeholder="例：images/quotes/wisdom_1.jpg"
+                            <input v-model="quoteForm.imageUrl" type="text" placeholder="例：/public/images/Kind/xxx.jpg"
                                    class="w-full border border-amber-200 rounded-xl px-3 py-2 font-mono text-slate-800 outline-none focus:border-amber-700" />
                         </div>
 
@@ -816,7 +893,6 @@
                              class="p-4 bg-amber-50/40 rounded-2xl border border-amber-200 flex gap-4 items-start justify-between">
 
                             <div class="flex gap-3 items-start">
-                                <!-- 縮圖 -->
                                 <img :src="q.imageUrl" class="w-16 h-16 rounded-xl object-cover border border-amber-200 shrink-0"
                                      @error="$event.target.src='https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=200&q=80'" />
                                 <div class="space-y-1">
@@ -847,705 +923,694 @@
 
             </div>
         </div>
+
     </div>
 
-        <script>
-            const { createApp, ref, computed, onMounted } = Vue;
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue;
 
-            createApp({
-                setup() {
-                    const activeTab = ref('LANTERN');
+        createApp({
+            setup() {
+                const getBaseUrl = () => {
+                    let base = (typeof getApiBase === 'function') ? getApiBase() : ((typeof API_BASE !== 'undefined') ? API_BASE : '/api');
+                    return base.replace(/\/+$/, '');
+                };
 
-                    const lanternConfigs = ref([]);
-                    const staffList = ref([]);
-                    const userList = ref([]);
+                const activeTab = ref('LANTERN');
 
-                    // 在 setup 內增加以下響應式變數與方法：
-                    const nextYear = new Date().getFullYear() + 1;
-                    const batchGenYear = ref(nextYear);
-                    const isGenerating = ref(false);
+                const lanternConfigs = ref([]);
+                const staffList = ref([]);
+                const userList = ref([]);
 
-                    // 善語錄檔案上傳控制狀態
-                    const isUploadingMedia = ref(false);
+                const batchGenYear = ref(new Date().getFullYear() + 1);
+                const isGenerating = ref(false);
+                const isUploadingMedia = ref(false);
 
-                    // 產生年度燈位
-                    const triggerBatchGenerate = async (forceOverwrite = false) => {
-                        if (!batchGenYear.value) {
-                            return alert('請輸入欲產生的目標年度（例如 2027）');
+                // 點燈表單
+                const lanternForm = ref({
+                    typeCode: '',
+                    typeName: '',
+                    hallName: '凌霄寶殿',
+                    defaultFee: 600,
+                    totalCapacity: 32,
+                    isEnabled: true
+                });
+
+                // 執事表單
+                const staffForm = ref({
+                    name: '',
+                    department: '義工志工隊',
+                    title: '服務志工',
+                    phone: '',
+                    memo: ''
+                });
+
+                // 帳號表單
+                const userForm = ref({
+                    username: '',
+                    password: '',
+                    realName: '',
+                    role: 'VOLUNTEER'
+                });
+
+                // 沿革文案與大事記
+                const historyForm = ref({
+                    title: '',
+                    subtitle: '',
+                    summaryHtml: '',
+                    deitiesHtml: ''
+                });
+
+                const timelineList = ref([]);
+                const timelineForm = ref({
+                    id: null,
+                    solarYear: '',
+                    dynastyEra: '',
+                    iconTag: '🏛️',
+                    eventTitle: '',
+                    eventContent: '',
+                    sortOrder: 0
+                });
+
+                // 聯絡表單
+                const contactForm = ref({
+                    address: '',
+                    phone: '',
+                    fax: '',
+                    email: '',
+                    openHours: '',
+                    busGuide: '',
+                    carGuide: '',
+                    parkingGuide: '',
+                    facebook: ''
+                });
+
+                // 五公神尊清單
+                const deitiesList = ref([]);
+                const currentDeityIndex = ref(0);
+                const currentDeity = computed(() => deitiesList.value[currentDeityIndex.value] || null);
+
+                // 善語錄清單與表單
+                const quotesList = ref([]);
+                const quoteForm = ref({
+                    id: null,
+                    title: '',
+                    author: '五公祖師法音',
+                    tag: '福慧兼修',
+                    imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&q=80',
+                    content: '',
+                    date: new Date().toISOString().slice(0, 10)
+                });
+
+                // --- 1. 點燈設定 ---
+                const loadLanternConfigs = async () => {
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/settings/lantern-configs`);
+                        const d = await res.json();
+                        if (d.success) lanternConfigs.value = d.data;
+                    } catch (e) {
+                        console.error('載入點燈規格失敗', e);
+                    }
+                };
+
+                const submitLanternConfig = async () => {
+                    if (!lanternForm.value.typeCode || !lanternForm.value.typeName) {
+                        return alert('請填寫完整代碼與名稱');
+                    }
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/settings/lantern-configs`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(lanternForm.value)
+                        });
+                        const d = await res.json();
+                        alert(d.message);
+                        if (d.success) await loadLanternConfigs();
+                    } catch (e) {
+                        alert('伺服器連線失敗');
+                    }
+                };
+
+                const editLantern = (c) => {
+                    lanternForm.value = {
+                        typeCode: c.type_code,
+                        typeName: c.type_name,
+                        hallName: c.hall_name,
+                        defaultFee: Number(c.default_fee),
+                        totalCapacity: Number(c.total_capacity),
+                        isEnabled: c.is_enabled === 1
+                    };
+                };
+
+                const triggerBatchGenerate = async (forceOverwrite = false) => {
+                    if (!batchGenYear.value) return alert('請輸入目標年度');
+                    isGenerating.value = true;
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/settings/lantern-configs/generate-year`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ year: Number(batchGenYear.value), overwrite: forceOverwrite })
+                        });
+                        const result = await res.json();
+                        if (res.status === 409 && result.alreadyExists) {
+                            if (confirm(`${result.message}\n\n是否確認重新整理並補齊該年度尚未建立之空燈位？`)) {
+                                await triggerBatchGenerate(true);
+                            }
+                            return;
                         }
+                        alert(result.message);
+                        if (result.success) await loadLanternConfigs();
+                    } catch (e) {
+                        alert('伺服器連線異常');
+                    } finally {
+                        isGenerating.value = false;
+                    }
+                };
 
-                        isGenerating.value = true;
-                        try {
-                            const res = await fetch('/api/settings/lantern-configs/generate-year', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    year: Number(batchGenYear.value),
-                                    overwrite: forceOverwrite
-                                })
-                            });
+                // --- 2. 執事人員 ---
+                const loadStaff = async () => {
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/settings/staff`);
+                        const d = await res.json();
+                        if (d.success) staffList.value = d.data;
+                    } catch (e) {
+                        console.error('載入人員失敗', e);
+                    }
+                };
 
-                            const result = await res.json();
-
-                            if (res.status === 409 && result.alreadyExists) {
-                                if (confirm(`${result.message}\n\n是否確認重新整理並補齊該年度尚未建立之空燈位？`)) {
-                                    await triggerBatchGenerate(true);
-                                }
-                                return;
-                            }
-
-                            if (result.success) {
-                                alert(result.message);
-                                await loadLanternConfigs();
-                            } else {
-                                alert(`建立失敗：${result.message}`);
-                            }
-                        } catch (e) {
-                            alert('連線伺服器異常，請檢查伺服器是否正常運行');
-                        } finally {
-                            isGenerating.value = false;
+                const submitStaff = async () => {
+                    if (!staffForm.value.name || !staffForm.value.title) return alert('請填寫姓名與職稱');
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/settings/staff`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(staffForm.value)
+                        });
+                        const d = await res.json();
+                        if (d.success) {
+                            alert('人員登記成功！');
+                            staffForm.value = { name: '', department: '義工志工隊', title: '服務志工', phone: '', memo: '' };
+                            await loadStaff();
                         }
-                    };
-                    // 表單資料
-                    const lanternForm = ref({
-                        typeCode: '',
-                        typeName: '',
-                        hallName: '凌霄寶殿',
-                        defaultFee: 600,
-                        totalCapacity: 32,
-                        isEnabled: true
-                    });
+                    } catch (e) {
+                        alert('伺服器連線失敗');
+                    }
+                };
 
-                    const staffForm = ref({
-                        name: '',
-                        department: '義工志工隊',
-                        title: '服務志工',
-                        phone: '',
-                        memo: ''
-                    });
+                const deleteStaff = async (id) => {
+                    if (!confirm('確定要移除此筆執事人員資料嗎？')) return;
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/settings/staff/${id}`, { method: 'DELETE' });
+                        const d = await res.json();
+                        if (d.success) await loadStaff();
+                    } catch (e) {
+                        alert('操作失敗');
+                    }
+                };
 
-                    const userForm = ref({
-                        username: '',
-                        password: '',
-                        realName: '',
-                        role: 'VOLUNTEER'
-                    });
+                // --- 3. 系統帳號 ---
+                const loadUsers = async () => {
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/settings/users`);
+                        const d = await res.json();
+                        if (d.success) userList.value = d.data;
+                    } catch (e) {
+                        console.error('載入帳號失敗', e);
+                    }
+                };
 
-                  
-
-                    // 讀取設定
-                    const loadLanternConfigs = async () => {
-                        try {
-                            const res = await fetch(`${API_BASE}/settings/lantern-configs`);
-                            const d = await res.json();
-                            if (d.success) lanternConfigs.value = d.data;
-                        } catch (e) { console.error(e); }
-                    };
-
-                    const loadStaff = async () => {
-                        try {
-                            const res = await fetch(`${API_BASE}/settings/staff`);
-                            const d = await res.json();
-                            if (d.success) staffList.value = d.data;
-                        } catch (e) { console.error(e); }
-                    };
-
-                    const loadUsers = async () => {
-                        try {
-                            const res = await fetch(`${API_BASE}/settings/users`);
-                            const d = await res.json();
-                            if (d.success) userList.value = d.data;
-                        } catch (e) { console.error(e); }
-                    };
-
-                    // 點燈類別送出
-                    const submitLanternConfig = async () => {
-                        if (!lanternForm.value.typeCode || !lanternForm.value.typeName) {
-                            return alert('請填寫完整代碼與名稱');
+                const submitUser = async () => {
+                    if (!userForm.value.username || !userForm.value.password || !userForm.value.realName) {
+                        return alert('請填寫完整帳號資訊');
+                    }
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/settings/users`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(userForm.value)
+                        });
+                        const d = await res.json();
+                        alert(d.message);
+                        if (d.success) {
+                            userForm.value = { username: '', password: '', realName: '', role: 'VOLUNTEER' };
+                            await loadUsers();
                         }
-                        try {
-                            const res = await fetch(`${API_BASE}/settings/lantern-configs`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(lanternForm.value)
-                            });
-                            const d = await res.json();
-                            if (d.success) {
-                                alert(d.message);
-                                await loadLanternConfigs();
-                            } else {
-                                alert(d.message);
-                            }
-                        } catch (e) { alert('伺服器連線失敗'); }
-                    };
+                    } catch (e) {
+                        alert('操作失敗');
+                    }
+                };
 
-                    const editLantern = (c) => {
-                        lanternForm.value = {
-                            typeCode: c.type_code,
-                            typeName: c.type_name,
-                            hallName: c.hall_name,
-                            defaultFee: c.default_fee,
-                            totalCapacity: c.total_capacity,
-                            isEnabled: c.is_enabled === 1
-                        };
-                    };
+                const toggleUserStatus = async (user) => {
+                    const nextStatus = user.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE';
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/settings/users/${user.user_id}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ status: nextStatus })
+                        });
+                        const d = await res.json();
+                        if (d.success) await loadUsers();
+                    } catch (e) {
+                        alert('操作失敗');
+                    }
+                };
 
-                    // 廟務人員送出與刪除
-                    const submitStaff = async () => {
-                        if (!staffForm.value.name || !staffForm.value.title) return alert('請填寫姓名與職稱');
-                        try {
-                            const res = await fetch(`${API_BASE}/settings/staff`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(staffForm.value)
-                            });
-                            const d = await res.json();
-                            if (d.success) {
-                                alert('人員登記成功！');
-                                staffForm.value = { name: '', department: '義工志工隊', title: '服務志工', phone: '', memo: '' };
-                                await loadStaff();
-                            }
-                        } catch (e) { alert('伺服器連線失敗'); }
-                    };
+                const promptResetPassword = async (user) => {
+                    const newPass = prompt(`請輸入「${user.real_name}」的新密碼：`);
+                    if (!newPass || !newPass.trim()) return;
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/settings/users/${user.user_id}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ password: newPass.trim() })
+                        });
+                        const d = await res.json();
+                        if (d.success) alert('密碼重設成功！');
+                    } catch (e) {
+                        alert('操作失敗');
+                    }
+                };
 
-                    const deleteStaff = async (id) => {
-                        if (!confirm('確定要移除此筆執事人員資料嗎？')) return;
-                        try {
-                            const res = await fetch(`${API_BASE}/settings/staff/${id}`, { method: 'DELETE' });
-                            const d = await res.json();
-                            if (d.success) await loadStaff();
-                        } catch (e) { alert('操作失敗'); }
-                    };
-
-                    // 系統帳號管理
-                    const submitUser = async () => {
-                        if (!userForm.value.username || !userForm.value.password || !userForm.value.realName) {
-                            return alert('請填寫完整帳號資訊');
+                // --- 4. 廟宇沿革 ---
+                const loadHistoryData = async () => {
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/history`);
+                        const d = await res.json();
+                        if (d.success && d.data) {
+                            historyForm.value = {
+                                title: d.data.title || '',
+                                subtitle: d.data.subtitle || '',
+                                summaryHtml: d.data.summary_html || '',
+                                deitiesHtml: d.data.deities_html || ''
+                            };
+                            timelineList.value = d.data.timeline || [];
                         }
-                        try {
-                            const res = await fetch(`${API_BASE}/settings/users`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(userForm.value)
-                            });
-                            const d = await res.json();
-                            if (d.success) {
-                                alert('帳號建立成功！');
-                                userForm.value = { username: '', password: '', realName: '', role: 'VOLUNTEER' };
-                                await loadUsers();
-                            } else {
-                                alert(d.message);
-                            }
-                        } catch (e) { alert('操作失敗'); }
-                    };
+                    } catch (e) {
+                        console.error('載入沿革設定失敗', e);
+                    }
+                };
 
-                    const toggleUserStatus = async (user) => {
-                        const nextStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-                        try {
-                            const res = await fetch(`${API_BASE}/settings/users/${user.user_id}`, {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ status: nextStatus })
-                            });
-                            const d = await res.json();
-                            if (d.success) await loadUsers();
-                        } catch (e) { alert('操作失敗'); }
-                    };
+                const submitHistoryMain = async () => {
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/history/main`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(historyForm.value)
+                        });
+                        const d = await res.json();
+                        alert(d.message);
+                    } catch (e) {
+                        alert('儲存沿革主文失敗');
+                    }
+                };
 
-                    const promptResetPassword = async (user) => {
-                        const newPass = prompt(`請輸入「${user.real_name}」的新密碼：`);
-                        if (!newPass) return;
-                        try {
-                            const res = await fetch(`${API_BASE}/settings/users/${user.user_id}`, {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ password: newPass })
-                            });
-                            const d = await res.json();
-                            if (d.success) alert('密碼重設成功！');
-                        } catch (e) { alert('操作失敗'); }
-                    };
-
-                    // 在 settings.html 的 setup 區段增加：
-                    const historyForm = ref({
-                        title: '',
-                        subtitle: '',
-                        summaryHtml: '',
-                        deitiesHtml: ''
-                    });
-
-                    const timelineList = ref([]);
-                    const timelineForm = ref({
+                const resetTimelineForm = () => {
+                    timelineForm.value = {
                         id: null,
                         solarYear: '',
                         dynastyEra: '',
                         iconTag: '🏛️',
                         eventTitle: '',
                         eventContent: '',
-                        sortOrder: 0
-                    });
-
-                    const loadHistoryData = async () => {
-                        try {
-                            const res = await fetch(`${API_BASE}/history`);
-                            const d = await res.json();
-                            if (d.success) {
-                                historyForm.value = {
-                                    title: d.data.title || '',
-                                    subtitle: d.data.subtitle || '',
-                                    summaryHtml: d.data.summary_html || '',
-                                    deitiesHtml: d.data.deities_html || ''
-                                };
-                                timelineList.value = d.data.timeline || [];
-                            }
-                        } catch (e) {
-                            console.error('載入沿革設定失敗', e);
-                        }
+                        sortOrder: timelineList.value.length + 1
                     };
+                };
 
-                    const submitHistoryMain = async () => {
-                        try {
-                            const res = await fetch(`${API_BASE}/history/main`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(historyForm.value)
-                            });
-                            const d = await res.json();
-                            alert(d.message);
-                        } catch (e) {
-                            alert('儲存沿革主文失敗');
-                        }
+                const editTimeline = (item) => {
+                    timelineForm.value = {
+                        id: item.id,
+                        solarYear: item.solar_year,
+                        dynastyEra: item.dynasty_era,
+                        iconTag: item.icon_tag || '🏛️',
+                        eventTitle: item.event_title,
+                        eventContent: item.event_content,
+                        sortOrder: item.sort_order || 0
                     };
+                };
 
-                    const resetTimelineForm = () => {
-                        timelineForm.value = {
-                            id: null,
-                            solarYear: '',
-                            dynastyEra: '',
-                            iconTag: '🏛️',
-                            eventTitle: '',
-                            eventContent: '',
-                            sortOrder: timelineList.value.length + 1
-                        };
-                    };
-
-                    const editTimeline = (item) => {
-                        timelineForm.value = {
-                            id: item.id,
-                            solarYear: item.solar_year,
-                            dynastyEra: item.dynasty_era,
-                            iconTag: item.icon_tag || '🏛️',
-                            eventTitle: item.event_title,
-                            eventContent: item.event_content,
-                            sortOrder: item.sort_order || 0
-                        };
-                    };
-
-                    const submitTimelineItem = async () => {
-                        if (!timelineForm.value.solarYear || !timelineForm.value.eventTitle) {
-                            return alert('請填寫年份與事蹟標題');
-                        }
-                        try {
-                            const res = await fetch(`${API_BASE}/history/timeline`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(timelineForm.value)
-                            });
-                            const d = await res.json();
-                            if (d.success) {
-                                resetTimelineForm();
-                                await loadHistoryData();
-                            } else {
-                                alert(d.message);
-                            }
-                        } catch (e) {
-                            alert('儲存里程碑失敗');
-                        }
-                    };
-
-                    const deleteTimeline = async (id) => {
-                        if (!confirm('確定刪除此大事記節點嗎？')) return;
-                        try {
-                            const res = await fetch(`${API_BASE}/history/timeline/${id}`, { method: 'DELETE' });
-                            const d = await res.json();
-                            if (d.success) await loadHistoryData();
-                        } catch (e) {
-                            alert('刪除失敗');
-                        }
-                    };
-
-                    // 確保每個欄位都有初始空字串，防止初次渲染時噴出 reading 'address' 錯誤
-                    const contactForm = ref({
-                        address: '',
-                        phone: '',
-                        fax: '',
-                        email: '',
-                        openHours: '',
-                        busGuide: '',
-                        carGuide: '',
-                        parkingGuide: '',
-                        facebook:''
-                    });
-
-
-
-                    // 載入已儲存之設定
-                    const loadContactSettings = async () => {
-                        try {
-                            const apiBase = '/api';
-                            const res = await fetch(`${apiBase}/settings/contact`);
-                            if (res.ok) {
-                                const d = await res.json();
-                                // 關鍵防呆：只有當 d.data 確實為物件時才合併，不可直接整包覆蓋
-                                if (d.success && d.data && typeof d.data === 'object') {
-                                    contactForm.value = { ...contactForm.value, ...d.data };
-                                    return;
-                                }
-                            }
-
-                        } catch (e) {
-                            console.warn('API 讀取失敗，嘗試讀取本機快取');
-                        }
-
-                        // 嘗試從 localStorage 恢復
-                        try {
-                            const local = localStorage.getItem('temple_contact_info');
-                            if (local) {
-                                const parsed = JSON.parse(local);
-                                if (parsed && typeof parsed === 'object') {
-                                    contactForm.value = { ...contactForm.value, ...parsed };
-                                }
-                            }
-                        } catch (e) {
-                            console.error('快取解析失敗', e);
-                        }
-                    };
-
-                    // 儲存設定
-                    const saveContactSettings = async () => {
-                        try {
-                            const res = await fetch(`${API_BASE}/settings/contact`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(contactForm.value)
-                            });
-                            const d = await res.json();
-                            if (d.success) {
-                                alert('廟宇聯絡資訊已成功儲存！前台已同步更新。');
-                            }
-                        } catch (e) {
-                            // 離線/純前端情境存入 localStorage
-                            localStorage.setItem('temple_contact_info', JSON.stringify(contactForm.value));
-                            alert('設定已儲存於本機資料庫（前台已同步更新）！');
-                        }
-                    };
-
-                    // 在 onMounted 呼叫 loadHistoryData()
-                    onMounted(async () => {
-                        await Promise.all([loadLanternConfigs(), loadStaff(), loadUsers(), loadHistoryData(), loadContactSettings(), loadDeitiesSettings()]);
-                    });
-
-                    // 五位神尊清單與當前選中指標
-                    const deitiesList = ref([]);
-                    const currentDeityIndex = ref(0);
-
-                    // 當前正在編輯的神尊響應式計算屬性
-                    const currentDeity = computed(() => {
-                        if (!deitiesList.value || deitiesList.value.length === 0) return null;
-                        return deitiesList.value[currentDeityIndex.value] || null;
-                    });
-
-                    // 為當前神尊新增一筆照片
-                    const addPhotoToCurrentDeity = () => {
-                        if (!currentDeity.value) return;
-                        if (!currentDeity.value.photos) currentDeity.value.photos = [];
-                        currentDeity.value.photos.push({
-                            url: 'images/deities/sample.jpg',
-                            caption: '神尊寶相說明'
+                const submitTimelineItem = async () => {
+                    if (!timelineForm.value.solarYear || !timelineForm.value.eventTitle) {
+                        return alert('請填寫年份與事蹟標題');
+                    }
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/history/timeline`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(timelineForm.value)
                         });
-                    };
-
-                    // 移除當前神尊的指定照片
-                    const removePhotoFromCurrentDeity = (pIdx) => {
-                        if (!currentDeity.value || !currentDeity.value.photos) return;
-                        currentDeity.value.photos.splice(pIdx, 1);
-                    };
-
-                    // 載入神尊設定
-                    const loadDeitiesSettings = async () => {
-                        const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api';
-                        try {
-                            const res = await fetch(`${apiBase}/settings/deities`);
-                            if (res.ok) {
-                                const d = await res.json();
-                                if (d.success && Array.isArray(d.data) && d.data.length > 0) {
-                                    deitiesList.value = d.data;
-                                    return;
-                                }
-                            }
-                        } catch (e) {
-                            console.warn('API 載入神明聖紀失敗，嘗試載入預設');
-                        }
-
-                        // 若資料庫查無紀錄，提供預設五神尊基礎結構
-                        deitiesList.value = [
-                            { id: 'zhi_gong', name: '寶誌禪師（誌公祖師）', alias: '誌公大師', summary: '南朝梁代高僧，主慈悲救度與息災解厄', bio: '誌公禪師梁武帝尊為國師，編撰《梁皇寶懺》救度眾生。', photos: [{ url: 'images/deities/zhi_gong_1.jpg', caption: '正殿誌公祖師金身' }] },
-                            { id: 'lang_gong', name: '朗公菩薩', alias: '朗公聖尊', summary: '德高望重，清修苦行，化導一方', bio: '行持苦修，具無礙辯才，化度四方黎民。', photos: [{ url: 'images/deities/lang_gong_1.jpg', caption: '朗公菩薩法相' }] },
-                            { id: 'kang_gong', name: '康公菩薩', alias: '康公尊尊', summary: '身心清泰，主佑信眾體健安康', bio: '以無緣大慈普度眾生，佑護信眾身心康泰。', photos: [{ url: 'images/deities/kang_gong_1.jpg', caption: '康公菩薩慈悲金身' }] },
-                            { id: 'bao_gong', name: '寶公菩薩', alias: '寶公祖師', summary: '智光如寶，庇護善信百業興旺', bio: '代表佛慧珍寶，開示行善積德乃福報之根基。', photos: [{ url: 'images/deities/bao_gong_1.jpg', caption: '寶公菩薩莊嚴寶相' }] },
-                            { id: 'hua_gong', name: '化公菩薩', alias: '化公仙師', summary: '應化無方，解冤釋結平息人間爭端', bio: '千百億化身普施教化，逢凶化吉。', photos: [{ url: 'images/deities/hua_gong_1.jpg', caption: '化公菩薩神尊特寫' }] }
-                        ];
-                    };
-
-                    // 儲存神尊設定至資料庫
-                    const saveDeitiesSettings = async () => {
-                        const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api';
-                        try {
-                            const res = await fetch(`${apiBase}/settings/deities`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(deitiesList.value)
-                            });
-                            const d = await res.json();
-                            if (d.success) {
-                                alert('五位聖尊之聖紀與相片資料已成功儲存！');
-                            } else {
-                                alert(`儲存失敗：${d.message}`);
-                            }
-                        } catch (e) {
-                            alert('伺服器連線異常，儲存失敗');
-                        }
-                    };
-
-                    // 善語錄清單與表單
-                    const quotesList = ref([]);
-                    const quoteForm = ref({
-                        id: null,
-                        title: '',
-                        author: '五公祖師法音',
-                        tag: '福慧兼修',
-                        imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&q=80',
-                        content: '',
-                        date: new Date().toISOString().slice(0, 10) // 預設當前日期 (YYYY-MM-DD)
-                    });
-
-                    const currentQuoteForm  = ref({
-                        id: null,
-                        title: '',
-                        author: '五公祖師法音',
-                        tag: '福慧兼修',
-                        imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&q=80',
-                        content: '',
-                        date: new Date().toISOString().slice(0, 10) // 預設當前日期 (YYYY-MM-DD)
-                    });
-
-                    const resetQuoteForm = () => {
-                        quoteForm.value = {
-                            id: null,
-                            title: '',
-                            author: '五公祖師法音',
-                            tag: '福慧兼修',
-                            imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&q=80',
-                            content: '',
-                            date: new Date().toISOString().slice(0, 10)
-                        };
-                    };
-
-                    const loadQuotesData = async () => {
-                        const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api';
-                        try {
-                            const res = await fetch(`${apiBase}/settings/quotes`);
-                            if (res.ok) {
-                                const d = await res.json();
-                                if (d.success && Array.isArray(d.data)) {
-                                    quotesList.value = d.data;
-                                }
-                            }
-                        } catch (e) {
-                            console.warn('載入善語錄失敗', e);
-                        }
-                    };
-
-                    const saveQuotesToDB = async () => {
-                        const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api';
-                        try {
-                            const res = await fetch(`${apiBase}/settings/quotes`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(quotesList.value)
-                            });
-                            const d = await res.json();
-                            if (d.success) {
-                                alert('善語錄已成功儲存！前台已同步更新。');
-                            } else {
-                                alert(`儲存失敗：${d.message}`);
-                            }
-                        } catch (e) {
-                            alert('伺服器連線異常，儲存失敗');
-                        }
-                    };
-
-                    const saveQuoteItem = async () => {
-                        if (!quoteForm.value.title || !quoteForm.value.content || !quoteForm.value.imageUrl) {
-                            return alert('請完整填寫標題、圖片網址與善語內容！');
-                        }
-
-                        if (quoteForm.value.id) {
-                            // 更新既有項目
-                            const idx = quotesList.value.findIndex(item => item.id === quoteForm.value.id);
-                            if (idx !== -1) {
-                                quotesList.value[idx] = { ...quoteForm.value };
-                            }
+                        const d = await res.json();
+                        if (d.success) {
+                            resetTimelineForm();
+                            await loadHistoryData();
                         } else {
-                            // 新增項目
-                            quotesList.value.unshift({
-                                ...quoteForm.value,
-                                id: Date.now()
-                            });
+                            alert(d.message);
                         }
+                    } catch (e) {
+                        alert('儲存里程碑失敗');
+                    }
+                };
 
-                        await saveQuotesToDB();
-                        resetQuoteForm();
-                    };
+                const deleteTimeline = async (id) => {
+                    if (!confirm('確定刪除此大事記節點嗎？')) return;
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/history/timeline/${id}`, { method: 'DELETE' });
+                        const d = await res.json();
+                        if (d.success) await loadHistoryData();
+                    } catch (e) {
+                        alert('刪除失敗');
+                    }
+                };
 
-                    const editQuote = (q) => {
-                        quoteForm.value = { ...q };
-                    };
-
-                    const deleteQuote = async (id) => {
-                        if (!confirm('確定要刪除這筆善語錄嗎？')) return;
-                        quotesList.value = quotesList.value.filter(item => item.id !== id);
-                        await saveQuotesToDB();
-                    };
-
-                    // 判斷是否為影片
-                    const isVideoFile = (url) => {
-                        if (!url) return false;
-                        return /\.(mp4|webm|mov)$/i.test(url);
-                    };
-
-                    // 處理選擇檔案上傳至 /api/upload/kind-media
-                    // 處理選擇檔案
-                    const handleKindFileUpload = (e) => {
-                        const file = e.target.files[0];
-                        if (!file) return;
-
-                        // 限制檔案大小 (50MB)
-                        if (file.size > 50 * 1024 * 1024) {
-                            alert('檔案過大，請選擇小於 50MB 的照片或影片！');
-                            e.target.value = '';
-                            return;
-                        }
-
-                        isUploadingMedia.value = true;
-
-                        // 使用原生 FileReader 轉為 Base64
-                        const reader = new FileReader();
-                        reader.onload = async () => {
-                            try {
-                                const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api';
-                                const res = await fetch(`${apiBase}/upload/kind-media`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                        fileName: file.name,
-                                        fileBase64: reader.result
-                                    })
-                                });
-
-                                const result = await res.json();
-                                if (result.success) {
-                                    // 自動帶入儲存後的 URL
-                                    quoteForm.value.imageUrl = result.fileUrl;
-                                    alert('媒體檔案上傳成功！');
-                                } else {
-                                    alert('上傳失敗：' + result.message);
-                                }
-                            } catch (err) {
-                                console.error('上傳出錯:', err);
-                                alert('上傳失敗，請確認後端已重新啟動！');
-                            } finally {
-                                isUploadingMedia.value = false;
-                                e.target.value = '';
+                // --- 5. 聯絡設定 ---
+                const loadContactSettings = async () => {
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/settings/contact`);
+                        if (res.ok) {
+                            const d = await res.json();
+                            if (d.success && d.data && typeof d.data === 'object') {
+                                contactForm.value = { ...contactForm.value, ...d.data };
                             }
-                        };
+                        }
+                    } catch (e) {
+                        console.warn('API 讀取聯絡資訊失敗');
+                    }
+                };
 
-                        reader.onerror = () => {
-                            alert('讀取檔案失敗');
+                const saveContactSettings = async () => {
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/settings/contact`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(contactForm.value)
+                        });
+                        const d = await res.json();
+                        if (d.success) {
+                            alert('廟宇聯絡資訊已成功儲存！前台已同步更新。');
+                        }
+                    } catch (e) {
+                        alert('儲存失敗');
+                    }
+                };
+
+                // --- 6. 五公聖尊 ---
+                const addPhotoToCurrentDeity = () => {
+                    if (!currentDeity.value) return;
+                    if (!currentDeity.value.photos) currentDeity.value.photos = [];
+                    currentDeity.value.photos.push({
+                        url: 'images/deities/sample.jpg',
+                        caption: '神尊寶相說明'
+                    });
+                };
+
+                const removePhotoFromCurrentDeity = (pIdx) => {
+                    if (!currentDeity.value || !currentDeity.value.photos) return;
+                    currentDeity.value.photos.splice(pIdx, 1);
+                };
+
+                const loadDeitiesSettings = async () => {
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/settings/deities`);
+                        if (res.ok) {
+                            const d = await res.json();
+                            if (d.success && Array.isArray(d.data) && d.data.length > 0) {
+                                deitiesList.value = d.data;
+                                return;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('讀取神明聖紀失敗');
+                    }
+
+                    deitiesList.value = [
+                        { id: 'zhi_gong', name: '寶誌禪師（誌公祖師）', alias: '誌公大師', summary: '南朝梁代高僧，主慈悲救度與息災解厄', bio: '誌公禪師梁武帝尊為國師，編撰《梁皇寶懺》救度眾生。', photos: [{ url: 'images/deities/zhi_gong_1.jpg', caption: '正殿誌公祖師金身' }] },
+                        { id: 'lang_gong', name: '朗公菩薩', alias: '朗公聖尊', summary: '德高望重，清修苦行，化導一方', bio: '行持苦修，具無礙辯才，化度四方黎民。', photos: [{ url: 'images/deities/lang_gong_1.jpg', caption: '朗公菩薩法相' }] },
+                        { id: 'kang_gong', name: '康公菩薩', alias: '康公尊尊', summary: '身心清泰，主佑信眾體健安康', bio: '以無緣大慈普度眾生，佑護信眾身心康泰。', photos: [{ url: 'images/deities/kang_gong_1.jpg', caption: '康公菩薩慈悲金身' }] },
+                        { id: 'bao_gong', name: '寶公菩薩', alias: '寶公祖師', summary: '智光如寶，庇護善信百業興旺', bio: '代表佛慧珍寶，開示行善積德乃福報之根基。', photos: [{ url: 'images/deities/bao_gong_1.jpg', caption: '寶公菩薩莊嚴寶相' }] },
+                        { id: 'hua_gong', name: '化公菩薩', alias: '化公仙師', summary: '應化無方，解冤釋結平息人間爭端', bio: '千百億化身普施教化，逢凶化吉。', photos: [{ url: 'images/deities/hua_gong_1.jpg', caption: '化公菩薩神尊特寫' }] }
+                    ];
+                };
+
+
+                const saveDeitiesSettings = async () => {
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/settings/deities`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(deitiesList.value)
+                        });
+                        const d = await res.json();
+                        if (d.success) {
+                            alert('五位聖尊之聖紀與相片資料已成功儲存！');
+                        } else {
+                            alert(`儲存失敗：${d.message}`);
+                        }
+                    } catch (e) {
+                        alert('伺服器連線異常，儲存失敗');
+                    }
+                };
+
+                // --- 7. 善語錄 ---
+                const resetQuoteForm = () => {
+                    quoteForm.value = {
+                        id: null,
+                        title: '',
+                        author: '五公祖師法音',
+                        tag: '福慧兼修',
+                        imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&q=80',
+                        content: '',
+                        date: new Date().toISOString().slice(0, 10)
+                    };
+                };
+
+                const loadQuotesData = async () => {
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/settings/quotes`);
+                        if (res.ok) {
+                            const d = await res.json();
+                            if (d.success && Array.isArray(d.data)) {
+                                quotesList.value = d.data;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('載入善語錄失敗', e);
+                    }
+                };
+
+                const saveQuotesToDB = async () => {
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/settings/quotes`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(quotesList.value)
+                        });
+                        const d = await res.json();
+                        if (d.success) {
+                            alert('善語錄已成功儲存！前台已同步更新。');
+                        } else {
+                            alert(`儲存失敗：${d.message}`);
+                        }
+                    } catch (e) {
+                        alert('伺服器連線異常，儲存失敗');
+                    }
+                };
+
+                const saveQuoteItem = async () => {
+                    if (!quoteForm.value.title || !quoteForm.value.content || !quoteForm.value.imageUrl) {
+                        return alert('請完整填寫標題、圖片網址與善語內容！');
+                    }
+
+                    if (quoteForm.value.id) {
+                        const idx = quotesList.value.findIndex(item => item.id === quoteForm.value.id);
+                        if (idx !== -1) {
+                            quotesList.value[idx] = { ...quoteForm.value };
+                        }
+                    } else {
+                        quotesList.value.unshift({
+                            ...quoteForm.value,
+                            id: Date.now()
+                        });
+                    }
+
+                    await saveQuotesToDB();
+                    resetQuoteForm();
+                };
+
+                const editQuote = (q) => {
+                    quoteForm.value = { ...q };
+                };
+
+                const deleteQuote = async (id) => {
+                    if (!confirm('確定要刪除這筆善語錄嗎？')) return;
+                    quotesList.value = quotesList.value.filter(item => item.id !== id);
+                    await saveQuotesToDB();
+                };
+
+                const isVideoFile = (url) => {
+                    if (!url) return false;
+                    return /\.(mp4|webm|mov)$/i.test(url);
+                };
+
+                const handleKindFileUpload = (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    if (file.size > 50 * 1024 * 1024) {
+                        alert('檔案過大，請選擇小於 50MB 的照片或影片！');
+                        e.target.value = '';
+                        return;
+                    }
+
+                    isUploadingMedia.value = true;
+
+                    const reader = new FileReader();
+                    reader.onload = async () => {
+                        try {
+                            const res = await fetch(`${getBaseUrl()}/upload/kind-media`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    fileName: file.name,
+                                    fileBase64: reader.result
+                                })
+                            });
+
+                            const result = await res.json();
+                            if (result.success) {
+                                quoteForm.value.imageUrl = result.fileUrl;
+                                alert('媒體檔案上傳成功！');
+                            } else {
+                                alert('上傳失敗：' + result.message);
+                            }
+                        } catch (err) {
+                            console.error('上傳出錯:', err);
+                            alert('上傳失敗，請確認後端 server.js 已啟動！');
+                        } finally {
                             isUploadingMedia.value = false;
                             e.target.value = '';
-                        };
-
-                        reader.readAsDataURL(file);
+                        }
                     };
 
-                    // 在 onMounted 中呼叫載入：
-                    onMounted(async () => {
-                        await Promise.all([
-                            loadLanternConfigs(),
-                            loadStaff(),
-                            loadUsers(),
-                            loadHistoryData(),
-                            loadContactSettings(),
-                            loadDeitiesSettings(), // 加入載入神尊聖紀
-                            loadQuotesData() // 新增載入善語錄
-                        ]);
-                    });
-
-                    return {
-                        activeTab,
-                        lanternConfigs,
-                        staffList,
-                        userList,
-                        lanternForm,
-                        staffForm,
-                        userForm,
-                        batchGenYear,
-                        isGenerating,
-                        triggerBatchGenerate,
-                        loadLanternConfigs,
-                        loadStaff,
-                        loadUsers,
-                        submitLanternConfig,
-                        editLantern,
-                        submitStaff,
-                        deleteStaff,
-                        submitUser,
-                        toggleUserStatus,
-                        promptResetPassword,
-                        historyForm,
-                        timelineList,
-                        timelineForm,
-                        loadHistoryData,
-                        submitHistoryMain,
-                        resetTimelineForm,
-                        editTimeline,
-                        submitTimelineItem,
-                        deleteTimeline,
-                        // 關鍵修正：必須把 contactForm 與 saveContactSettings 導出給 HTML 模板！
-                        contactForm,
-                        saveContactSettings,
-                        deitiesList,
-                        currentDeityIndex,
-                        currentDeity,
-                        addPhotoToCurrentDeity,
-                        removePhotoFromCurrentDeity,
-                        saveDeitiesSettings,
-                        quotesList,
-                        quoteForm,
-                        resetQuoteForm,
-                        loadQuotesData,
-                        saveQuoteItem,
-                        editQuote,
-                        deleteQuote,
-                        isUploadingMedia,
-                        isVideoFile,
-                        
-                        currentQuoteForm, // 👈 檢查是否有導出
-                        handleKindFileUpload
+                    reader.onerror = () => {
+                        alert('讀取檔案失敗');
+                        isUploadingMedia.value = false;
+                        e.target.value = '';
                     };
-                }
-            }).mount('#app');
-        </script>
+
+                    reader.readAsDataURL(file);
+                };
+
+                // 處理神尊單張照片上傳
+                const handleDeityPhotoUpload = (e, photoIndex) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    // 限制圖片大小 (15MB)
+                    if (file.size > 15 * 1024 * 1024) {
+                        alert('照片檔案過大，請選擇小於 15MB 的圖檔！');
+                        e.target.value = '';
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = async () => {
+                        try {
+                            const res = await fetch(`${getBaseUrl()}/upload/deity-photo`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    fileName: file.name,
+                                    fileBase64: reader.result
+                                })
+                            });
+
+                            const result = await res.json();
+                            if (result.success) {
+                                // 自動將上傳完成的路徑填入對應相片項目
+                                currentDeity.value.photos[photoIndex].url = result.fileUrl;
+                                alert('神尊相片上傳成功！');
+                            } else {
+                                alert('上傳失敗：' + result.message);
+                            }
+                        } catch (err) {
+                            console.error('上傳出錯:', err);
+                            alert('上傳失敗，請確認後端 server.js 已重新啟動！');
+                        } finally {
+                            e.target.value = '';
+                        }
+                    };
+
+                    reader.onerror = () => {
+                        alert('讀取照片失敗');
+                        e.target.value = '';
+                    };
+
+                    reader.readAsDataURL(file);
+                };
+
+                onMounted(async () => {
+                    await Promise.all([
+                        loadLanternConfigs(),
+                        loadStaff(),
+                        loadUsers(),
+                        loadHistoryData(),
+                        loadContactSettings(),
+                        loadDeitiesSettings(),
+                        loadQuotesData()
+                    ]);
+                });
+
+                return {
+                    activeTab,
+                    lanternConfigs,
+                    staffList,
+                    userList,
+                    lanternForm,
+                    staffForm,
+                    userForm,
+                    batchGenYear,
+                    isGenerating,
+                    triggerBatchGenerate,
+                    loadLanternConfigs,
+                    loadStaff,
+                    loadUsers,
+                    submitLanternConfig,
+                    editLantern,
+                    submitStaff,
+                    deleteStaff,
+                    submitUser,
+                    toggleUserStatus,
+                    promptResetPassword,
+                    historyForm,
+                    timelineList,
+                    timelineForm,
+                    loadHistoryData,
+                    submitHistoryMain,
+                    resetTimelineForm,
+                    editTimeline,
+                    submitTimelineItem,
+                    deleteTimeline,
+                    contactForm,
+                    saveContactSettings,
+                    deitiesList,
+                    currentDeityIndex,
+                    currentDeity,
+                    addPhotoToCurrentDeity,
+                    removePhotoFromCurrentDeity,
+                    saveDeitiesSettings,
+                    quotesList,
+                    quoteForm,
+                    resetQuoteForm,
+                    loadQuotesData,
+                    saveQuoteItem,
+                    editQuote,
+                    deleteQuote,
+                    isUploadingMedia,
+                    isVideoFile,
+                    handleKindFileUpload,
+                    handleDeityPhotoUpload
+                };
+            }
+        }).mount('#app');
+    </script>
 </body>
 </html>

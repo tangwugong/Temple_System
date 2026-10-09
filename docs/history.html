@@ -5,9 +5,9 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>廟宇沿革 - 五公祖師巖</title>
-    <script src="/js/tailwindcss.js"></script>
-    <script src="/js/vue.global.prod.js"></script>
-    <script src="/js/common.js"></script>
+    <script src="js/tailwindcss.js"></script>
+    <script src="js/vue.global.prod.js"></script>
+    <script src="js/common.js"></script>
     <style>
         [v-cloak] {
             display: none;
@@ -138,7 +138,7 @@
                             <img v-if="selectedMaster.image"
                                  :src="selectedMaster.image"
                                  :alt="selectedMaster.name"
-                                 @error="$event.target.style.display='none'"
+                                 @error="$event.target.style.display=''"
                                  class="w-full h-full object-cover">
                             <span v-else class="text-6xl">{{ selectedMaster.image || '⛩️' }}</span>
                         </div>
@@ -189,9 +189,8 @@
 
         createApp({
             setup() {
-               // const getApiBase = () => (typeof API_BASE !== 'undefined' && API_BASE) ? API_BASE : 'https://temple-api-1mft.onrender.com/api';
-                const API_BASE = 'https://temple-api-1mft.onrender.com/api';
-                const getApiBase = () => 'https://temple-api-1mft.onrender.com/api';
+                const getApiBase = () => (typeof API_BASE !== 'undefined' && API_BASE) ? API_BASE : '/api';
+                
                 const historyData = ref({
                     title: '',
                     subtitle: '',
@@ -281,9 +280,7 @@
 
                 const loadHistory = async () => {
                     try {
-                        //const res = await fetch(`${API_BASE}/history`);
-                        const res = await fetch(`https://temple-api-1mft.onrender.com/api/history`);
-                        
+                        const res = await fetch(`${API_BASE}/history`);
                         const d = await res.json();
                         if (d.success) historyData.value = d.data;
                     } catch (e) {
@@ -294,9 +291,7 @@
                 // 載入神尊資料：以系統參數維護的資料為主
                 const loadDeitiesData = async () => {
                     try {
-                        //`https://temple-api-1mft.onrender.com/api/
-                        //const res = await fetch(`https://temple-api-1mft.onrender.com/api/settings/deities`);
-                        const res = await fetch(`https://temple-api-1mft.onrender.com/api/settings/deities`);
+                        const res = await fetch(`${getApiBase()}/settings/deities`);
                         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
                         const d = await res.json();
