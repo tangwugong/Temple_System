@@ -1,22 +1,22 @@
 {
   "name": "temple_system",
   "version": "1.0.0",
-  "description": "",
+  "description": "Temple Management System API",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server_PG.js"
-    
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "better-sqlite3": "^13.0.3",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "pg": "^8.13.1"
-  
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "pg": "^8.11.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
