@@ -850,6 +850,66 @@ app.get('/api/lanterns/categories-summary', async (req, res) => {
     }
 });
 
+//app.post('/api/lanterns/order', async (req, res) => {
+//    const { seatCodes, believerName, phone, year } = req.body;
+//    const targetYear = Number(year) || new Date().getFullYear();
+
+//    if (!seatCodes || !seatCodes.length || !believerName) {
+//        return res.status(400).json({ success: false, message: '請指定燈位與安奉善信姓名' });
+//    }
+
+//    const client = await pool.connect();
+//    try {
+//        await client.query('BEGIN');
+
+//        for (const code of seatCodes) {
+//            const checkRes = await client.query(`
+//                SELECT seat_code FROM lantern_seat 
+//                WHERE lantern_year = $1 AND seat_code = $2 AND status = 'OCCUPIED'
+//                FOR UPDATE
+//            `, [targetYear, code]);
+
+//            if (checkRes.rows.length > 0) {
+//                throw new Error(`燈位【${code}】在 ${targetYear} 年度已被安奉！`);
+//            }
+//        }
+
+//        for (const code of seatCodes) {
+//            await client.query(`
+//                UPDATE lantern_seat 
+//                SET status = 'OCCUPIED', assigned_believer_name = $1, phone = $2
+//                WHERE lantern_year = $3 AND seat_code = $4
+//            `, [believerName, phone || '', targetYear, code]);
+//        }
+
+//        const totalAmount = seatCodes.length * 600;
+//        const recordNo = `REC-${targetYear}-${Date.now().toString().slice(-4)}`;
+//        const today = new Date().toISOString().split('T')[0];
+
+//        await client.query(`
+//            INSERT INTO finance_ledger (record_no, entry_date, entry_type, category, amount, party_name, phone, title, memo)
+//            VALUES ($1, $2, 'INCOME', '光明太歲燈緣金', $3, $4, $5, $6, $7)
+//        `, [
+//            recordNo,
+//            today,
+//            totalAmount,
+//            believerName,
+//            phone || '',
+//            `辦理 ${targetYear} 年度點燈安奉共 ${seatCodes.length} 盞`,
+//            `燈位: ${seatCodes.join(', ')}`
+//        ]);
+
+//        await client.query('COMMIT');
+//        res.json({ success: true, message: '安奉登記成功', recordNo });
+//    } catch (err) {
+//        await client.query('ROLLBACK');
+//        res.status(400).json({ success: false, message: err.message });
+//    } finally {
+//        client.release();
+//    }
+//});
+
+// 核心整合：點燈下單（鎖定空位 + 動態按實際定價計算總額 + 雙向同步寫入 finance_records）
 app.post('/api/lanterns/order', async (req, res) => {
     const { seatCodes, believerName, phone, year } = req.body;
     const targetYear = Number(year) || new Date().getFullYear();
@@ -862,9 +922,12 @@ app.post('/api/lanterns/order', async (req, res) => {
     try {
         await client.query('BEGIN');
 
+        let calculatedTotal = 0;
+
+        // 1. 鎖定並檢查燈位，同時累積各燈位實際設定金額
         for (const code of seatCodes) {
             const checkRes = await client.query(`
-                SELECT seat_code FROM lantern_seat 
+                SELECT seat_code, fee::float AS fee FROM lantern_seat 
                 WHERE lantern_year = $1 AND seat_code = $2 AND status = 'OCCUPIED'
                 FOR UPDATE
             `, [targetYear, code]);
@@ -872,35 +935,72 @@ app.post('/api/lanterns/order', async (req, res) => {
             if (checkRes.rows.length > 0) {
                 throw new Error(`燈位【${code}】在 ${targetYear} 年度已被安奉！`);
             }
+
+            // 讀取該燈位目前的金額
+            const seatInfoRes = await client.query(`
+                SELECT fee::float AS fee FROM lantern_seat 
+                WHERE lantern_year = $1 AND seat_code = $2
+            `, [targetYear, code]);
+
+            const seatFee = seatInfoRes.rows.length > 0 ? Number(seatInfoRes.rows[0].fee) : 600;
+            calculatedTotal += seatFee;
         }
 
+        // 2. 更新燈位為已安奉 OCCUPIED
         for (const code of seatCodes) {
             await client.query(`
                 UPDATE lantern_seat 
                 SET status = 'OCCUPIED', assigned_believer_name = $1, phone = $2
                 WHERE lantern_year = $3 AND seat_code = $4
-            `, [believerName, phone || '', targetYear, code]);
+            `, [believerName.trim(), phone ? phone.trim() : '', targetYear, code]);
         }
 
-        const totalAmount = seatCodes.length * 600;
         const recordNo = `REC-${targetYear}-${Date.now().toString().slice(-4)}`;
         const today = new Date().toISOString().split('T')[0];
+        const memoStr = `安奉 ${targetYear} 年度點燈共 ${seatCodes.length} 盞 [${seatCodes.join(', ')}]`;
 
+        // 3. 寫入傳統日記帳表 (finance_ledger)
         await client.query(`
             INSERT INTO finance_ledger (record_no, entry_date, entry_type, category, amount, party_name, phone, title, memo)
             VALUES ($1, $2, 'INCOME', '光明太歲燈緣金', $3, $4, $5, $6, $7)
         `, [
             recordNo,
             today,
-            totalAmount,
-            believerName,
-            phone || '',
+            calculatedTotal,
+            believerName.trim(),
+            phone ? phone.trim() : '',
             `辦理 ${targetYear} 年度點燈安奉共 ${seatCodes.length} 盞`,
-            `燈位: ${seatCodes.join(', ')}`
+            memoStr
+        ]);
+
+        // 4. 【關鍵修復】同步寫入公庫財務清冊表 (finance_records)，讓 finance.html 查得到！
+        await client.query(`
+            INSERT INTO finance_records (
+                tx_no, tx_type, category, amount, payment_method,
+                source_module, source_ref_id, payer_name, receipt_no,
+                handled_by, memo, tx_date, created_at
+            ) VALUES (
+                $1, 'INCOME', '光明太歲燈緣金', $2, 'CASH',
+                'LANTERN', $3, $4, $5,
+                '臨櫃值班', $6, $7, CURRENT_TIMESTAMP
+            )
+        `, [
+            recordNo,
+            calculatedTotal,
+            targetYear.toString(),
+            believerName.trim(),
+            recordNo,
+            memoStr,
+            today
         ]);
 
         await client.query('COMMIT');
-        res.json({ success: true, message: '安奉登記成功', recordNo });
+        res.json({
+            success: true,
+            message: '安奉登記成功！款項已同步開立公庫收據。',
+            recordNo,
+            totalAmount: calculatedTotal
+        });
     } catch (err) {
         await client.query('ROLLBACK');
         res.status(400).json({ success: false, message: err.message });
