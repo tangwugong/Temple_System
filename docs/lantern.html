@@ -14,16 +14,16 @@
         }
     </style>
 </head>
-<body class="bg-[#FFFDF7] text-slate-800 min-h-screen" style="background-color: #FFFDF7;">
+<body class="bg-[#FFFDF7] text-slate-800 min-h-screen">
     <div id="app" v-cloak class="max-w-7xl mx-auto px-4 py-6 space-y-6">
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            <!-- 左側：視覺化動態燈牆矩陣與年度狀況看板 -->
+            <!-- 左側：視覺化動態燈牆矩陣與年度狀況看板 (2 欄) -->
             <div class="lg:col-span-2 space-y-4">
 
                 <!-- 頂部年度切換與說明 -->
-                <div class="bg-white p-4 rounded-xl border border-amber-200 shadow-sm flex flex-wrap justify-between items-center gap-3">
+                <div class="bg-white p-4 rounded-2xl border border-amber-200 shadow-sm flex flex-wrap justify-between items-center gap-3">
                     <div>
                         <h2 class="font-bold text-base text-slate-900 flex items-center gap-2">
                             <span>🏮</span> 五公祖師巖 ‧ 智慧定址神位矩陣
@@ -31,9 +31,9 @@
                                 {{ selectedYear }} 年度 ({{ getLunarYearGanZhi(selectedYear) }})
                             </span>
                         </h2>
-                        <p class="text-xs text-gray-500">
+                        <p class="text-xs text-gray-500 mt-0.5">
                             <span v-if="isGuest" class="text-amber-800 font-bold">【訪客查詢模式】僅提供燈位安奉名冊即時查閱，如需點燈請洽大殿服務台</span>
-                            <span v-else>執事操作模式：可點選空位辦理信眾臨櫃開單安奉</span>
+                            <span v-else>執事操作模式：可點選空位辦理信眾臨櫃開單安奉，點選已安奉燈位可查閱費用明細</span>
                         </p>
                     </div>
 
@@ -50,13 +50,13 @@
                     </div>
                 </div>
 
-                <!-- 依年度顯示各點燈類別狀況卡片 -->
+                <!-- 依年度顯示各點燈類別狀況卡片 (含單價顯示) -->
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div v-for="cat in categorySummaries"
                          :key="cat.type_code"
                          @click="selectCategory(cat.type_code)"
                          :class="currentCategory === cat.type_code ? 'border-amber-800 bg-amber-50/60 ring-2 ring-amber-700/20' : 'border-amber-200 bg-white hover:border-amber-400'"
-                         class="p-3 rounded-xl border shadow-sm cursor-pointer transition-all space-y-2 flex flex-col justify-between">
+                         class="p-3 rounded-2xl border shadow-sm cursor-pointer transition-all space-y-2 flex flex-col justify-between">
 
                         <div class="flex justify-between items-start">
                             <span class="text-xs font-bold text-slate-900 truncate">{{ cat.type_name }}</span>
@@ -81,18 +81,21 @@
 
                         <div class="flex justify-between items-center text-[10px] text-gray-500 pt-1 border-t border-dashed border-gray-200">
                             <span>空位: <b class="text-emerald-700 font-mono">{{ Math.max(0, cat.total_capacity - (cat.occupied_seats || 0)) }}</b></span>
-                            <span class="font-mono">NT${{ cat.default_fee }}</span>
+                            <span class="font-mono font-bold text-red-700">NT$ {{ Number(cat.default_fee).toLocaleString() }}</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- 當前類別燈壁矩陣卡片 -->
-                <div class="bg-white p-5 rounded-xl border border-amber-200 shadow-sm space-y-3">
+                <div class="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm space-y-3">
                     <div class="flex flex-wrap justify-between items-center border-b border-amber-100 pb-2 gap-2">
                         <div>
                             <h3 class="font-bold text-sm text-amber-950 flex items-center gap-2">
                                 <span class="w-2.5 h-2.5 rounded-full bg-amber-700"></span>
                                 {{ selectedCategoryInfo?.type_name }} ({{ selectedCategoryInfo?.hall_name || '大殿' }})
+                                <span class="text-xs font-mono text-red-700 font-bold bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
+                                    緣金：NT$ {{ Number(selectedCategoryInfo?.default_fee || 600).toLocaleString() }} / 盞
+                                </span>
                             </h3>
                             <p class="text-[11px] text-gray-500 font-mono mt-0.5">
                                 年度：<b class="text-amber-900">{{ selectedYear }}</b> ｜
@@ -108,19 +111,20 @@
                         </div>
                     </div>
 
-                    <!-- 燈位 8 欄響應式網格 (訪客狀態下禁止點擊空位) -->
+                    <!-- 燈位 8 欄響應式網格 -->
                     <div class="grid grid-cols-4 sm:grid-cols-8 gap-2">
                         <button v-for="seat in currentCategorySeats"
                                 :key="seat.code"
-                                :disabled="seat.status === 'OCCUPIED' || isGuest"
-                                @click="toggleSeat(seat)"
+                                :disabled="seat.status === 'OCCUPIED' && isGuest"
+                                @click="handleSeatClick(seat)"
                                 :class="{
-                'bg-emerald-50/80 border-emerald-300 text-emerald-950': seat.status === 'AVAILABLE',
-                'hover:bg-emerald-100 cursor-pointer': seat.status === 'AVAILABLE' && !isGuest,
-                'cursor-default opacity-80': seat.status === 'AVAILABLE' && isGuest,
-                'bg-amber-400 border-amber-600 text-amber-950 font-bold shadow-md animate-pulse': seat.status === 'LOCKED',
-                'bg-gradient-to-b from-red-800 to-red-900 border-red-950 text-white cursor-not-allowed shadow-inner': seat.status === 'OCCUPIED'
-              }"
+                                    'bg-emerald-50/80 border-emerald-300 text-emerald-950': seat.status === 'AVAILABLE',
+                                    'hover:bg-emerald-100 cursor-pointer': seat.status === 'AVAILABLE' && !isGuest,
+                                    'cursor-default opacity-80': seat.status === 'AVAILABLE' && isGuest,
+                                    'bg-amber-400 border-amber-600 text-amber-950 font-bold shadow-md animate-pulse': seat.status === 'LOCKED',
+                                    'bg-gradient-to-b from-red-800 to-red-900 border-red-950 text-white shadow-inner': seat.status === 'OCCUPIED',
+                                    'hover:brightness-110 cursor-pointer': seat.status === 'OCCUPIED' && !isGuest
+                                }"
                                 class="p-2 border rounded-xl text-center transition-all flex flex-col items-center justify-between min-h-[66px]">
 
                             <span class="text-[9px] font-mono opacity-80" :class="seat.status === 'OCCUPIED' ? 'text-amber-200' : 'text-gray-500'">
@@ -151,9 +155,9 @@
 
             </div>
 
-            <!-- 右側：訪客提示區塊 vs 執事受理點燈面板 -->
-            <!-- 【A】若為訪客 (Guest)：顯示唯讀提示與執事登入引導 -->
-            <div v-if="isGuest" class="bg-white p-6 rounded-xl border border-amber-200 shadow-sm space-y-5 h-fit sticky top-20">
+            <!-- 右側：訪客提示區塊 vs 執事受理點燈與費用細項面板 (1 欄) -->
+            <!-- 【A】若為訪客 (Guest)：顯示唯讀提示 -->
+            <div v-if="isGuest" class="bg-white p-6 rounded-2xl border border-amber-200 shadow-sm space-y-5 h-fit sticky top-20">
                 <div class="border-b pb-3 space-y-1">
                     <div class="flex items-center gap-2">
                         <span class="text-2xl">🏮</span>
@@ -168,7 +172,7 @@
                             <span>ℹ️</span> 訪客線上查榜說明
                         </p>
                         <p class="text-[11px] text-amber-900/90">
-                            您目前處於<b>信眾公開查證模式</b>。上方可依年度切換查看各殿堂（太歲、光明、文昌、財神等）之安奉大名與剩餘名額。
+                            您目前處於<b>信眾公開查證模式</b>。上方可依年度切換查看各殿堂（太歲、光明等）之安奉大名與剩餘名額。
                         </p>
                     </div>
 
@@ -197,8 +201,8 @@
                 </div>
             </div>
 
-            <!-- 【B】若為已登入執事：顯示臨櫃選位與結算面板 -->
-            <div v-else class="bg-white p-6 rounded-xl border border-amber-200 shadow-sm space-y-4 flex flex-col justify-between h-fit sticky top-20">
+            <!-- 【B】若為已登入執事：臨櫃選位、CRM 查找與費用細項結算清單 -->
+            <div v-else class="bg-white p-6 rounded-2xl border border-amber-200 shadow-sm space-y-4 flex flex-col justify-between h-fit sticky top-20">
                 <div class="space-y-4">
                     <div class="border-b pb-2">
                         <div class="flex justify-between items-center">
@@ -207,7 +211,7 @@
                                 {{ selectedYear }} 年度
                             </span>
                         </div>
-                        <p class="text-xs text-gray-500">執事員：{{ currentUser?.realName }}（支援帶入 CRM 資料）</p>
+                        <p class="text-xs text-gray-500 mt-0.5">執事員：{{ currentUser?.realName || currentUser?.username }}（支援 CRM 快速帶入）</p>
                     </div>
 
                     <!-- 快速查找信眾 (CRM) -->
@@ -226,10 +230,10 @@
                                    @focus="isSearching = true"
                                    type="text"
                                    placeholder="輸入姓名、手機快速搜尋..."
-                                   class="w-full border border-amber-300 rounded-lg px-3 py-1.5 text-xs bg-white focus:ring-1 focus:ring-amber-500 outline-none" />
+                                   class="w-full border border-amber-300 rounded-xl px-3 py-1.5 text-xs bg-white focus:ring-1 focus:ring-amber-500 outline-none" />
 
                             <div v-if="isSearching && searchSuggestions.length > 0"
-                                 class="absolute left-0 right-0 top-full mt-1 bg-white border border-amber-200 rounded-lg shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-gray-100 text-xs">
+                                 class="absolute left-0 right-0 top-full mt-1 bg-white border border-amber-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-gray-100 text-xs">
                                 <div v-for="b in searchSuggestions"
                                      :key="b.id"
                                      @click="selectBeliever(b)"
@@ -245,7 +249,7 @@
                         </div>
 
                         <div>
-                            <select @change="onSelectDropdown($event.target.value)" class="w-full border border-amber-200 rounded-lg px-2.5 py-1.5 text-xs bg-white text-gray-700 outline-none">
+                            <select @change="onSelectDropdown($event.target.value)" class="w-full border border-amber-200 rounded-xl px-2.5 py-1.5 text-xs bg-white text-gray-700 outline-none">
                                 <option value="">-- 或點選下拉清單直接選擇 --</option>
                                 <option v-for="b in allBelievers" :key="b.id" :value="b.id">
                                     {{ b.name }}（{{ b.relationship }}）- {{ b.phone }} / 戶號: {{ b.familyCode }}
@@ -254,49 +258,64 @@
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">安奉善信大名 *</label>
-                        <input v-model="posForm.name" type="text" placeholder="例：林大寶" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 focus:bg-white outline-none focus:border-amber-700" />
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">安奉善信大名 *</label>
+                            <input v-model="posForm.name" type="text" placeholder="例：林大寶" class="w-full border rounded-xl px-3 py-2 bg-gray-50 focus:bg-white outline-none focus:border-amber-700 font-bold" />
+                        </div>
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">聯絡電話 *</label>
+                            <input v-model="posForm.phone" type="text" placeholder="例：0912-345678" class="w-full border rounded-xl px-3 py-2 bg-gray-50 focus:bg-white outline-none focus:border-amber-700 font-mono" />
+                        </div>
                     </div>
 
+                    <!-- 已選定燈位清單 -->
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">聯絡電話 *</label>
-                        <input v-model="posForm.phone" type="text" placeholder="例：0912-345678" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 focus:bg-white outline-none focus:border-amber-700" />
-                    </div>
-
-                    <!-- 已選定燈位明細 -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">已選定安奉燈位 ({{ selectedSeats.length }} 盞)</label>
-                        <div v-if="selectedSeats.length > 0" class="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 bg-gray-50 rounded-lg border">
+                        <div class="flex justify-between items-center mb-1 text-xs">
+                            <label class="font-bold text-gray-700">已選定燈位 ({{ selectedSeats.length }} 盞)</label>
+                            <button v-if="selectedSeats.length > 0" @click="clearSelectedSeats" class="text-red-600 hover:underline text-[11px]">清空重選</button>
+                        </div>
+                        <div v-if="selectedSeats.length > 0" class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-2 bg-gray-50 rounded-xl border">
                             <span v-for="s in selectedSeats"
                                   :key="s.code"
-                                  class="bg-amber-100 text-amber-900 text-xs px-2.5 py-1 rounded-md border border-amber-300 font-mono flex items-center gap-1">
+                                  class="bg-amber-100 text-amber-900 text-xs px-2.5 py-1 rounded-lg border border-amber-300 font-mono flex items-center gap-1">
                                 <span class="font-bold">{{ s.code }}</span>
                                 <span>({{ s.label }})</span>
                                 <span class="text-[10px] text-red-700 font-bold">NT${{ s.fee }}</span>
                             </span>
                         </div>
-                        <div v-else class="text-xs text-gray-400 py-3 text-center border border-dashed rounded-lg">
+                        <div v-else class="text-xs text-gray-400 py-3 text-center border border-dashed rounded-xl">
                             尚未在左側點選空位
                         </div>
                     </div>
 
-                    <!-- 結算明細區塊 -->
-                    <div class="p-4 bg-amber-50/80 rounded-xl border border-amber-200 text-xs space-y-1.5">
-                        <div class="flex justify-between text-gray-600">
-                            <span>點燈年度：</span>
-                            <span class="font-mono font-bold text-slate-800">{{ selectedYear }} 年度</span>
+                    <!-- 費用細項與小計清單 (整合點燈明細與單價小計) -->
+                    <div class="p-4 bg-amber-50/80 rounded-2xl border border-amber-200 text-xs space-y-2">
+                        <div class="flex justify-between font-bold text-amber-950 border-b border-amber-200/80 pb-1.5">
+                            <span>點燈項目費用細項</span>
+                            <span class="font-mono">小計 (NT$)</span>
                         </div>
-                        <div v-for="cat in categorySummaries" :key="cat.type_code" class="flex justify-between text-gray-600">
-                            <span>{{ cat.type_name }}：</span>
-                            <span class="font-mono">
-                                {{ selectedSeats.filter(s => s.code.startsWith(cat.type_code + '-')).length }} 盞
-                            </span>
+
+                        <!-- 各類別費用拆解明細 -->
+                        <div v-if="feeBreakdown.length > 0" class="space-y-1.5">
+                            <div v-for="item in feeBreakdown" :key="item.typeCode" class="flex justify-between items-center text-slate-700">
+                                <div>
+                                    <span class="font-bold">{{ item.typeName }}</span>
+                                    <span class="text-[11px] text-slate-500 font-mono"> (NT$ {{ item.unitFee }} × {{ item.count }} 盞)</span>
+                                </div>
+                                <span class="font-mono font-bold text-slate-900">NT$ {{ item.subtotal.toLocaleString() }}</span>
+                            </div>
                         </div>
-                        <div class="flex justify-between font-bold text-amber-950 border-t border-amber-200 pt-2 text-sm">
-                            <span>應繳緣金總計：</span>
-                            <span class="text-red-700 font-mono text-base">NT$ {{ totalFee.toLocaleString() }}</span>
+                        <div v-else class="text-gray-400 text-center py-1 text-[11px]">
+                            尚無選定之點燈項目
                         </div>
+
+                        <!-- 總額結算 -->
+                        <div class="flex justify-between items-center font-bold text-amber-950 border-t border-amber-200 pt-2 text-sm">
+                            <span>應繳納緣金總計：</span>
+                            <span class="text-red-700 font-mono text-base font-black">NT$ {{ totalFee.toLocaleString() }}</span>
+                        </div>
+                        <p class="text-[10px] text-gray-500 font-mono mt-1">※ 結算後款項將同步登入公庫收支日記帳並開立正式入帳收據字號。</p>
                     </div>
                 </div>
 
@@ -308,6 +327,95 @@
             </div>
 
         </div>
+
+        <!-- ================= 彈窗 1：已安奉燈位費用與安奉明細 Modal ================= -->
+        <div v-if="showDetailModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden text-xs animate-in fade-in zoom-in-95 duration-200">
+                <div class="bg-red-900 px-6 py-4 text-white flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-sm">燈位安奉明細 ‧ {{ activeOccupiedSeat?.code }}</h3>
+                        <p class="text-[11px] text-amber-200 font-mono">{{ activeOccupiedSeat?.hallName || '五公祖師巖' }}（{{ activeOccupiedSeat?.label }}）</p>
+                    </div>
+                    <button @click="showDetailModal = false" class="text-amber-200 hover:text-white text-lg">✕</button>
+                </div>
+
+                <div class="p-6 space-y-4">
+                    <div class="p-4 bg-amber-50 rounded-xl border border-amber-200 space-y-2">
+                        <div class="flex justify-between items-center border-b border-amber-200/80 pb-2">
+                            <span class="text-slate-600">安奉善信：</span>
+                            <span class="font-bold text-sm text-slate-900">{{ activeOccupiedSeat?.believerName || '未登記' }}</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-amber-200/80 pb-2">
+                            <span class="text-slate-600">聯絡手機：</span>
+                            <span class="font-mono font-bold text-slate-900">{{ activeOccupiedSeat?.phone || '未登記電話' }}</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-amber-200/80 pb-2">
+                            <span class="text-slate-600">安奉年度：</span>
+                            <span class="font-mono font-bold text-slate-900">{{ activeOccupiedSeat?.year }} 年度</span>
+                        </div>
+                        <div class="flex justify-between items-center pt-1">
+                            <span class="text-slate-600 font-bold">安奉緣金費用：</span>
+                            <span class="font-mono text-sm font-black text-red-700">NT$ {{ Number(activeOccupiedSeat?.fee || 600).toLocaleString() }}</span>
+                        </div>
+                    </div>
+
+                    <p class="text-[11px] text-gray-500 leading-relaxed">
+                        ※ 本筆燈位點燈收支已納入公庫財務流水帳，若需核銷或查驗歷史收據字軌，請至「公庫財務收支」頁面核對。
+                    </p>
+                </div>
+
+                <div class="bg-gray-50 px-6 py-3 border-t flex justify-between items-center">
+                    <a href="finance.html" class="text-blue-700 hover:underline font-bold text-[11px] flex items-center gap-1">
+                        <span>🪙</span> 前往財務模組對帳
+                    </a>
+                    <button @click="showDetailModal = false" class="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-xl font-bold">
+                        關閉
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 彈窗 2：開單完成與入帳收據確認 Modal ================= -->
+        <div v-if="showSuccessModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden text-xs animate-in fade-in zoom-in-95 duration-200">
+                <div class="bg-emerald-900 px-6 py-4 text-white flex justify-between items-center">
+                    <h3 class="font-bold text-sm">🎉 點燈安奉成功 ‧ 正式入帳確認</h3>
+                    <button @click="showSuccessModal = false" class="text-emerald-200 hover:text-white text-lg">✕</button>
+                </div>
+
+                <div class="p-6 space-y-4">
+                    <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-200 space-y-2">
+                        <div class="flex justify-between items-center border-b border-emerald-200 pb-2">
+                            <span class="text-slate-600 font-bold">公庫日記帳收據編號：</span>
+                            <span class="font-mono font-bold text-sm text-emerald-800">{{ orderResult?.recordNo }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-600">安奉人：</span>
+                            <span class="font-bold text-slate-900">{{ orderResult?.name }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-600">點燈數量：</span>
+                            <span class="font-mono font-bold text-slate-900">{{ orderResult?.count }} 盞</span>
+                        </div>
+                        <div class="flex justify-between items-center border-t border-emerald-200 pt-2">
+                            <span class="text-slate-600 font-bold">繳納緣金總額：</span>
+                            <span class="font-mono font-black text-sm text-red-700">NT$ {{ orderResult?.totalFee?.toLocaleString() }}</span>
+                        </div>
+                    </div>
+
+                    <p class="text-[11px] text-gray-500">
+                        點燈神位已即時點亮，該筆款項已同步寫入公庫收支日記帳（finance_ledger）。
+                    </p>
+                </div>
+
+                <div class="bg-gray-50 px-6 py-3 border-t flex justify-end">
+                    <button @click="showSuccessModal = false" class="px-5 py-2 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl font-bold shadow">
+                        確認完成
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -315,6 +423,11 @@
 
         createApp({
             setup() {
+                const getBaseUrl = () => {
+                    let base = (typeof getApiBase === 'function') ? getApiBase() : ((typeof API_BASE !== 'undefined') ? API_BASE : '/api');
+                    return base.replace(/\/+$/, '');
+                };
+
                 const currentUser = ref(null);
                 const isGuest = computed(() => !currentUser.value || currentUser.value.role === 'GUEST');
 
@@ -332,6 +445,12 @@
                 const isSearching = ref(false);
                 const selectedBelieverTag = ref('');
 
+                // 彈窗狀態
+                const showDetailModal = ref(false);
+                const activeOccupiedSeat = ref(null);
+                const showSuccessModal = ref(false);
+                const orderResult = ref(null);
+
                 const getLunarYearGanZhi = (year) => {
                     const tianGan = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
                     const diZhi = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
@@ -342,7 +461,7 @@
 
                 const loadCategoriesSummary = async (year) => {
                     try {
-                        const res = await fetch(`${API_BASE}/lanterns/categories-summary?year=${year}`);
+                        const res = await fetch(`${getBaseUrl()}/lanterns/categories-summary?year=${year}`);
                         const data = await res.json();
                         if (data.success && data.data.length > 0) {
                             categorySummaries.value = data.data;
@@ -356,7 +475,7 @@
 
                 const loadSeatsByYear = async (year) => {
                     try {
-                        const res = await fetch(`${API_BASE}/lanterns?year=${year}`);
+                        const res = await fetch(`${getBaseUrl()}/lanterns?year=${year}`);
                         const data = await res.json();
                         if (data.success) {
                             allSeats.value = data.data.map(d => ({
@@ -364,7 +483,10 @@
                                 label: d.seat_label,
                                 status: d.status,
                                 fee: Number(d.fee) || 600,
-                                believerName: d.assigned_believer_name || ''
+                                believerName: d.assigned_believer_name || '',
+                                phone: d.phone || '',
+                                hallName: d.hall_name || '',
+                                year: d.lantern_year || year
                             }));
                         }
                     } catch (e) {
@@ -383,17 +505,12 @@
 
                 const selectCategory = async (typeCode) => {
                     currentCategory.value = typeCode;
-                    await Promise.all([
-                        loadCategoriesSummary(selectedYear.value),
-                        loadSeatsByYear(selectedYear.value)
-                    ]);
                 };
 
-                // 僅已登入者載入 CRM 信眾名冊
                 const loadBelievers = async () => {
                     if (isGuest.value) return;
                     try {
-                        const res = await fetch(`${API_BASE}/households`);
+                        const res = await fetch(`${getBaseUrl()}/households`);
                         const data = await res.json();
                         if (data.success) {
                             const list = [];
@@ -435,6 +552,33 @@
 
                 const selectedSeats = computed(() => allSeats.value.filter(s => s.status === 'LOCKED'));
 
+                // 計算費用細項分組（依類別計算單價、盞數與小計）
+                const feeBreakdown = computed(() => {
+                    if (selectedSeats.value.length === 0) return [];
+                    const breakdownMap = {};
+
+                    selectedSeats.value.forEach(seat => {
+                        const typeCode = seat.code.split('-')[0];
+                        const cat = categorySummaries.value.find(c => c.type_code === typeCode);
+                        const typeName = cat ? cat.type_name : '點燈項目';
+                        const unitFee = seat.fee || (cat ? Number(cat.default_fee) : 600);
+
+                        if (!breakdownMap[typeCode]) {
+                            breakdownMap[typeCode] = {
+                                typeCode,
+                                typeName,
+                                unitFee,
+                                count: 0,
+                                subtotal: 0
+                            };
+                        }
+                        breakdownMap[typeCode].count++;
+                        breakdownMap[typeCode].subtotal += unitFee;
+                    });
+
+                    return Object.values(breakdownMap);
+                });
+
                 const totalFee = computed(() => {
                     return selectedSeats.value.reduce((sum, s) => sum + (s.fee || 600), 0);
                 });
@@ -463,43 +607,62 @@
                     if (b) selectBeliever(b);
                 };
 
-                // 點擊燈位：訪客直接停用
-                const toggleSeat = (seat) => {
+                const clearSelectedSeats = () => {
+                    selectedSeats.value.forEach(s => s.status = 'AVAILABLE');
+                };
+
+                // 處理燈位點擊（空位暫選 vs 已安奉查看細項）
+                const handleSeatClick = (seat) => {
+                    if (seat.status === 'OCCUPIED') {
+                        if (!isGuest.value) {
+                            activeOccupiedSeat.value = seat;
+                            showDetailModal.value = true;
+                        }
+                        return;
+                    }
+
                     if (isGuest.value) {
                         alert('訪客僅提供燈位查閱，臨櫃點燈請洽廟方執事！');
                         return;
                     }
+
                     if (seat.status === 'AVAILABLE') seat.status = 'LOCKED';
                     else if (seat.status === 'LOCKED') seat.status = 'AVAILABLE';
                 };
 
-                // 執事送出開單
                 const submitOrder = async () => {
-                    if (isGuest.value) {
-                        alert('訪客無法執行開單作業！');
-                        return;
-                    }
-                    if (!posForm.value.name) {
-                        alert('請填寫安奉善信姓名');
-                        return;
-                    }
+                    if (isGuest.value) return alert('訪客無法執行開單作業！');
+                    if (!posForm.value.name) return alert('請填寫安奉善信姓名');
+                    if (selectedSeats.value.length === 0) return alert('請先點選欲安奉之燈位！');
+
                     const codes = selectedSeats.value.map(s => s.code);
+                    const currentTotal = totalFee.value;
+                    const applicantName = posForm.value.name;
+
                     try {
-                        const res = await fetch(`${API_BASE}/lanterns/order`, {
+                        const res = await fetch(`${getBaseUrl()}/lanterns/order`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 seatCodes: codes,
-                                believerName: posForm.value.name,
+                                believerName: applicantName,
                                 phone: posForm.value.phone,
                                 year: selectedYear.value
                             })
                         });
                         const data = await res.json();
                         if (data.success) {
-                            alert(`安奉登記成功！公庫收據：${data.recordNo}，已為「${posForm.value.name}」點亮 ${selectedYear.value} 年度共 ${codes.length} 盞燈。`);
+                            orderResult.value = {
+                                recordNo: data.recordNo,
+                                name: applicantName,
+                                count: codes.length,
+                                totalFee: currentTotal
+                            };
+                            showSuccessModal.value = true;
+
                             posForm.value = { name: '', phone: '' };
                             selectedBelieverTag.value = '';
+
                             await Promise.all([
                                 loadCategoriesSummary(selectedYear.value),
                                 loadSeatsByYear(selectedYear.value)
@@ -513,7 +676,7 @@
                 };
 
                 onMounted(async () => {
-                    currentUser.value = getCurrentUser();
+                    currentUser.value = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
                     await Promise.all([
                         loadCategoriesSummary(selectedYear.value),
                         loadSeatsByYear(selectedYear.value),
@@ -532,6 +695,7 @@
                     selectedCategoryInfo,
                     currentCategorySeats,
                     selectedSeats,
+                    feeBreakdown,
                     totalFee,
                     posForm,
                     allBelievers,
@@ -539,12 +703,17 @@
                     isSearching,
                     searchSuggestions,
                     selectedBelieverTag,
+                    showDetailModal,
+                    activeOccupiedSeat,
+                    showSuccessModal,
+                    orderResult,
                     getLunarYearGanZhi,
                     changeYear,
                     selectCategory,
                     selectBeliever,
                     onSelectDropdown,
-                    toggleSeat,
+                    clearSelectedSeats,
+                    handleSeatClick,
                     submitOrder
                 };
             }
