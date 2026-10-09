@@ -909,6 +909,102 @@ app.post('/api/lanterns/order', async (req, res) => {
     }
 });
 
+// --- [B] 廟宇人員與執事角色維護 ---
+app.get('/api/settings/staff', async (req, res) => {
+    try {
+        const { rows } = await pool.query('SELECT * FROM temple_staff ORDER BY created_at ASC');
+        res.json({ success: true, data: rows });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.post('/api/settings/staff', async (req, res) => {
+    try {
+        const { name, department, title, phone, memo } = req.body;
+        if (!name || !department || !title) {
+            return res.status(400).json({ success: false, message: '請填寫人員大名、組別與職稱' });
+        }
+
+        const staffId = `STF-${Date.now().toString().slice(-4)}`;
+        await pool.query(`
+            INSERT INTO temple_staff (staff_id, name, department, title, phone, memo)
+            VALUES ($1, $2, $3, $4, $5, $6)
+        `, [staffId, name, department, title, phone || '', memo || '']);
+
+        res.json({ success: true, message: '廟務人員新增成功', staffId });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.delete('/api/settings/staff/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM temple_staff WHERE staff_id = $1', [req.params.id]);
+        res.json({ success: true, message: '人員資料已移除' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// --- [C] 系統帳號與權限角色表維護 (sys_user) ---
+app.get('/api/settings/users', async (req, res) => {
+    try {
+        const { rows } = await pool.query(`
+            SELECT user_id, username, real_name, role, status, created_at 
+            FROM sys_user 
+            ORDER BY created_at ASC
+        `);
+        res.json({ success: true, data: rows });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.post('/api/settings/users', async (req, res) => {
+    try {
+        const { username, password, realName, role } = req.body;
+        if (!username || !password || !realName || !role) {
+            return res.status(400).json({ success: false, message: '帳號、密碼、姓名與身分權限為必填' });
+        }
+
+        const userId = `U${Date.now().toString().slice(-4)}`;
+        await pool.query(`
+            INSERT INTO sys_user (user_id, username, password, real_name, role, status)
+            VALUES ($1, $2, $3, $4, $5, 'ACTIVE')
+        `, [userId, username.trim(), password, realName.trim(), role]);
+
+        res.json({ success: true, message: '系統使用者帳號建立成功' });
+    } catch (err) {
+        // PostgreSQL 的唯一鍵衝突 (Unique Violation) 錯誤代碼是 23505
+        if (err.code === '23505' || err.message.toLowerCase().includes('unique')) {
+            return res.status(400).json({ success: false, message: '此使用者帳號已被使用，請更換' });
+        }
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// 變更帳號狀態 (啟用/停用) 或 重設密碼
+app.patch('/api/settings/users/:userId', async (req, res) => {
+    try {
+        const { status, password, role } = req.body;
+        const { userId } = req.params;
+
+        if (status) {
+            await pool.query('UPDATE sys_user SET status = $1 WHERE user_id = $2', [status, userId]);
+        }
+        if (password) {
+            await pool.query('UPDATE sys_user SET password = $1 WHERE user_id = $2', [password, userId]);
+        }
+        if (role) {
+            await pool.query('UPDATE sys_user SET role = $1 WHERE user_id = $2', [role, userId]);
+        }
+
+        res.json({ success: true, message: '帳號資訊已成功更新' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 // =========================================================================
 // 6. 財務日記帳與傳票 API
 // =========================================================================
