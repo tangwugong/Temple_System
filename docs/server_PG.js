@@ -1406,33 +1406,55 @@ if (!fs.existsSync(uploadDeityDir)) {
     console.log(`[系統提示] 已建立神尊法相目錄：${uploadDeityDir}`);
 }
 
+/ 2. 神尊專屬相片上傳
 app.post('/api/upload/deity-photo', (req, res) => {
     try {
-        const { fileName, fileBase64 } = req.body;
-        if (!fileName || !fileBase64) {
-            return res.status(400).json({ success: false, message: '未接收到照片內容' });
+        const { fileBase64 } = req.body;
+        if (!fileBase64) {
+            return res.status(400).json({ success: false, message: '未接收到相片內容' });
         }
 
-        const ext = path.extname(fileName).toLowerCase() || '.jpg';
-        const uniqueName = `DEITY-${Date.now()}-${Math.round(Math.random() * 1E4)}${ext}`;
-        const targetPath = path.join(uploadDeityDir, uniqueName);
+        console.log(`[神尊相片] 成功接收，已轉為資料庫長字串格式。`);
 
-        const base64Data = fileBase64.replace(/^data:.*?;base64,/, '');
-        const buffer = Buffer.from(base64Data, 'base64');
-
-        fs.writeFileSync(targetPath, buffer);
-        console.log(`[神尊相片上傳] 檔案已成功儲存：${targetPath}`);
-
+        // 直接將 Base64 字串當作圖片 URL 丟回給前端存入 DB
         res.json({
             success: true,
-            message: '相片上傳成功',
-            fileUrl: `/images/Deities/${uniqueName}` // 對應 public 靜態目錄路徑
+            message: '相片檔案已成功轉換，請點擊「儲存」寫入資料庫',
+            fileUrl: fileBase64
         });
     } catch (err) {
         console.error('[神尊相片上傳錯誤]:', err.message);
-        res.status(500).json({ success: false, message: '儲存失敗: ' + err.message });
+        res.status(500).json({ success: false, message: '處理失敗: ' + err.message });
     }
 });
+
+//app.post('/api/upload/deity-photo', (req, res) => {
+//    try {
+//        const { fileName, fileBase64 } = req.body;
+//        if (!fileName || !fileBase64) {
+//            return res.status(400).json({ success: false, message: '未接收到照片內容' });
+//        }
+
+//        const ext = path.extname(fileName).toLowerCase() || '.jpg';
+//        const uniqueName = `DEITY-${Date.now()}-${Math.round(Math.random() * 1E4)}${ext}`;
+//        const targetPath = path.join(uploadDeityDir, uniqueName);
+
+//        const base64Data = fileBase64.replace(/^data:.*?;base64,/, '');
+//        const buffer = Buffer.from(base64Data, 'base64');
+
+//        fs.writeFileSync(targetPath, buffer);
+//        console.log(`[神尊相片上傳] 檔案已成功儲存：${targetPath}`);
+
+//        res.json({
+//            success: true,
+//            message: '相片上傳成功',
+//            fileUrl: `/images/Deities/${uniqueName}` // 對應 public 靜態目錄路徑
+//        });
+//    } catch (err) {
+//        console.error('[神尊相片上傳錯誤]:', err.message);
+//        res.status(500).json({ success: false, message: '儲存失敗: ' + err.message });
+//    }
+//});
 // =========================================================================
 // 五公祖師聖尊聖紀與法相相簿 API (對應 settings.html & history.html)
 // =========================================================================
