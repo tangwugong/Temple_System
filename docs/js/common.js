@@ -2,7 +2,7 @@
 
 //const API_BASE  = 'https://temple-api-1mft.onrender.com/api';
 
-const API_BASE  = 'https://wukong-api.onrender.com';
+const API_BASE  = 'https://wukong-api.onrender.com/api';
 // 訪客白名單頁面
 const GUEST_ALLOWED_PAGES = ['index.html', 'history.html', 'lantern.html', 'events.html', 'login.html', 'manual.html', 'contact.html','quotes.html'];
 
