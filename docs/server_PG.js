@@ -1589,7 +1589,7 @@ app.get('/api/believers/search', async (req, res) => {
 
         // 假設 db 是從 'pg' 套件建立的 pool (例如 const db = new Pool(...))
         // 必須使用 await 來等待非同步查詢結果
-        const result = await db.query(sql, [param]);
+        const result = await pool.query(sql, [param]);
         const believers = result.rows; // Postgres 的查詢結果資料會放在 .rows 裡面
 
         console.log(`[信眾查詢 API] 查詢成功，共回傳 ${believers.length} 筆`);
