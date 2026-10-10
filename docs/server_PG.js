@@ -224,6 +224,36 @@ app.get('/api/charity/summary', async (req, res) => {
     }
 });
 
+// 公庫收支日記帳
+app.get('/api/ledger', async (req, res) => {
+    try {
+        const sql = `
+            SELECT 
+                record_no AS "recordNo",
+                entry_type AS "entryType",
+                category,
+                title,
+                party_name AS "partyName",
+                phone,
+                amount::float AS amount,
+                payment_method AS "paymentMethod",
+                tax_deductible AS "taxDeductible",
+                id_number AS "idNumber",
+                invoice_no AS "invoiceNo",
+                handler,
+                memo,
+                TO_CHAR(entry_date, 'YYYY-MM-DD') AS "entryDate",
+                created_at AS "createdAt"
+            FROM accounting_ledger 
+            ORDER BY entry_date DESC, created_at DESC
+        `;
+        const { rows } = await pool.query(sql);
+        res.json({ success: true, data: rows });
+    } catch (err) {
+        console.error('讀取公庫日記帳失敗:', err);
+        res.status(500).json({ success: false, message: '資料庫讀取失敗: ' + err.message });
+    }
+});
 // =========================================================================
 // 公告管理 API (PostgreSQL 版)
 // =========================================================================
@@ -989,64 +1019,7 @@ app.get('/api/lanterns/categories-summary', async (req, res) => {
     }
 });
 
-//app.post('/api/lanterns/order', async (req, res) => {
-//    const { seatCodes, believerName, phone, year } = req.body;
-//    const targetYear = Number(year) || new Date().getFullYear();
 
-//    if (!seatCodes || !seatCodes.length || !believerName) {
-//        return res.status(400).json({ success: false, message: '請指定燈位與安奉善信姓名' });
-//    }
-
-//    const client = await pool.connect();
-//    try {
-//        await client.query('BEGIN');
-
-//        for (const code of seatCodes) {
-//            const checkRes = await client.query(`
-//                SELECT seat_code FROM lantern_seat 
-//                WHERE lantern_year = $1 AND seat_code = $2 AND status = 'OCCUPIED'
-//                FOR UPDATE
-//            `, [targetYear, code]);
-
-//            if (checkRes.rows.length > 0) {
-//                throw new Error(`燈位【${code}】在 ${targetYear} 年度已被安奉！`);
-//            }
-//        }
-
-//        for (const code of seatCodes) {
-//            await client.query(`
-//                UPDATE lantern_seat 
-//                SET status = 'OCCUPIED', assigned_believer_name = $1, phone = $2
-//                WHERE lantern_year = $3 AND seat_code = $4
-//            `, [believerName, phone || '', targetYear, code]);
-//        }
-
-//        const totalAmount = seatCodes.length * 600;
-//        const recordNo = `REC-${targetYear}-${Date.now().toString().slice(-4)}`;
-//        const today = new Date().toISOString().split('T')[0];
-
-//        await client.query(`
-//            INSERT INTO finance_ledger (record_no, entry_date, entry_type, category, amount, party_name, phone, title, memo)
-//            VALUES ($1, $2, 'INCOME', '光明太歲燈緣金', $3, $4, $5, $6, $7)
-//        `, [
-//            recordNo,
-//            today,
-//            totalAmount,
-//            believerName,
-//            phone || '',
-//            `辦理 ${targetYear} 年度點燈安奉共 ${seatCodes.length} 盞`,
-//            `燈位: ${seatCodes.join(', ')}`
-//        ]);
-
-//        await client.query('COMMIT');
-//        res.json({ success: true, message: '安奉登記成功', recordNo });
-//    } catch (err) {
-//        await client.query('ROLLBACK');
-//        res.status(400).json({ success: false, message: err.message });
-//    } finally {
-//        client.release();
-//    }
-//});
 
 // 核心整合：點燈下單（鎖定空位 + 動態按實際定價計算總額 + 雙向同步寫入 finance_records）
 app.post('/api/lanterns/order', async (req, res) => {
