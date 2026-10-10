@@ -10,7 +10,7 @@
     <script src="js/common.js"></script>
     <style>
         [v-cloak] {
-            display: none; 
+            display: none;
         }
 
         @media print {
@@ -299,9 +299,25 @@
                             <input v-model="distForm.phone" type="text" placeholder="例：06-1234567" class="w-full border rounded-xl px-3 py-2 font-mono" />
                         </div>
                         <div>
-                            <label class="block font-bold text-emerald-900 mb-1">轉贈發放份數 (桌數) *</label>
-                            <input v-model.number="distForm.quantity" type="number" min="1" class="w-full border rounded-xl px-3 py-2 font-mono font-bold text-emerald-800 text-sm" />
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block font-bold text-emerald-900">轉贈發放份數 (桌數) *</label>
+                                <span class="text-[10px] text-gray-500 font-mono">
+                                    可派發上限：<strong class="text-red-700 font-bold">{{ maxAvailableStock }}</strong> 份
+                                </span>
+                            </div>
+                            <input v-model.number="distForm.quantity"
+                                   type="number"
+                                   min="1"
+                                   :max="maxAvailableStock"
+                                   class="w-full border rounded-xl px-3 py-2 font-mono font-bold text-emerald-800 text-sm outline-none focus:ring-1 focus:ring-emerald-600" />
+                            <p v-if="distForm.quantity > maxAvailableStock" class="text-[10px] text-red-600 font-bold mt-1">
+                                ⚠️ 轉贈數量已超出上限（超出 {{ distForm.quantity - maxAvailableStock }} 份）！
+                            </p>
                         </div>
+                        <!--<div>
+        <label class="block font-bold text-emerald-900 mb-1">轉贈發放份數 (桌數) *</label>
+        <input v-model.number="distForm.quantity" type="number" min="1" class="w-full border rounded-xl px-3 py-2 font-mono font-bold text-emerald-800 text-sm" />
+    </div>-->
                     </div>
 
                     <div>
@@ -528,6 +544,24 @@
                     return donorsList.value.reduce((s, r) => s + (Number(r.seats) || 1), 0);
                 });
 
+                // 計算當前選中法會的「最大可轉贈上限」
+                const maxAvailableStock = computed(() => {
+                    if (!distForm.value.eventId) return 0;
+                    const currentEvt = summaries.value.find(s => (s.eventId || s.event_id) === distForm.value.eventId);
+                    if (!currentEvt) return 0;
+
+                    const remaining = Number(currentEvt.remainingStock) || 0;
+
+                    // 若是「修改模式」，當前這筆紀錄原本佔用的數量要加回作為可用額度
+                    if (isEditMode.value && editingDistId.value) {
+                        const originalRecord = distributions.value.find(d => (d.distId || d.dist_id) === editingDistId.value);
+                        const originalQty = originalRecord ? (Number(originalRecord.quantity) || 0) : 0;
+                        return remaining + originalQty;
+                    }
+
+                    return remaining;
+                });
+
                 const openDonorsModal = async (evt) => {
                     activeEvent.value = evt;
                     // 關鍵修復：防呆支援 eventId 或 event_id
@@ -659,8 +693,19 @@
                 };
 
                 const submitDistribute = async () => {
-                    if (!distForm.value.organizationName || !distForm.value.quantity) {
-                        return alert('請填寫受贈機構與發放份數');
+                    if (!distForm.value.organizationName || !distForm.value.organizationName.trim()) {
+                        return alert('請填寫受贈機構名稱！');
+                    }
+
+                    const qty = Number(distForm.value.quantity);
+                    if (!qty || qty <= 0) {
+                        return alert('請填寫正確且大於 0 的轉贈份數！');
+                    }
+
+                    // 【核心防呆】轉贈數量不可超過庫存剩餘可發數量
+                    const maxLimit = maxAvailableStock.value;
+                    if (qty > maxLimit) {
+                        return alert(`【數量超出上限】\n\n本場法會目前最多僅剩餘 ${maxLimit} 份物資可供轉贈！\n您輸入的轉贈數量為 ${qty} 份，不可超出在庫剩餘額度。`);
                     }
 
                     try {
@@ -672,7 +717,7 @@
                                 body: JSON.stringify(distForm.value)
                             });
                         } else {
-                            if (!distForm.value.eventId) return alert('請選擇來源法會活動');
+                            if (!distForm.value.eventId) return alert('請選擇來源法會活動！');
                             res = await fetch(`${getBaseUrl()}/charity/distribute`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
@@ -692,6 +737,40 @@
                         alert('伺服器連線失敗');
                     }
                 };
+                //const submitDistribute = async () => {
+                //    if (!distForm.value.organizationName || !distForm.value.quantity) {
+                //        return alert('請填寫受贈機構與發放份數');
+                //    }
+
+                //    try {
+                //        let res, data;
+                //        if (isEditMode.value) {
+                //            res = await fetch(`${getBaseUrl()}/charity/distribute/${editingDistId.value}`, {
+                //                method: 'PUT',
+                //                headers: { 'Content-Type': 'application/json' },
+                //                body: JSON.stringify(distForm.value)
+                //            });
+                //        } else {
+                //            if (!distForm.value.eventId) return alert('請選擇來源法會活動');
+                //            res = await fetch(`${getBaseUrl()}/charity/distribute`, {
+                //                method: 'POST',
+                //                headers: { 'Content-Type': 'application/json' },
+                //                body: JSON.stringify(distForm.value)
+                //            });
+                //        }
+
+                //        data = await res.json();
+                //        if (data.success) {
+                //            alert(data.message);
+                //            showDistributeModal.value = false;
+                //            await loadCharityData();
+                //        } else {
+                //            alert(`操作失敗：${data.message}`);
+                //        }
+                //    } catch (e) {
+                //        alert('伺服器連線失敗');
+                //    }
+                //};
 
                 const viewFullPhoto = (url) => {
                     previewPhotoUrl.value = url;
