@@ -161,6 +161,155 @@ async function initDatabase() {
     }
 }
 
+
+// =========================================================================
+// 物資轉贈發放 API (charity_distribution) - PostgreSQL 版
+// =========================================================================
+
+// 1. 取得轉贈發放履歷清單
+app.get('/api/charity/distributions', async (req, res) => {
+    try {
+        const sql = `
+            SELECT 
+                d.dist_id AS "distId",
+                d.event_id AS "eventId",
+                d.organization_name AS "organizationName",
+                COALESCE(d.contact_person, '') AS "contactPerson",
+                COALESCE(d.phone, '') AS phone,
+                COALESCE(d.items_summary, '愛心白米平安物資') AS "itemsSummary",
+                d.quantity::int AS quantity,
+                TO_CHAR(d.dist_date::date, 'YYYY-MM-DD') AS "distDate",
+                COALESCE(d.handler, '總務慈善組') AS handler,
+                COALESCE(d.memo, '') AS memo,
+                COALESCE(d.photo_url, '') AS "photoUrl",
+                d.created_at AS "createdAt",
+                COALESCE(e.name, '常態普度祈安') AS "eventName"
+            FROM charity_distribution d
+            LEFT JOIN temple_events e ON d.event_id = e.id
+            ORDER BY d.dist_date DESC, d.created_at DESC
+        `;
+        const { rows } = await pool.query(sql);
+        res.json({ success: true, data: rows });
+    } catch (err) {
+        console.error('讀取轉贈履歷失敗:', err);
+        res.status(500).json({ success: false, message: '伺服器讀取轉贈履歷失敗: ' + err.message });
+    }
+});
+
+// 2. 新增物資轉贈受贈團體紀錄
+app.post('/api/charity/distribute', async (req, res) => {
+    try {
+        const {
+            eventId,
+            organizationName,
+            contactPerson,
+            phone,
+            itemsSummary,
+            quantity,
+            distDate,
+            handler,
+            memo,
+            photoUrl
+        } = req.body;
+
+        if (!eventId || !organizationName || !quantity || Number(quantity) <= 0) {
+            return res.status(400).json({ success: false, message: '請指定法會、受贈機構與正確份數' });
+        }
+
+        const distId = `DIS-${Date.now().toString().slice(-8)}`;
+        const today = distDate || new Date().toISOString().split('T')[0];
+
+        const insertSql = `
+            INSERT INTO charity_distribution (
+                dist_id, event_id, organization_name, contact_person,
+                phone, items_summary, quantity, dist_date,
+                handler, memo, photo_url
+            ) VALUES (
+                $1, $2, $3, $4,
+                $5, $6, $7, $8::date,
+                $9, $10, $11
+            )
+        `;
+
+        await pool.query(insertSql, [
+            distId,
+            eventId,
+            organizationName.trim(),
+            contactPerson ? contactPerson.trim() : '',
+            phone ? phone.trim() : '',
+            itemsSummary ? itemsSummary.trim() : '愛心白米平安物資',
+            parseInt(quantity, 10),
+            today,
+            handler || '總務慈善組',
+            memo ? memo.trim() : '',
+            photoUrl || ''
+        ]);
+
+        res.json({ success: true, message: '轉贈登記成功', distId });
+    } catch (err) {
+        console.error('新增轉贈紀錄失敗:', err);
+        res.status(500).json({ success: false, message: '伺服器寫入失敗: ' + err.message });
+    }
+});
+
+// 3. 修改受贈派發記錄
+app.put('/api/charity/distribute/:distId', async (req, res) => {
+    try {
+        const { distId } = req.params;
+        const {
+            organizationName,
+            contactPerson,
+            phone,
+            itemsSummary,
+            quantity,
+            distDate,
+            handler,
+            memo,
+            photoUrl
+        } = req.body;
+
+        if (!organizationName || !quantity || Number(quantity) <= 0) {
+            return res.status(400).json({ success: false, message: '請提供受贈單位與正確份數' });
+        }
+
+        const updateSql = `
+            UPDATE charity_distribution 
+            SET organization_name = $1,
+                contact_person = $2,
+                phone = $3,
+                items_summary = $4,
+                quantity = $5,
+                dist_date = $6::date,
+                handler = $7,
+                memo = $8,
+                photo_url = COALESCE($9, photo_url)
+            WHERE dist_id = $10
+        `;
+
+        const result = await pool.query(updateSql, [
+            organizationName.trim(),
+            contactPerson ? contactPerson.trim() : '',
+            phone ? phone.trim() : '',
+            itemsSummary ? itemsSummary.trim() : '愛心白米平安物資',
+            parseInt(quantity, 10),
+            distDate || new Date().toISOString().split('T')[0],
+            handler || '總務慈善組',
+            memo ? memo.trim() : '',
+            photoUrl !== undefined ? photoUrl : null,
+            distId
+        ]);
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ success: false, message: '查無此派送記錄' });
+        }
+
+        res.json({ success: true, message: '派發記錄已成功更新！' });
+    } catch (err) {
+        console.error('更新轉贈紀錄失敗:', err);
+        res.status(500).json({ success: false, message: '伺服器更新失敗: ' + err.message });
+    }
+});
+
 // =========================================================================
 // API: 取得各活動物資捐贈與派發統計清單 (GET /api/charity/summary)
 // =========================================================================
