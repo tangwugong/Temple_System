@@ -227,6 +227,7 @@ app.get('/api/charity/summary', async (req, res) => {
 // 公庫收支日記帳
 // 公庫收支日記帳
 app.get('/api/ledger', async (req, res) => {
+    console.error('讀取公庫日記帳:');
     try {
         const sql = `
             SELECT 
@@ -245,11 +246,12 @@ app.get('/api/ledger', async (req, res) => {
                 COALESCE(memo, '') AS memo,
                 COALESCE(entry_date, '') AS "entryDate",
                 created_at AS "createdAt"
-            FROM accounting_ledger 
+            FROM finance_ledger
             ORDER BY entry_date DESC, created_at DESC
         `;
         const { rows } = await pool.query(sql);
         res.json({ success: true, data: rows });
+        console.error(res);
     } catch (err) {
         console.error('讀取公庫日記帳失敗:', err);
         res.status(500).json({ success: false, message: '資料庫讀取失敗: ' + err.message });
