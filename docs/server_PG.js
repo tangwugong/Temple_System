@@ -161,6 +161,137 @@ async function initDatabase() {
     }
 }
 
+/ --- 2. API: 取得各活動待派發物資與信眾清單統計 ---
+
+app.get('/api/charity/summary', (req, res) => {
+    try {
+        // 1. 從 temple_events 與 event_roster 統計各法會信眾登記代捐的總份數 (offering = 'DONATE_CHARITY')
+        const eventSummaries = await pool.query(`
+            SELECT 
+                e.id AS event_id, 
+                e.name AS event_name, 
+                e.solar_date,
+                COALESCE(SUM(r.seats), 0) AS total_donated_seats
+            FROM temple_events e
+            LEFT JOIN event_roster r 
+                ON e.id = r.event_id AND r.offering = 'DONATE_CHARITY' AND r.pay_status != 'CANCELLED'
+            GROUP BY e.id
+            ORDER BY e.solar_date DESC
+        `).all();
+
+        // 2. 從 charity_distribution 統計已轉贈派發的總份數
+        let distributedMap = {};
+        try {
+            const distRows = await pool.query(`
+                SELECT event_id, COALESCE(SUM(quantity), 0) AS distributed_total
+                FROM charity_distribution
+                GROUP BY event_id
+            `).all();
+
+            distRows.forEach(row => {
+                distributedMap[row.event_id] = Number(row.distributed_total) || 0;
+            });
+        } catch (e) {
+            console.warn('[Charity Summary] charity_distribution 查無派發紀錄');
+        }
+
+        // 3. 計算各活動在庫剩餘量
+        const result = eventSummaries.map(evt => {
+            const total = Number(evt.total_donated_seats || 0);
+            const delivered = Number(distributedMap[evt.event_id] || 0);
+            return {
+                eventId: evt.event_id,
+                eventName: evt.event_name,
+                solarDate: evt.solar_date,
+                totalDonated: total,
+                totalDistributed: delivered,
+                remainingStock: Math.max(0, total - delivered)
+            };
+        });
+
+        res.json({ success: true, data: result });
+    } catch (err) {
+        console.error('[Charity Summary API 錯誤]:', err.message);
+        res.status(500).json({ success: false, message: '讀取物資統計失敗: ' + err.message });
+    }
+});
+
+// =========================================================================
+// 公告管理 API (PostgreSQL 版)
+// =========================================================================
+
+// 3. API: 讀取所有公告 (置頂優先，依發布日期降序)
+app.get('/api/announcements', async (req, res) => {
+    try {
+        const sql = `
+            SELECT 
+                id,
+                title,
+                category,
+                content,
+                is_pinned,
+                publisher,
+                publish_date,
+                created_at
+            FROM temple_announcement 
+            ORDER BY is_pinned DESC, publish_date DESC, created_at DESC
+        `;
+        const result = await pool.query(sql);
+        res.json({ success: true, data: result.rows });
+    } catch (err) {
+        console.error('讀取公告清單失敗:', err);
+        res.status(500).json({ success: false, message: '伺服器讀取公告失敗: ' + err.message });
+    }
+});
+
+// 4. API: 新增公告
+app.post('/api/announcements', async (req, res) => {
+    try {
+        const { title, category, content, isPinned, publisher } = req.body;
+        if (!title || !content) {
+            return res.status(400).json({ success: false, message: '請填寫公告標題與內容' });
+        }
+
+        const id = `ANN-${Date.now().toString().slice(-6)}`;
+        const today = new Date().toISOString().split('T')[0];
+
+        const sql = `
+            INSERT INTO temple_announcement (id, title, category, content, is_pinned, publisher, publish_date)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `;
+        await pool.query(sql, [
+            id,
+            title.trim(),
+            category || '一般通告',
+            content.trim(),
+            isPinned ? 1 : 0,
+            publisher || '執事會',
+            today
+        ]);
+
+        res.json({ success: true, message: '公告發布成功', id });
+    } catch (err) {
+        console.error('發布公告失敗:', err);
+        res.status(500).json({ success: false, message: '伺服器寫入公告失敗: ' + err.message });
+    }
+});
+
+// 5. API: 刪除公告
+app.delete('/api/announcements/:id', async (req, res) => {
+    try {
+        const sql = 'DELETE FROM temple_announcement WHERE id = $1';
+        const result = await pool.query(sql, [req.params.id]);
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ success: false, message: '查無該筆公告或已刪除' });
+        }
+
+        res.json({ success: true, message: '公告已刪除' });
+    } catch (err) {
+        console.error('刪除公告失敗:', err);
+        res.status(500).json({ success: false, message: '伺服器刪除失敗: ' + err.message });
+    }
+});
 // =========================================================================
 // 3. 信眾人員與家戶主檔 API (CRM)
 // =========================================================================
