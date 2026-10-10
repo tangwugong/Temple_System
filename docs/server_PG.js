@@ -225,6 +225,7 @@ app.get('/api/charity/summary', async (req, res) => {
 });
 
 // 公庫收支日記帳
+// 公庫收支日記帳
 app.get('/api/ledger', async (req, res) => {
     try {
         const sql = `
@@ -233,16 +234,16 @@ app.get('/api/ledger', async (req, res) => {
                 entry_type AS "entryType",
                 category,
                 title,
-                party_name AS "partyName",
-                phone,
-                amount::float AS amount,
-                payment_method AS "paymentMethod",
-                tax_deductible AS "taxDeductible",
-                id_number AS "idNumber",
-                invoice_no AS "invoiceNo",
-                handler,
-                memo,
-                TO_CHAR(entry_date, 'YYYY-MM-DD') AS "entryDate",
+                COALESCE(party_name, '') AS "partyName",
+                COALESCE(phone, '') AS phone,
+                COALESCE(amount, 0)::float AS amount,
+                COALESCE(payment_method, 'CASH') AS "paymentMethod",
+                COALESCE(tax_deductible, 0) AS "taxDeductible",
+                COALESCE(id_number, '') AS "idNumber",
+                COALESCE(invoice_no, '') AS "invoiceNo",
+                COALESCE(handler, '') AS handler,
+                COALESCE(memo, '') AS memo,
+                COALESCE(entry_date, '') AS "entryDate",
                 created_at AS "createdAt"
             FROM accounting_ledger 
             ORDER BY entry_date DESC, created_at DESC
@@ -254,6 +255,7 @@ app.get('/api/ledger', async (req, res) => {
         res.status(500).json({ success: false, message: '資料庫讀取失敗: ' + err.message });
     }
 });
+
 // =========================================================================
 // 公告管理 API (PostgreSQL 版)
 // =========================================================================
