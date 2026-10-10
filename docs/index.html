@@ -578,12 +578,18 @@
                                 }
                             }
                             if (canViewFinance.value) {
-                                const res = await fetch(`${API_BASE}/ledger`);
+                                const res = await fetch(`${API_BASE}/finance/records`);
                                 const d = await res.json();
-                                if (d.success && Array.isArray(d.data)) {
-                                    const inc = d.data.filter(x => x.entry_type === 'INCOME').reduce((s, r) => s + Number(r.amount || 0), 0);
-                                    const exp = d.data.filter(x => x.entry_type === 'EXPENSE').reduce((s, r) => s + Number(r.amount || 0), 0);
-                                    stats.value.financeBalance = inc - exp;
+                                if (d.success) {
+                                    // 優先直接採用後端 SQL 算好的結餘 (balance)
+                                    if (d.summary && typeof d.summary.balance !== 'undefined') {
+                                        stats.value.financeBalance = Number(d.summary.balance);
+                                    } else if (Array.isArray(d.data)) {
+                                        // 備用語意相容 (若 summary 未回傳則手動計算，注意欄位為駝峰 txType)
+                                        const inc = d.data.filter(x => (x.txType || x.tx_type) === 'INCOME').reduce((s, r) => s + Number(r.amount || 0), 0);
+                                        const exp = d.data.filter(x => (x.txType || x.tx_type) === 'EXPENSE').reduce((s, r) => s + Number(r.amount || 0), 0);
+                                        stats.value.financeBalance = inc - exp;
+                                    }
                                 }
                             }
 
