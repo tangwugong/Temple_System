@@ -653,29 +653,179 @@ app.get('/api/events/:eventId/roster', async (req, res) => {
 });
 
 // 會計收費核銷入帳
+//app.patch('/api/events/roster/:regId/verify-pay', async (req, res) => {
+//    try {
+//        const { role, verifiedBy } = req.body;
+//        if (!['ACCOUNTANT', 'ADMIN'].includes(role)) {
+//            return res.status(403).json({ success: false, message: '權限不足！收費核定僅限會計出納人員操作。' });
+//        }
+
+//        const receiptNo = `REC-${Date.now().toString().slice(-6)}`;
+//        const result = await pool.query(`
+//            UPDATE event_roster 
+//            SET pay_status = 'PAID',
+//                receipt_no = $1,
+//                verified_by = $2,
+//                verified_at = CURRENT_TIMESTAMP
+//            WHERE reg_id = $3 AND pay_status = 'PENDING'
+//        `, [receiptNo, verifiedBy || '會計組', req.params.regId]);
+
+//        if (result.rowCount === 0) {
+//            return res.status(400).json({ success: false, message: '該紀錄已收費核銷或查無此筆資料' });
+//        }
+//        res.json({ success: true, message: `收費核定成功！開立收據：${receiptNo}` });
+//    } catch (e) {
+//        res.status(500).json({ success: false, message: '核定失敗: ' + e.message });
+//    }
+//});
+
+// =========================================================================
+// 法會收費核銷 API：同步寫入 finance_records
+// =========================================================================
+
 app.patch('/api/events/roster/:regId/verify-pay', async (req, res) => {
+    const { regId } = req.params;
+    const { role, verifiedBy } = req.body || {};
+
+    console.log(`[核銷請求] 收到 regId: ${regId}, 操作者: ${verifiedBy}, 角色: ${role}`);
+
+    // 權限防護：未帶角色或非會計/管理員時拒絕
+    const userRole = (role || '').toUpperCase();
+    if (!['ACCOUNTANT', 'ADMIN'].includes(userRole)) {
+        return res.status(403).json({
+            success: false,
+            message: '權限不足！收費核銷僅限會計執事（ACCOUNTANT）或管理員（ADMIN）操作。'
+        });
+    }
+
+    const client = await pool.connect();
     try {
-        const { role, verifiedBy } = req.body;
-        if (!['ACCOUNTANT', 'ADMIN'].includes(role)) {
-            return res.status(403).json({ success: false, message: '權限不足！收費核定僅限會計出納人員操作。' });
+        await client.query('BEGIN');
+
+        // 1. 單表鎖定查詢：避免 JOIN 造成的 FOR UPDATE 鎖定別名語法問題
+        const rosterSql = `
+            SELECT 
+                reg_id,
+                event_id,
+                name AS applicant_name,
+                phone,
+                category,
+                seats,
+                amount::float AS amount,
+                pay_status
+            FROM event_roster
+            WHERE reg_id = $1
+            FOR UPDATE
+        `;
+        const rosterRes = await client.query(rosterSql, [regId]);
+
+        if (rosterRes.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ success: false, message: '查無該筆法會登記紀錄！' });
         }
 
-        const receiptNo = `REC-${Date.now().toString().slice(-6)}`;
-        const result = await pool.query(`
-            UPDATE event_roster 
+        const record = rosterRes.rows[0];
+        if (record.pay_status === 'PAID') {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ success: false, message: '此筆登記已完成收費核銷，請勿重複開單！' });
+        }
+        if (record.pay_status === 'CANCELLED') {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ success: false, message: '此筆登記已取消，無法進行收費！' });
+        }
+
+        // 2. 獨立查詢法會活動名稱 (若查無則備用名稱)
+        let eventName = '法會祈安植福';
+        try {
+            const evtRes = await client.query('SELECT name FROM temple_events WHERE id = $1', [record.event_id]);
+            if (evtRes.rows.length > 0) {
+                eventName = evtRes.rows[0].name;
+            }
+        } catch (e) {
+            console.warn('[法會活動名稱查詢跳過]:', e.message);
+        }
+
+        // 3. 產生單號與收據號
+        const timestamp = Date.now().toString();
+        const receiptNo = `REC-${timestamp.slice(-6)}`;
+        const txNo = `TX-EVT-${timestamp.slice(-8)}`;
+        const today = new Date().toISOString().slice(0, 10);
+        const verifier = verifiedBy || '會計組';
+
+        // 4. 更新 event_roster 狀態為 PAID
+        await client.query(`
+            UPDATE event_roster
             SET pay_status = 'PAID',
                 receipt_no = $1,
                 verified_by = $2,
                 verified_at = CURRENT_TIMESTAMP
-            WHERE reg_id = $3 AND pay_status = 'PENDING'
-        `, [receiptNo, verifiedBy || '會計組', req.params.regId]);
+            WHERE reg_id = $3
+        `, [receiptNo, verifier, regId]);
 
-        if (result.rowCount === 0) {
-            return res.status(400).json({ success: false, message: '該紀錄已收費核銷或查無此筆資料' });
-        }
-        res.json({ success: true, message: `收費核定成功！開立收據：${receiptNo}` });
-    } catch (e) {
-        res.status(500).json({ success: false, message: '核定失敗: ' + e.message });
+        // 5. 同步寫入 finance_records
+        const memoStr = `法會護持款：${eventName}（${record.category || '闔家祈安'} 共 ${record.seats || 1} 席）`;
+
+        await client.query(`
+            INSERT INTO finance_records (
+                tx_no,
+                tx_type,
+                category,
+                amount,
+                payment_method,
+                source_module,
+                source_ref_id,
+                payer_name,
+                receipt_no,
+                handled_by,
+                memo,
+                tx_date,
+                created_at
+            ) VALUES (
+                $1,
+                'INCOME',
+                '法會科儀功德金',
+                $2,
+                'CASH',
+                'EVENT',
+                $3,
+                $4,
+                $5,
+                $6,
+                $7,
+                $8::date,
+                CURRENT_TIMESTAMP
+            )
+        `, [
+            txNo,
+            Number(record.amount) || 0,
+            regId,
+            record.applicant_name,
+            receiptNo,
+            verifier,
+            memoStr,
+            today
+        ]);
+
+        await client.query('COMMIT');
+
+        console.log(`[法會核銷完成] 單號: ${regId} | 金額: ${record.amount} | 收據: ${receiptNo}`);
+
+        res.json({
+            success: true,
+            message: `收費核定成功！已同步登入公庫財務日記帳，開立收據：${receiptNo}`,
+            data: {
+                regId,
+                receiptNo,
+                txNo,
+                amount: record.amount
+            }
+        });
+    } catch (err) {
+        await client.query('ROLLBACK').catch(() => { });
+        console.error('❌ [法會核銷 SQL 例外]:', err.message);
+        res.status(500).json({ success: false, message: '核銷資料庫寫入失敗: ' + err.message });
+    } finally {
+        client.release();
     }
 });
 
@@ -1449,6 +1599,139 @@ app.get('/api/finance/records', async (req, res) => {
     }
 });
 
+// =========================================================================
+// 法會收費核銷 API：同步寫入 finance_records
+// =========================================================================
+app.patch('/api/events/roster/:regId/verify-pay', async (req, res) => {
+    const { regId } = req.params;
+    const { role, verifiedBy } = req.body;
+
+    // 嚴格權限防護：僅限會計出納與系統管理員
+    if (!['ACCOUNTANT', 'ADMIN'].includes(role)) {
+        return res.status(403).json({ success: false, message: '權限不足！收費核銷僅限會計組或管理員操作。' });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. 查詢該筆報名紀錄並行鎖（FOR UPDATE），確認為 PENDING 狀態並取得金額與活動資訊
+        const rosterSql = `
+            SELECT 
+                r.reg_id,
+                r.event_id,
+                r.name AS applicant_name,
+                r.phone,
+                r.category,
+                r.seats,
+                r.amount::float AS amount,
+                r.pay_status,
+                e.name AS event_name
+            FROM event_roster r
+            JOIN temple_events e ON r.event_id = e.id
+            WHERE r.reg_id = $1
+            FOR UPDATE OF r
+        `;
+        const rosterRes = await client.query(rosterSql, [regId]);
+
+        if (rosterRes.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ success: false, message: '查無該筆法會登記紀錄！' });
+        }
+
+        const record = rosterRes.rows[0];
+        if (record.pay_status === 'PAID') {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ success: false, message: '此筆登記已完成收費核銷，請勿重複開單！' });
+        }
+        if (record.pay_status === 'CANCELLED') {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ success: false, message: '此筆登記已取消，無法進行收費！' });
+        }
+
+        // 2. 產生收據編號與傳票號碼
+        const timestamp = Date.now().toString();
+        const receiptNo = `REC-${timestamp.slice(-6)}`;
+        const txNo = `TX-EVT-${timestamp.slice(-8)}`;
+        const today = new Date().toISOString().slice(0, 10);
+        const verifier = verifiedBy || '會計組';
+
+        // 3. 更新 event_roster 狀態為 PAID
+        await client.query(`
+            UPDATE event_roster
+            SET pay_status = 'PAID',
+                receipt_no = $1,
+                verified_by = $2,
+                verified_at = CURRENT_TIMESTAMP
+            WHERE reg_id = $3
+        `, [receiptNo, verifier, regId]);
+
+        // 4. 【核心整合】自動同步寫入 finance_records (功德收入)
+        const memoStr = `法會護持功德款：${record.event_name}（${record.category || '闔家祈安'} 共 ${record.seats} 席）`;
+
+        await client.query(`
+            INSERT INTO public.finance_records (
+                tx_no,
+                tx_type,
+                category,
+                amount,
+                payment_method,
+                source_module,
+                source_ref_id,
+                payer_name,
+                receipt_no,
+                handled_by,
+                memo,
+                tx_date,
+                created_at
+            ) VALUES (
+                $1,
+                'INCOME',
+                '法會科儀功德金',
+                $2,
+                'CASH',
+                'EVENT',
+                $3,
+                $4,
+                $5,
+                $6,
+                $7,
+                $8::date,
+                CURRENT_TIMESTAMP
+            )
+        `, [
+            txNo,
+            record.amount,
+            regId,
+            record.applicant_name,
+            receiptNo,
+            verifier,
+            memoStr,
+            today
+        ]);
+
+        await client.query('COMMIT');
+
+        console.log(`[法會核銷成功] 登記號: ${regId} | 金額: NT$ ${record.amount} | 收據: ${receiptNo} | 傳票: ${txNo}`);
+
+        res.json({
+            success: true,
+            message: `收費核定成功！已同步登入公庫財務日記帳，開立收據：${receiptNo}`,
+            data: {
+                regId,
+                receiptNo,
+                txNo,
+                amount: record.amount
+            }
+        });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('[法會核銷失敗]:', err);
+        res.status(500).json({ success: false, message: '核銷失敗，資料庫寫入異常: ' + err.message });
+    } finally {
+        client.release();
+    }
+});
 // =========================================================================
 // 7. 線上諮詢與回覆管理 API (guest_inquiries)
 // =========================================================================
