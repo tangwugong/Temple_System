@@ -1,8 +1,7 @@
 ﻿// public/js/common.js
 
-//const API_BASE  = 'https://temple-api-1mft.onrender.com/api';
+const API_BASE = '/api';
 
-const API_BASE  = 'https://wukong-api.onrender.com/api';
 // 訪客白名單頁面
 const GUEST_ALLOWED_PAGES = ['index.html', 'history.html', 'lantern.html', 'events.html', 'login.html', 'manual.html', 'contact.html','quotes.html'];
 
@@ -152,7 +151,7 @@ function renderGlobalNav() {
         { page: 'events.html', icon: '📅', label: '法會活動' },
         { page: 'lantern.html', icon: '🏮', label: '點燈排位' },
         { page: 'charity.html', icon: '🌾', label: '物資捐贈' },
-        { page: 'finance.html', icon: '🪙', label: '財務收支' },
+        { page: 'finance.html', icon: '💰', label: '財務收支' },
         { page: 'crm.html', icon: '👤', label: '信眾家戶' },
         { page: 'settings.html', icon: '⚙️', label: '系統參數' },
         { page: 'contact.html', icon: '📞', label: '聯絡資訊' },
