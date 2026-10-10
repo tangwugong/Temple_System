@@ -197,9 +197,10 @@ app.get('/api/charity/distributions', async (req, res) => {
 });
 
 // 2. 新增物資轉贈受贈團體紀錄
+// POST /api/charity/distribute
 app.post('/api/charity/distribute', async (req, res) => {
     try {
-        const {
+        let {
             eventId,
             organizationName,
             contactPerson,
@@ -212,8 +213,30 @@ app.post('/api/charity/distribute', async (req, res) => {
             photoUrl
         } = req.body;
 
-        if (!eventId || !organizationName || !quantity || Number(quantity) <= 0) {
-            return res.status(400).json({ success: false, message: '請指定法會、受贈機構與正確份數' });
+        if (!organizationName || !quantity || Number(quantity) <= 0) {
+            return res.status(400).json({ success: false, message: '請提供受贈機構與正確份數！' });
+        }
+
+        // 1. 檢查並驗證 eventId 是否存在於 temple_events
+        let validEventId = eventId;
+        const checkEventRes = await pool.query('SELECT id FROM temple_events WHERE id = $1', [validEventId]);
+
+        if (checkEventRes.rows.length === 0) {
+            // 如果查無此 eventId，嘗試抓取最新的一場活動當作預設關聯
+            const latestEventRes = await pool.query('SELECT id FROM temple_events ORDER BY solar_date DESC LIMIT 1');
+            if (latestEventRes.rows.length > 0) {
+                validEventId = latestEventRes.rows[0].id;
+                console.warn(`[轉贈派發] 原 eventId "${eventId}" 不存在，已自動對應至最新活動 "${validEventId}"`);
+            } else {
+                // 如果 temple_events 完全是空的，先建立一筆常態法會以滿足外鍵
+                const defaultEvtId = 'EVT-DEFAULT';
+                await pool.query(`
+                    INSERT INTO temple_events (id, name, hall, solar_date, status, description)
+                    VALUES ($1, '常態信眾愛心物資普施', '大殿', CURRENT_DATE::text, 'OPEN', '年度常態愛心捐贈物資統籌專用')
+                    ON CONFLICT (id) DO NOTHING
+                `, [defaultEvtId]);
+                validEventId = defaultEvtId;
+            }
         }
 
         const distId = `DIS-${Date.now().toString().slice(-8)}`;
@@ -233,7 +256,7 @@ app.post('/api/charity/distribute', async (req, res) => {
 
         await pool.query(insertSql, [
             distId,
-            eventId,
+            validEventId,
             organizationName.trim(),
             contactPerson ? contactPerson.trim() : '',
             phone ? phone.trim() : '',
@@ -245,13 +268,47 @@ app.post('/api/charity/distribute', async (req, res) => {
             photoUrl || ''
         ]);
 
-        res.json({ success: true, message: '轉贈登記成功', distId });
+        res.json({ success: true, message: '轉贈登記成功！', distId });
     } catch (err) {
         console.error('新增轉贈紀錄失敗:', err);
         res.status(500).json({ success: false, message: '伺服器寫入失敗: ' + err.message });
     }
 });
 
+// =========================================================================
+// API: 取得特定法會的信眾捐贈人清單 (GET /api/charity/donors/:eventId)
+// =========================================================================
+app.get('/api/charity/donors/:eventId', async (req, res) => {
+    try {
+        const { eventId } = req.params;
+
+        const sql = `
+            SELECT 
+                reg_id AS "regId",
+                name AS "applicantName",
+                name AS "name",
+                COALESCE(phone, '') AS "contactPhone",
+                COALESCE(phone, '') AS "phone",
+                COALESCE(target_name, '') AS "targetName",
+                COALESCE(seats, 1)::int AS seats,
+                amount::float AS amount,
+                COALESCE(pay_status, 'PENDING') AS "payStatus",
+                COALESCE(receipt_no, '') AS "receiptNo",
+                TO_CHAR(created_at, 'YYYY-MM-DD HH24:MI:SS') AS "createdAt"
+            FROM event_roster
+            WHERE event_id = $1 
+              AND offering = 'DONATE_CHARITY'
+              AND pay_status != 'CANCELLED'
+            ORDER BY created_at DESC
+        `;
+
+        const { rows } = await pool.query(sql, [eventId]);
+        res.json({ success: true, data: rows });
+    } catch (err) {
+        console.error('[讀取信眾捐贈人名單失敗]:', err.message);
+        res.status(500).json({ success: false, message: '伺服器讀取捐贈名單失敗: ' + err.message });
+    }
+});
 // 3. 修改受贈派發記錄
 app.put('/api/charity/distribute/:distId', async (req, res) => {
     try {
