@@ -161,7 +161,7 @@ async function initDatabase() {
     }
 }
 
-/ --- 2. API: 取得各活動待派發物資與信眾清單統計 ---
+ // --- 2. API: 取得各活動待派發物資與信眾清單統計 ---
 
 app.get('/api/charity/summary', (req, res) => {
     try {
