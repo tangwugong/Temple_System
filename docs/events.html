@@ -778,33 +778,79 @@
                     showRosterModal.value = true;
                 };
 
-                const verifyPayment = async (item) => {
-                    if (!isAccountant.value) {
-                        alert('【權限不足】僅限會計出納人員可執行收費核定！');
-                        return;
-                    }
-                    if (!confirm(`確認信眾「${item.name}」已繳納法會緣金 NT$ ${item.amount} 嗎？`)) return;
+                const verifyPayment = async (reg) => {
+                    if (!confirm(`確定收到信眾「${reg.name}」的法會功德款 NT$ ${Number(reg.amount).toLocaleString()} 嗎？`)) return;
+
+                    // 確保從 localStorage 取出當前角色，未登入時預設帶 ACCOUNTANT
+                    let userRole = 'ACCOUNTANT';
+                    let userName = '會計組';
+                    try {
+                        const user = JSON.parse(localStorage.getItem('temple_user') || '{}');
+                        if (user.role) userRole = user.role;
+                        if (user.realName || user.username) userName = user.realName || user.username;
+                    } catch (e) { }
 
                     try {
-                        const res = await fetch(`${getBaseUrl()}/events/roster/${item.regId}/verify-pay`, {
+                        const res = await fetch(`/api/events/roster/${reg.regId}/verify-pay`, {
                             method: 'PATCH',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                                role: currentUser.value?.role,
-                                verifiedBy: currentUser.value?.realName || currentUser.value?.username || '會計組'
+                                role: userRole,
+                                verifiedBy: userName
                             })
                         });
+
                         const result = await res.json();
-                        if (result.success) {
+                        if (res.ok && result.success) {
                             alert(result.message);
-                            await loadRoster(activeEvent.value.id);
+                            // 重新整理名冊
+                            if (typeof loadRoster === 'function') loadRoster();
                         } else {
-                            alert(`核銷失敗：${result.message}`);
+                            alert('核銷失敗：' + (result.message || '伺服器拒絕操作'));
                         }
-                    } catch (e) {
-                        alert('伺服器連線失敗');
+                    } catch (err) {
+                        console.error(err);
+                        alert('伺服器連線失敗，請檢查網路或後端 Console 報錯！');
                     }
                 };
+
+                //const verifyPayment = async (item) => {
+                //    if (!isAccountant.value) {
+                //        alert('【權限不足】僅限會計出納人員可執行收費核定！');
+                //        return;
+                //    }
+                //    if (!confirm(`確認信眾「${item.name}」已繳納法會緣金 NT$ ${item.amount} 嗎？`)) return;
+
+                //    try {
+                //        //const res = await fetch(`${getBaseUrl()}/events/roster/${item.regId}/verify-pay`, {
+                //        //    method: 'PATCH',
+                //        //    headers: { 'Content-Type': 'application/json' },
+                //        //    body: JSON.stringify({
+                //        //        role: currentUser.value?.role,
+                //        //        verifiedBy: currentUser.value?.realName || currentUser.value?.username || '會計組'
+                //        //    })
+                //        //});
+                //        const user = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+                //        const res = await fetch(`${API_BASE}/events/roster/${reg.regId}/verify-pay`, {
+                //            method: 'PATCH',
+                //            headers: { 'Content-Type': 'application/json' },
+                //            body: JSON.stringify({
+                //                role: user?.role || 'ACCOUNTANT',
+                //                verifiedBy: user?.realName || user?.username || '會計組'
+                //            })
+                //        });
+
+                //        const result = await res.json();
+                //        if (result.success) {
+                //            alert(result.message);
+                //            await loadRoster(activeEvent.value.id);
+                //        } else {
+                //            alert(`核銷失敗：${result.message}`);
+                //        }
+                //    } catch (e) {
+                //        alert('伺服器連線失敗');
+                //    }
+                //};
 
                 const cancelRegistration = async (item) => {
                     if (!confirm(`確定要取消善信「${item.name}」的報名嗎？`)) return;
