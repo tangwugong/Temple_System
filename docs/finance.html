@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>公庫財務收支 - 五公祖師巖</title>
     <!-- ================= 核心身分守衛 (未登入或無權限立刻轉址) ================= -->
     <script>
@@ -32,9 +33,8 @@
     <script src="js/vue.global.prod.js"></script>
     <script src="js/common.js"></script>
     <style>
-        /* 核心修復：強制覆蓋背景色，護眼不反光 */
         html, body {
-            background-color: #f1f5f9 !important; /* Slate-100 沉穩石板灰底 */
+            background-color: #f8fafc !important; /* Slate-50 簡約沉穩背景 */
             color: #1e293b !important;
         }
 
@@ -103,21 +103,31 @@
     <div id="app" v-cloak class="max-w-7xl mx-auto px-4 py-6 space-y-6">
 
         <!-- 頂部功能橫條 -->
-        <div class="flex flex-wrap justify-between items-center bg-white p-5 rounded-xl border border-slate-200 shadow-sm gap-4">
-            <div>
-                <h2 class="font-bold text-lg text-slate-900">五公祖師巖 ‧ 公庫財務收支日記帳</h2>
-                <p class="text-xs text-slate-500">支援香油捐獻開單、廟務採購核銷、多維度條件檢索與期間損益即時試算</p>
+        <div class="flex flex-wrap justify-between items-center bg-white p-5 rounded-2xl border border-slate-200 shadow-sm gap-4">
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="p-2 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-1">
+                    <span>⬅️</span> 大廳
+                </a>
+                <div>
+                    <h2 class="font-bold text-lg text-slate-900 flex items-center gap-2">
+                        <span>🪙</span> 五公祖師巖 ‧ 公庫財務收支日記帳
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">整合香油捐獻、點燈安奉規費、法會護持款與廟務核銷支出明細</p>
+                </div>
             </div>
             <div class="flex items-center gap-3">
                 <span class="text-xs bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1.5 rounded-full font-bold font-mono">
                     目前總紀錄：{{ records.length }} 筆
                 </span>
+                <a href="lantern.html" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 rounded-xl text-xs font-bold transition-all flex items-center gap-1 shadow-sm">
+                    <span>🏮</span> 點燈排位系統
+                </a>
             </div>
         </div>
 
-        <!-- 財務指標摘要 (隨篩選條件即時連動) -->
+        <!-- 財務指標摘要 -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div class="bg-white p-5 rounded-xl border border-emerald-200 shadow-sm">
+            <div class="bg-white p-5 rounded-2xl border border-emerald-200 shadow-sm">
                 <div class="flex justify-between items-center">
                     <p class="text-xs text-slate-500 font-medium">區間/條件 總收入</p>
                     <span class="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded font-bold font-mono">
@@ -126,7 +136,7 @@
                 </div>
                 <h3 class="text-2xl font-black text-emerald-700 font-mono mt-1">NT$ {{ totalIncome.toLocaleString() }}</h3>
             </div>
-            <div class="bg-white p-5 rounded-xl border border-rose-200 shadow-sm">
+            <div class="bg-white p-5 rounded-2xl border border-rose-200 shadow-sm">
                 <div class="flex justify-between items-center">
                     <p class="text-xs text-slate-500 font-medium">區間/條件 總支出</p>
                     <span class="text-[10px] bg-rose-50 text-rose-700 border border-rose-200 px-1.5 py-0.5 rounded font-bold font-mono">
@@ -135,7 +145,7 @@
                 </div>
                 <h3 class="text-2xl font-black text-rose-700 font-mono mt-1">NT$ {{ totalExpense.toLocaleString() }}</h3>
             </div>
-            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <p class="text-xs text-slate-500 font-medium">期間收支結餘</p>
                 <h3 class="text-2xl font-black font-mono mt-1" :class="balance >= 0 ? 'text-slate-900' : 'text-rose-600'">
                     NT$ {{ balance.toLocaleString() }}
@@ -143,88 +153,258 @@
             </div>
         </div>
 
-        <!-- 主操作區域 -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- 查詢篩選條件卡片 (獨立一列) -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 text-xs">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+                <h3 class="font-bold text-slate-900 flex items-center gap-1.5 text-sm">
+                    <span>🔍</span> 收支條件篩選與多維度查詢
+                </h3>
+                <div class="flex items-center gap-2">
+                    <button type="button" @click="loadFinanceData" class="bg-slate-800 hover:bg-slate-900 active:scale-95 text-white font-bold px-4 py-1.5 rounded-xl text-xs transition-all shadow-sm">
+                        🔍 查詢
+                    </button>
+                    <button @click="resetFilters" class="text-slate-500 hover:text-slate-800 font-medium flex items-center gap-1 text-[11px]">
+                        <span>🔄</span> 重設條件
+                    </button>
+                </div>
+            </div>
 
-            <!-- 左：開立表單 (香油 / 支出) -->
-            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4 h-fit">
-                <div class="flex p-1 bg-slate-100 rounded-lg text-xs font-bold border border-slate-200">
-                    <button @click="mode = 'INCOME'" :class="mode === 'INCOME' ? 'bg-amber-800 text-white shadow' : 'text-slate-600 hover:text-slate-900'" class="flex-1 py-1.5 rounded transition-all">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                <div>
+                    <label class="block font-bold text-slate-600 mb-1">收支類型</label>
+                    <select v-model="filters.txType" class="w-full border border-slate-300 rounded-xl px-2.5 py-1.5 bg-white font-medium text-slate-800 outline-none">
+                        <option value="ALL">全部類別 (收/支)</option>
+                        <option value="INCOME">僅看 收入 (INCOME)</option>
+                        <option value="EXPENSE">僅看 支出 (EXPENSE)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-600 mb-1">會計科目</label>
+                    <select v-model="filters.category" class="w-full border border-slate-300 rounded-xl px-2.5 py-1.5 bg-white text-slate-800 outline-none">
+                        <option value="ALL">全選科目</option>
+                        <option value="光明太歲燈緣金">🏮 光明太歲燈緣金</option>
+                        <option value="法會科儀功德金">🪷 法會科儀功德金</option>
+                        <option value="隨喜香油錢">隨喜香油錢</option>
+                        <option value="建廟修繕基金">建廟修繕基金</option>
+                        <option value="急難救助愛心款">急難救助愛心款</option>
+                        <option value="金紙白米敬献">金紙白米敬献</option>
+                        <option value="金紙香品採購">金紙香品採購</option>
+                        <option value="法會科儀法事費">法會科儀法事費</option>
+                        <option value="廟宇水電瓦斯公費">廟宇水電瓦斯公費</option>
+                        <option value="普品白米供桌宴席">普品白米供桌宴席</option>
+                        <option value="雜項事務修繕">雜項事務修繕</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-600 mb-1">起始日期</label>
+                    <input v-model="filters.startDate" type="date" class="w-full border border-slate-300 rounded-xl px-2 py-1.5 font-mono text-slate-800 outline-none" />
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-600 mb-1">結束日期</label>
+                    <input v-model="filters.endDate" type="date" class="w-full border border-slate-300 rounded-xl px-2 py-1.5 font-mono text-slate-800 outline-none" />
+                </div>
+            </div>
+
+            <div>
+                <input v-model="filters.keyword"
+                       @keyup.enter="loadFinanceData"
+                       type="text"
+                       placeholder="🔍 快速搜尋對象(捐款人/受款廠商)、收據單號、傳票號碼、燈位代號(如 T-001)、事由摘要..."
+                       class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 focus:bg-white outline-none focus:border-slate-500 transition-colors" />
+            </div>
+        </div>
+
+        <!-- ================= 核心：收支流水明細 (獨立一列 滿版呈現) ================= -->
+        <div id="printable-area" class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+
+            <!-- 列印專用報表抬頭 (僅列印時顯示) -->
+            <div class="print-header hidden mb-4 border-b-2 border-black pb-3 text-center">
+                <h1 class="text-xl font-black tracking-wider">五公祖師巖 廟務收支流水清冊</h1>
+                <div class="flex justify-between items-center text-xs mt-2 font-mono text-gray-700">
+                    <div>製表日期：{{ new Date().toLocaleDateString('zh-TW') }}</div>
+                    <div>
+                        總入帳：NT$ {{ totalIncome.toLocaleString() }} ｜
+                        總支出：NT$ {{ totalExpense.toLocaleString() }} ｜
+                        結餘：NT$ {{ balance.toLocaleString() }}
+                    </div>
+                    <div>經辦會計：{{ currentUser?.realName || currentUser?.username || '會計組' }}</div>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center border-b border-slate-100 pb-2 no-print">
+                <h3 class="font-bold text-sm text-slate-900 flex items-center gap-2">
+                    <span>📋</span> 收支流水明細清冊 (符合條件：<span class="text-slate-900 font-mono font-bold">{{ records.length }}</span> 筆)
+                </h3>
+                <div class="flex items-center gap-2">
+                    <button type="button" @click="printReport"
+                            class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1.5">
+                        <span>🖨️</span> 列印收支清冊
+                    </button>
+                    <button @click="loadFinanceData" class="text-xs text-slate-600 hover:text-slate-900 flex items-center gap-1">
+                        <span>🔄</span> 重新整理
+                    </button>
+                </div>
+            </div>
+
+            <!-- 資料表格 (滿版寬度，排版寬裕) -->
+            <div class="overflow-x-auto bg-white rounded-xl border border-slate-200">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
+                            <th class="p-3">傳票單號</th>
+                            <th class="p-3">日期</th>
+                            <th class="p-3">收支別</th>
+                            <th class="p-3">會計科目</th>
+                            <th class="p-3">繳款信眾 / 請款對象</th>
+                            <th class="p-3 text-right">金額 (NT$)</th>
+                            <th class="p-3">收據編號</th>
+                            <th class="p-3">經手人</th>
+                            <th class="p-3">摘要 / 燈位明細</th>
+                            <th class="p-3 text-center no-print">動作</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <tr v-if="records.length === 0">
+                            <td colspan="10" class="text-center py-12 text-slate-400">
+                                目前尚無收支流水紀錄，或沒有符合篩選條件的資料。
+                            </td>
+                        </tr>
+
+                        <tr v-for="r in records" :key="r.id" class="hover:bg-slate-50/80 transition-colors">
+                            <td class="p-3 font-mono font-bold text-slate-700 whitespace-nowrap">{{ r.txNo }}</td>
+                            <td class="p-3 font-mono text-slate-500 whitespace-nowrap">{{ r.txDate }}</td>
+                            <td class="p-3 whitespace-nowrap">
+                                <span :class="r.txType === 'INCOME' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'"
+                                      class="px-2 py-0.5 rounded-full font-bold text-[10px]">
+                                    {{ r.txType === 'INCOME' ? '＋ 功德入帳' : '－ 廟務支出' }}
+                                </span>
+                            </td>
+                            <td class="p-3 whitespace-nowrap">
+                                <span class="font-bold text-slate-800">{{ r.category }}</span>
+                                <span v-if="r.sourceModule === 'LANTERN'" class="ml-1 px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 text-[10px] font-bold">點燈</span>
+                                <span v-else-if="r.sourceModule === 'EVENT'" class="ml-1 px-1.5 py-0.2 rounded bg-purple-100 text-purple-900 text-[10px] font-bold">法會</span>
+                            </td>
+                            <td class="p-3 font-medium text-slate-900 whitespace-nowrap">{{ r.payerName }}</td>
+                            <td class="p-3 font-mono font-bold text-right whitespace-nowrap"
+                                :class="r.txType === 'INCOME' ? 'text-emerald-700' : 'text-rose-700'">
+                                {{ r.txType === 'INCOME' ? '+' : '-' }} NT$ {{ Number(r.amount).toLocaleString() }}
+                            </td>
+                            <td class="p-3 font-mono text-[11px] text-blue-700 font-bold whitespace-nowrap">{{ r.receiptNo || '-' }}</td>
+                            <td class="p-3 text-slate-600 whitespace-nowrap">{{ r.handledBy }}</td>
+                            <td class="p-3 text-slate-600 max-w-sm">
+                                <!-- 點燈項目特殊呈現燈號標籤 -->
+                                <div v-if="r.sourceModule === 'LANTERN' && extractLanternCodes(r.memo).length > 0" class="flex flex-wrap gap-1">
+                                    <span v-for="c in extractLanternCodes(r.memo)" :key="c" class="bg-amber-100 text-amber-900 font-mono text-[10px] px-1.5 py-0.2 rounded border border-amber-300 font-bold">
+                                        {{ c }}
+                                    </span>
+                                </div>
+                                <div v-else class="truncate">{{ r.memo || '-' }}</div>
+                            </td>
+                            <td class="p-3 text-center no-print whitespace-nowrap">
+                                <button v-if="r.sourceModule === 'LANTERN'" @click="openLanternDetailModal(r)" class="text-amber-800 hover:underline font-bold text-[11px]">
+                                    燈位細項
+                                </button>
+                                <span v-else class="text-slate-400">-</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+        <!-- ================= 下方：開立表單 (香油捐獻 / 支出核銷) ================= -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <div>
+                    <h3 class="font-bold text-base text-slate-900 flex items-center gap-2">
+                        <span>✍️</span> 臨櫃開單與傳票立案
+                    </h3>
+                    <p class="text-xs text-slate-500">辦理信眾隨喜功德款開立收據，或採購報銷建立內部支出傳票</p>
+                </div>
+
+                <div class="flex p-1 bg-slate-100 rounded-xl text-xs font-bold border border-slate-200">
+                    <button @click="mode = 'INCOME'" :class="mode === 'INCOME' ? 'bg-amber-800 text-white shadow' : 'text-slate-600 hover:text-slate-900'" class="px-4 py-1.5 rounded-lg transition-all">
                         ➕ 香油捐獻開單
                     </button>
-                    <button @click="mode = 'EXPENSE'" :class="mode === 'EXPENSE' ? 'bg-rose-800 text-white shadow' : 'text-slate-600 hover:text-slate-900'" class="flex-1 py-1.5 rounded transition-all">
+                    <button @click="mode = 'EXPENSE'" :class="mode === 'EXPENSE' ? 'bg-rose-800 text-white shadow' : 'text-slate-600 hover:text-slate-900'" class="px-4 py-1.5 rounded-lg transition-all">
                         ➖ 支出核銷傳票
                     </button>
                 </div>
+            </div>
 
-                <!-- 添油香表單 -->
-                <div v-if="mode === 'INCOME'" class="space-y-3 text-xs">
-                    <!-- 信眾快速查詢與自動填入 -->
-                    <div class="space-y-1 relative">
-                        <div class="flex items-center justify-between">
-                            <label class="block font-bold text-slate-700">信眾主檔快速代入</label>
-                            <span class="text-[10px] text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-bold">
-                                即時搜尋 ⚡
-                            </span>
-                        </div>
-                        <div class="relative">
-                            <input type="text"
-                                   v-model="believerSearchQuery"
-                                   @input="onSearchBelieverInput"
-                                   @focus="showBelieverDropdown = believerSearchResults.length > 0"
-                                   @blur="closeBelieverDropdown"
-                                   placeholder="輸入信眾姓名、電話或身分證號..."
-                                   class="w-full pl-8 pr-7 py-2 text-xs border border-slate-300 rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-600 outline-none transition-all" />
-                            <span class="absolute left-2.5 top-2.5 text-xs text-slate-400">🔍</span>
-                            <span v-if="isSearchingBeliever" class="absolute right-2.5 top-2.5 text-[10px] text-slate-400 animate-spin">⏳</span>
+            <!-- 添油香表單 -->
+            <div v-if="mode === 'INCOME'" class="space-y-4 text-xs">
+                <!-- 信眾主檔快速代入 -->
+                <div class="p-4 bg-amber-50/50 rounded-xl border border-amber-200 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label class="block font-bold text-slate-700">信眾主檔快速代入 (CRM 整合)</label>
+                        <span class="text-[10px] text-amber-800 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full font-bold">
+                            即時搜尋 ⚡
+                        </span>
+                    </div>
+                    <div class="relative">
+                        <input type="text"
+                               v-model="believerSearchQuery"
+                               @input="onSearchBelieverInput"
+                               @focus="showBelieverDropdown = believerSearchResults.length > 0"
+                               @blur="closeBelieverDropdown"
+                               placeholder="輸入信眾姓名、電話或身分證號搜尋快速代入..."
+                               class="w-full pl-8 pr-7 py-2.5 text-xs border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-amber-600 outline-none transition-all" />
+                        <span class="absolute left-2.5 top-3 text-xs text-slate-400">🔍</span>
+                        <span v-if="isSearchingBeliever" class="absolute right-2.5 top-3 text-[10px] text-slate-400 animate-spin">⏳</span>
 
-                            <!-- 下拉建議清單 -->
-                            <div v-if="showBelieverDropdown && believerSearchResults.length > 0"
-                                 class="absolute left-0 top-full mt-1 w-full bg-white rounded-xl shadow-xl border border-slate-300 z-50 overflow-hidden divide-y divide-slate-100">
-                                <div class="bg-slate-50 px-3 py-1 text-[10px] font-bold text-slate-700 flex justify-between border-b border-slate-200">
-                                    <span>請點選信眾代入</span>
-                                    <span>符合 {{ believerSearchResults.length }} 筆</span>
-                                </div>
-                                <div class="max-h-52 overflow-y-auto">
-                                    <div v-for="b in believerSearchResults"
-                                         :key="b.id"
-                                         @mousedown.prevent="selectBeliever(b)"
-                                         class="p-2.5 hover:bg-slate-50 cursor-pointer transition-colors flex items-center justify-between">
-                                        <div>
-                                            <div class="font-bold text-slate-800 flex items-center gap-1.5">
-                                                <span class="text-sm text-slate-900">{{ b.name }}</span>
-                                                <span class="text-[10px] text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded font-medium">{{ b.relationship || '信士' }}</span>
-                                                <span v-if="b.zodiac" class="text-[10px] text-slate-500">({{ b.zodiac }})</span>
-                                            </div>
-                                            <div class="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
-                                                <span class="font-mono">{{ b.phone || '無電話' }}</span>
-                                                <span v-if="b.address" class="text-slate-400 truncate max-w-[150px]">{{ b.address }}</span>
-                                            </div>
+                        <!-- 下拉建議清單 -->
+                        <div v-if="showBelieverDropdown && believerSearchResults.length > 0"
+                             class="absolute left-0 top-full mt-1 w-full bg-white rounded-xl shadow-xl border border-slate-300 z-50 overflow-hidden divide-y divide-slate-100">
+                            <div class="bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-700 flex justify-between border-b border-slate-200">
+                                <span>請點選信眾代入</span>
+                                <span>符合 {{ believerSearchResults.length }} 筆</span>
+                            </div>
+                            <div class="max-h-52 overflow-y-auto">
+                                <div v-for="b in believerSearchResults"
+                                     :key="b.id"
+                                     @mousedown.prevent="selectBeliever(b)"
+                                     class="p-3 hover:bg-amber-50/50 cursor-pointer transition-colors flex items-center justify-between">
+                                    <div>
+                                        <div class="font-bold text-slate-800 flex items-center gap-1.5">
+                                            <span class="text-sm text-slate-900">{{ b.name }}</span>
+                                            <span class="text-[10px] text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded font-medium">{{ b.relationship || '信士' }}</span>
+                                            <span v-if="b.zodiac" class="text-[10px] text-slate-500">({{ b.zodiac }})</span>
                                         </div>
-                                        <button type="button" class="px-2.5 py-1 bg-amber-800 hover:bg-amber-900 text-white rounded text-[10px] font-bold shadow-sm">
-                                            代入 ↵
-                                        </button>
+                                        <div class="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
+                                            <span class="font-mono">{{ b.phone || '無電話' }}</span>
+                                            <span v-if="b.address" class="text-slate-400 truncate max-w-[200px]">{{ b.address }}</span>
+                                        </div>
                                     </div>
+                                    <button type="button" class="px-2.5 py-1 bg-amber-800 hover:bg-amber-900 text-white rounded-lg text-[10px] font-bold shadow-sm">
+                                        代入 ↵
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
                         <label class="block font-bold text-slate-700 mb-1">捐款信眾大名 *</label>
-                        <input v-model="incomeForm.payerName" type="text" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold text-slate-900 focus:ring-1 focus:ring-amber-600 outline-none" placeholder="例：林大寶" />
+                        <input v-model="incomeForm.payerName" type="text" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-1 focus:ring-amber-600 outline-none" placeholder="例：林大寶" />
                     </div>
                     <div>
                         <label class="block font-bold text-slate-700 mb-1">聯絡手機</label>
-                        <input v-model="incomeForm.phone" type="text" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-600 outline-none" placeholder="例：0912-345678" />
+                        <input v-model="incomeForm.phone" type="text" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-amber-600 outline-none font-mono" placeholder="例：0912-345678" />
                     </div>
                     <div>
                         <label class="block font-bold text-slate-700 mb-1">捐獻緣金 (NT$) *</label>
-                        <input v-model.number="incomeForm.amount" type="number" min="100" step="100" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold font-mono text-rose-700 focus:ring-1 focus:ring-amber-600 outline-none" />
+                        <input v-model.number="incomeForm.amount" type="number" min="100" step="100" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold font-mono text-emerald-700 focus:ring-1 focus:ring-amber-600 outline-none" />
                     </div>
                     <div>
                         <label class="block font-bold text-slate-700 mb-1">捐獻科目</label>
-                        <select v-model="incomeForm.category" class="w-full border border-slate-300 rounded-lg px-3 py-2 bg-white text-xs outline-none">
+                        <select v-model="incomeForm.category" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white text-xs outline-none font-bold text-slate-800">
                             <option value="隨喜香油錢">隨喜香油錢</option>
                             <option value="光明太歲燈緣金">光明太歲燈緣金</option>
                             <option value="建廟修繕基金">建廟修繕基金</option>
@@ -232,32 +412,38 @@
                             <option value="金紙白米敬献">金紙白米敬献</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="block font-bold text-slate-700 mb-1">備註說明</label>
-                        <input v-model="incomeForm.memo" type="text" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs outline-none" placeholder="例：祈求闔家平安" />
-                    </div>
-                    <button @click="submitIncome" :disabled="isSubmitting" class="w-full py-2.5 bg-amber-800 hover:bg-amber-900 active:scale-95 text-white font-bold rounded-lg shadow transition-all disabled:opacity-50">
-                        {{ isSubmitting ? '入帳處理中...' : '開立功德收據並入帳' }}
-                    </button>
                 </div>
 
-                <!-- 記支出表單 -->
-                <div v-if="mode === 'EXPENSE'" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">備註說明</label>
+                    <input v-model="incomeForm.memo" type="text" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none" placeholder="例：祈求闔家平安健康" />
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button @click="submitIncome" :disabled="isSubmitting" class="px-6 py-2.5 bg-amber-800 hover:bg-amber-900 active:scale-95 text-white font-bold rounded-xl shadow transition-all disabled:opacity-50 text-xs">
+                        {{ isSubmitting ? '入帳處理中...' : '開立功德收據並正式入帳' }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- 記支出表單 -->
+            <div v-if="mode === 'EXPENSE'" class="space-y-4 text-xs">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
                         <label class="block font-bold text-slate-700 mb-1">支出事由摘要 *</label>
-                        <input v-model="expenseForm.title" type="text" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs outline-none" placeholder="例：採購法會沉香線香" />
+                        <input v-model="expenseForm.title" type="text" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none" placeholder="例：採購法會沉香線香" />
                     </div>
                     <div>
                         <label class="block font-bold text-slate-700 mb-1">支出金額 (NT$) *</label>
-                        <input v-model.number="expenseForm.amount" type="number" min="1" step="100" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold font-mono text-rose-700 outline-none" />
+                        <input v-model.number="expenseForm.amount" type="number" min="1" step="100" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold font-mono text-rose-700 outline-none" />
                     </div>
                     <div>
                         <label class="block font-bold text-slate-700 mb-1">受款廠商 / 對象 *</label>
-                        <input v-model="expenseForm.payee" type="text" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs outline-none" placeholder="例：萬寶香業" />
+                        <input v-model="expenseForm.payee" type="text" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none" placeholder="例：萬寶香業" />
                     </div>
                     <div>
                         <label class="block font-bold text-slate-700 mb-1">會計科目</label>
-                        <select v-model="expenseForm.category" class="w-full border border-slate-300 rounded-lg px-3 py-2 bg-white text-xs outline-none">
+                        <select v-model="expenseForm.category" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white text-xs outline-none">
                             <option value="金紙香品採購">金紙香品採購</option>
                             <option value="法會科儀法事費">法會科儀法事費</option>
                             <option value="廟宇水電瓦斯公費">廟宇水電瓦斯公費</option>
@@ -265,171 +451,81 @@
                             <option value="雜項事務修繕">雜項事務修繕</option>
                         </select>
                     </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block font-bold text-slate-700 mb-1">發票 / 憑單字軌</label>
-                        <input v-model="expenseForm.invoiceNo" type="text" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs uppercase font-mono outline-none" placeholder="例：AB-12345678" />
+                        <input v-model="expenseForm.invoiceNo" type="text" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs uppercase font-mono outline-none" placeholder="例：AB-12345678" />
                     </div>
-                    <button @click="submitExpense" :disabled="isSubmittingExpense" class="w-full py-2.5 bg-rose-800 hover:bg-rose-900 active:scale-95 text-white font-bold rounded-lg shadow transition-all disabled:opacity-50">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">核銷日期</label>
+                        <input v-model="expenseForm.txDate" type="date" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono outline-none" />
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button @click="submitExpense" :disabled="isSubmittingExpense" class="px-6 py-2.5 bg-rose-800 hover:bg-rose-900 active:scale-95 text-white font-bold rounded-xl shadow transition-all disabled:opacity-50 text-xs">
                         {{ isSubmittingExpense ? '核銷立案中...' : '核銷立案開立傳票' }}
                     </button>
                 </div>
             </div>
+        </div>
 
-            <!-- 右：查詢條件工具箱 + 日記帳清冊 -->
-            <div class="lg:col-span-2 space-y-4">
-
-                <!-- 查詢篩選條件卡片 -->
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3 text-xs">
-                    <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-                        <h3 class="font-bold text-slate-900 flex items-center gap-1.5">
-                            <span>🔍</span> 收支條件篩選與多維度查詢
-                        </h3>
-                        <div class="flex items-center gap-2">
-                            <button type="button" @click="loadFinanceData" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-1.5 rounded-lg text-xs transition-all shadow-sm">
-                                🔍 查詢
-                            </button>
-                            <button @click="resetFilters" class="text-slate-500 hover:text-slate-800 font-medium flex items-center gap-1 text-[11px]">
-                                <span>🔄</span> 重設全部條件
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                        <!-- 1. 收支類別 -->
-                        <div>
-                            <label class="block font-bold text-slate-600 mb-1">收支類型</label>
-                            <select v-model="filters.txType" class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white font-medium text-slate-800 outline-none">
-                                <option value="ALL">全部類別 (收/支)</option>
-                                <option value="INCOME">僅看 收入 (INCOME)</option>
-                                <option value="EXPENSE">僅看 支出 (EXPENSE)</option>
-                            </select>
-                        </div>
-
-                        <!-- 2. 會計科目 -->
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">會計科目</label>
-                            <select v-model="filters.category" class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white outline-none">
-                                <option value="ALL">全選科目</option>
-                                <option value="隨喜香油錢">隨喜香油錢</option>
-                                <option value="光明太歲燈緣金">光明太歲燈緣金</option>
-                                <option value="建廟修繕基金">建廟修繕基金</option>
-                                <option value="急難救助愛心款">急難救助愛心款</option>
-                                <option value="金紙白米敬献">金紙白米敬献</option>
-                                <option value="金紙香品採購">金紙香品採購</option>
-                                <option value="法會科儀法事費">法會科儀法事費</option>
-                                <option value="廟宇水電瓦斯公費">廟宇水電瓦斯公費</option>
-                                <option value="普品白米供桌宴席">普品白米供桌宴席</option>
-                                <option value="雜項事務修繕">雜項事務修繕</option>
-                            </select>
-                        </div>
-
-                        <!-- 3. 起始日期 -->
-                        <div>
-                            <label class="block font-bold text-slate-600 mb-1">起始日期</label>
-                            <input v-model="filters.startDate" type="date" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 font-mono text-slate-800 outline-none" />
-                        </div>
-
-                        <!-- 4. 結束日期 -->
-                        <div>
-                            <label class="block font-bold text-slate-600 mb-1">結束日期</label>
-                            <input v-model="filters.endDate" type="date" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 font-mono text-slate-800 outline-none" />
-                        </div>
-                    </div>
-
-                    <!-- 關鍵字搜尋框 -->
+        <!-- ================= 彈窗：點燈費用細項與燈位核定 Modal ================= -->
+        <div v-if="showDetailModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden text-xs animate-in fade-in zoom-in-95 duration-200">
+                <div class="bg-amber-900 px-6 py-4 text-white flex justify-between items-center">
                     <div>
-                        <input v-model="filters.keyword"
-                               @keyup.enter="loadFinanceData"
-                               type="text"
-                               placeholder="🔍 快速搜尋對象(捐款人/廠商)、流水單號、事由摘要、電話..."
-                               class="w-full border border-slate-300 rounded-lg px-3 py-2 bg-slate-50 focus:bg-white outline-none focus:border-slate-500 transition-colors" />
+                        <h3 class="font-bold text-sm">點燈費用細項 ‧ {{ activeRecord?.receiptNo }}</h3>
+                        <p class="text-[11px] text-amber-200 font-mono">傳票單號：{{ activeRecord?.txNo }} ｜ 入帳日期：{{ activeRecord?.txDate }}</p>
                     </div>
+                    <button @click="showDetailModal = false" class="text-amber-200 hover:text-white text-lg">✕</button>
                 </div>
 
-                <!-- 收支明細列印容器 (只印此區塊) -->
-                <div id="printable-area" class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
-
-                    <!-- 列印專用報表抬頭 (僅列印時顯示) -->
-                    <div class="print-header hidden mb-4 border-b-2 border-black pb-3 text-center">
-                        <h1 class="text-xl font-black tracking-wider">五公祖師巖 廟務收支流水清冊</h1>
-                        <div class="flex justify-between items-center text-xs mt-2 font-mono text-gray-700">
-                            <div>製表日期：{{ new Date().toLocaleDateString('zh-TW') }}</div>
-                            <div>
-                                總入帳：NT$ {{ totalIncome.toLocaleString() }} ｜
-                                總支出：NT$ {{ totalExpense.toLocaleString() }} ｜
-                                結餘：NT$ {{ balance.toLocaleString() }}
-                            </div>
-                            <div>經辦會計：{{ currentUser?.realName || currentUser?.username || '會計組' }}</div>
+                <div class="p-6 space-y-4">
+                    <div class="p-4 bg-amber-50 rounded-xl border border-amber-200 space-y-2">
+                        <div class="flex justify-between items-center border-b border-amber-200 pb-2">
+                            <span class="text-slate-600">安奉善信：</span>
+                            <span class="font-bold text-sm text-slate-900">{{ activeRecord?.payerName }}</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-amber-200 pb-2">
+                            <span class="text-slate-600">功德科目：</span>
+                            <span class="font-bold text-amber-950">{{ activeRecord?.category }}</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-amber-200 pb-2">
+                            <span class="text-slate-600">經手執事：</span>
+                            <span class="font-mono text-slate-800">{{ activeRecord?.handledBy }}</span>
+                        </div>
+                        <div class="flex justify-between items-center pt-1">
+                            <span class="text-slate-600 font-bold">繳納緣金總額：</span>
+                            <span class="font-mono text-base font-black text-red-700">NT$ {{ Number(activeRecord?.amount).toLocaleString() }}</span>
                         </div>
                     </div>
 
-                    <!-- 明細清冊標題列與按鈕 (列印時隱藏) -->
-                    <div class="flex justify-between items-center border-b border-slate-100 pb-2 no-print">
-                        <h3 class="font-bold text-sm text-slate-900">
-                            收支流水明細 (符合條件：<span class="text-slate-900 font-mono font-bold">{{ records.length }}</span> 筆)
-                        </h3>
-                        <div class="flex items-center gap-2">
-                            <button type="button" @click="printReport"
-                                    class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1.5">
-                                <span>🖨️</span>
-                                <span>列印收支清冊</span>
-                            </button>
-                            <button @click="loadFinanceData" class="text-xs text-slate-600 hover:text-slate-900 flex items-center gap-1">
-                                <span>🔄</span> 重新整理
-                            </button>
+                    <!-- 燈位拆解清單 -->
+                    <div>
+                        <h4 class="font-bold text-slate-800 mb-2">安奉神位編號明細：</h4>
+                        <div class="flex flex-wrap gap-1.5 p-3 bg-slate-50 rounded-xl border border-slate-200 max-h-36 overflow-y-auto">
+                            <span v-for="c in extractLanternCodes(activeRecord?.memo)" :key="c" class="bg-amber-100 text-amber-900 font-mono px-2.5 py-1 rounded-lg border border-amber-300 font-bold text-xs">
+                                🏮 {{ c }}
+                            </span>
                         </div>
                     </div>
 
-                    <!-- 資料表格 -->
-                    <div class="overflow-x-auto bg-white rounded-xl border border-slate-200">
-                        <table class="w-full text-left text-xs border-collapse">
-                            <thead>
-                                <tr class="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
-                                    <th class="p-3">單號 / 傳票</th>
-                                    <th class="p-3">日期</th>
-                                    <th class="p-3">收支別</th>
-                                    <th class="p-3">會計科目</th>
-                                    <th class="p-3">繳款信眾 / 請款對象</th>
-                                    <th class="p-3 text-right">金額 (NT$)</th>
-                                    <th class="p-3">收據編號</th>
-                                    <th class="p-3">經手人</th>
-                                    <th class="p-3">摘要說明</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                <tr v-if="records.length === 0">
-                                    <td colspan="9" class="text-center py-10 text-slate-400">
-                                        目前尚無收支流水紀錄，或沒有符合篩選條件的資料。
-                                    </td>
-                                </tr>
+                    <p class="text-[11px] text-gray-500">
+                        備註摘錄：{{ activeRecord?.memo }}
+                    </p>
+                </div>
 
-                                <tr v-for="r in records" :key="r.id" class="hover:bg-slate-50/70 transition-colors">
-                                    <td class="p-3 font-mono font-bold text-slate-700">{{ r.txNo }}</td>
-                                    <td class="p-3 font-mono text-slate-500 whitespace-nowrap">{{ r.txDate }}</td>
-                                    <td class="p-3">
-                                        <span :class="r.txType === 'INCOME' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'"
-                                              class="px-2 py-0.5 rounded font-bold text-[11px]">
-                                            {{ r.txType === 'INCOME' ? '＋ 功德入帳' : '－ 廟務支出' }}
-                                        </span>
-                                    </td>
-                                    <td class="p-3 font-bold text-slate-800">{{ r.category }}</td>
-                                    <td class="p-3 font-medium text-slate-900">{{ r.payerName }}</td>
-                                    <td class="p-3 font-mono font-bold text-right"
-                                        :class="r.txType === 'INCOME' ? 'text-emerald-700' : 'text-rose-700'">
-                                        {{ r.txType === 'INCOME' ? '+' : '-' }} NT$ {{ r.amount.toLocaleString() }}
-                                    </td>
-                                    <td class="p-3 font-mono text-[11px] text-blue-700">{{ r.receiptNo || '-' }}</td>
-                                    <td class="p-3 text-slate-600">{{ r.handledBy }}</td>
-                                    <td class="p-3 text-slate-500 max-w-xs truncate">{{ r.memo || '-' }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
+                <div class="bg-gray-50 px-6 py-3 border-t flex justify-end">
+                    <button @click="showDetailModal = false" class="px-5 py-2 bg-amber-800 hover:bg-amber-900 text-white font-bold rounded-xl shadow">
+                        關閉視窗
+                    </button>
                 </div>
             </div>
-
         </div>
+
     </div>
 
     <script>
@@ -441,7 +537,10 @@
                 const records = ref([]);
                 const currentUser = ref(null);
 
-                // ==================== 1. 信眾主檔快速代入功能 ====================
+                const showDetailModal = ref(false);
+                const activeRecord = ref(null);
+
+                // 信眾主檔快速代入
                 const believerSearchQuery = ref('');
                 const believerSearchResults = ref([]);
                 const isSearchingBeliever = ref(false);
@@ -457,7 +556,6 @@
                         return;
                     }
 
-                    // 防抖 250ms
                     searchTimer = setTimeout(async () => {
                         isSearchingBeliever.value = true;
                         const apiBase = (typeof API_BASE !== 'undefined' && API_BASE) ? API_BASE : '/api';
@@ -501,7 +599,7 @@
                     }, 200);
                 };
 
-                // ==================== 2. 篩選與過濾 ====================
+                // 篩選條件
                 const filters = ref({
                     txType: 'ALL',
                     category: 'ALL',
@@ -521,7 +619,7 @@
                     loadFinanceData();
                 };
 
-                // ==================== 3. 財務即時統計 ====================
+                // 統計數據
                 const totalIncome = computed(() => {
                     if (!Array.isArray(records.value)) return 0;
                     return records.value
@@ -540,13 +638,7 @@
                     return totalIncome.value - totalExpense.value;
                 });
 
-                const summary = computed(() => ({
-                    totalIncome: totalIncome.value,
-                    totalExpense: totalExpense.value,
-                    balance: balance.value
-                }));
-
-                // ==================== 4. 入帳表單 ====================
+                // 入帳表單
                 const incomeForm = ref({
                     payerName: '',
                     phone: '',
@@ -592,14 +684,13 @@
                             alert(`開立失敗：${result.message}`);
                         }
                     } catch (e) {
-                        console.error('[finance.html] 入帳失敗:', e);
-                        alert('伺服器連線失敗，請檢查後端是否正常運作。');
+                        alert('伺服器連線失敗');
                     } finally {
                         isSubmitting.value = false;
                     }
                 };
 
-                // ==================== 5. 支出表單 ====================
+                // 支出表單
                 const expenseForm = ref({
                     title: '',
                     payee: '',
@@ -644,6 +735,7 @@
                             amount: Number(expenseForm.value.amount),
                             paymentMethod: expenseForm.value.paymentMethod,
                             memo: expenseForm.value.title ? expenseForm.value.title.trim() : '',
+                            invoiceNo: expenseForm.value.invoiceNo,
                             txDate: expenseForm.value.txDate || new Date().toISOString().slice(0, 10),
                             handledBy: currentUser.value?.realName || currentUser.value?.username || '會計組'
                         };
@@ -664,14 +756,13 @@
                             alert(`支出登記失敗：${result.message}`);
                         }
                     } catch (err) {
-                        console.error('[finance.html] submitExpense 異常:', err);
                         alert(`連線伺服器失敗：${err.message}`);
                     } finally {
                         isSubmittingExpense.value = false;
                     }
                 };
 
-                // ==================== 6. 讀取財務清冊 ====================
+                // 讀取收支流水清冊
                 const loadFinanceData = async () => {
                     const apiBase = (typeof API_BASE !== 'undefined' && API_BASE) ? API_BASE : '/api';
                     const params = new URLSearchParams();
@@ -710,6 +801,7 @@
                                 payerName: item.payerName || item.payer_name || '無名氏',
                                 receiptNo: item.receiptNo || item.receipt_no || '-',
                                 handledBy: item.handledBy || item.handled_by || '-',
+                                sourceModule: item.sourceModule || item.source_module || 'MANUAL',
                                 memo: item.memo || '',
                                 txDate: item.txDate || item.tx_date || ''
                             }));
@@ -722,7 +814,22 @@
                     }
                 };
 
-                // ==================== 7. 列印報表 ====================
+                // 解析燈位代碼
+                const extractLanternCodes = (memoText) => {
+                    if (!memoText) return [];
+                    const match = memoText.match(/\[(.*?)\]/);
+                    if (match && match[1]) {
+                        return match[1].split(',').map(s => s.trim()).filter(Boolean);
+                    }
+                    const codes = memoText.match(/[A-Za-z]+-\d+/g);
+                    return codes || [];
+                };
+
+                const openLanternDetailModal = (r) => {
+                    activeRecord.value = r;
+                    showDetailModal.value = true;
+                };
+
                 const printReport = () => {
                     if (!records.value || records.value.length === 0) {
                         alert('目前清冊尚無資料可供列印！');
@@ -755,7 +862,6 @@
                     totalIncome,
                     totalExpense,
                     balance,
-                    summary,
                     incomeForm,
                     expenseForm,
                     isSubmitting,
@@ -770,7 +876,11 @@
                     showBelieverDropdown,
                     onSearchBelieverInput,
                     selectBeliever,
-                    closeBelieverDropdown
+                    closeBelieverDropdown,
+                    extractLanternCodes,
+                    openLanternDetailModal,
+                    showDetailModal,
+                    activeRecord
                 };
             }
         }).mount('#app');
