@@ -161,38 +161,46 @@ async function initDatabase() {
     }
 }
 
- // --- 2. API: 取得各活動待派發物資與信眾清單統計 ---
-
-app.get('/api/charity/summary', (req, res) => {
+// =========================================================================
+// API: 取得各活動物資捐贈與派發統計清單 (GET /api/charity/summary)
+// =========================================================================
+app.get('/api/charity/summary', async (req, res) => {
     try {
         // 1. 從 temple_events 與 event_roster 統計各法會信眾登記代捐的總份數 (offering = 'DONATE_CHARITY')
-        const eventSummaries = await pool.query(`
+        // 注意：PostgreSQL 嚴格要求非聚合欄位 (e.name, e.solar_date) 必須加入 GROUP BY
+        const eventSummariesSql = `
             SELECT 
                 e.id AS event_id, 
                 e.name AS event_name, 
                 e.solar_date,
-                COALESCE(SUM(r.seats), 0) AS total_donated_seats
+                COALESCE(SUM(r.seats), 0)::int AS total_donated_seats
             FROM temple_events e
             LEFT JOIN event_roster r 
-                ON e.id = r.event_id AND r.offering = 'DONATE_CHARITY' AND r.pay_status != 'CANCELLED'
-            GROUP BY e.id
+                ON e.id = r.event_id 
+               AND r.offering = 'DONATE_CHARITY' 
+               AND r.pay_status != 'CANCELLED'
+            GROUP BY e.id, e.name, e.solar_date
             ORDER BY e.solar_date DESC
-        `).all();
+        `;
+        const eventSummariesRes = await pool.query(eventSummariesSql);
+        const eventSummaries = eventSummariesRes.rows;
 
         // 2. 從 charity_distribution 統計已轉贈派發的總份數
         let distributedMap = {};
         try {
-            const distRows = await pool.query(`
-                SELECT event_id, COALESCE(SUM(quantity), 0) AS distributed_total
+            const distSql = `
+                SELECT 
+                    event_id, 
+                    COALESCE(SUM(quantity), 0)::int AS distributed_total
                 FROM charity_distribution
                 GROUP BY event_id
-            `).all();
-
-            distRows.forEach(row => {
+            `;
+            const distRes = await pool.query(distSql);
+            distRes.rows.forEach(row => {
                 distributedMap[row.event_id] = Number(row.distributed_total) || 0;
             });
         } catch (e) {
-            console.warn('[Charity Summary] charity_distribution 查無派發紀錄');
+            console.warn('[Charity Summary] charity_distribution 查無派發紀錄或資料表尚未建立');
         }
 
         // 3. 計算各活動在庫剩餘量
