@@ -530,19 +530,47 @@
 
                 const openDonorsModal = async (evt) => {
                     activeEvent.value = evt;
+                    // 關鍵修復：防呆支援 eventId 或 event_id
+                    const targetEventId = evt.eventId || evt.event_id;
+
+                    if (!targetEventId) {
+                        console.error('無效的法會活動 ID:', evt);
+                        alert('無法取得法會活動編號，請重新整理後再試！');
+                        return;
+                    }
+
                     try {
-                        const res = await fetch(`${getBaseUrl()}/charity/donors/${evt.eventId}`);
+                        const base = (typeof getBaseUrl === 'function') ? getBaseUrl() : ((typeof API_BASE !== 'undefined') ? API_BASE : '/api');
+                        const res = await fetch(`${base}/charity/donors/${encodeURIComponent(targetEventId)}`);
                         const data = await res.json();
+
                         if (data.success) {
-                            donorsList.value = data.data || [];
+                            donorsList.value = Array.isArray(data.data) ? data.data : [];
                             showDonorsModal.value = true;
                         } else {
                             alert(`讀取捐贈清冊失敗：${data.message}`);
                         }
                     } catch (e) {
-                        alert('連線伺服器異常');
+                        console.error('讀取捐贈名冊例外:', e);
+                        alert('伺服器連線失敗');
                     }
                 };
+
+                //const openDonorsModal = async (evt) => {
+                //    activeEvent.value = evt;
+                //    try {
+                //        const res = await fetch(`${getBaseUrl()}/charity/donors/${evt.eventId}`);
+                //        const data = await res.json();
+                //        if (data.success) {
+                //            donorsList.value = data.data || [];
+                //            showDonorsModal.value = true;
+                //        } else {
+                //            alert(`讀取捐贈清冊失敗：${data.message}`);
+                //        }
+                //    } catch (e) {
+                //        alert('連線伺服器異常');
+                //    }
+                //};
 
                 const exportDonorsText = () => {
                     if (donorsList.value.length === 0) return alert('無名冊可供匯出');
