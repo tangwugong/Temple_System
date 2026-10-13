@@ -354,6 +354,17 @@
                         <p class="text-[11px] text-slate-500 leading-relaxed line-clamp-2">燈位規格年度一鍵生成、執事帳號權限與沿革大事記編輯。</p>
                     </a>
 
+                    <a v-if="canAccess('lantern-print.html')" href="lantern-print.html" class="group bg-white p-5 rounded-2xl border border-amber-200/90 hover:border-amber-500 transition-all shadow-sm hover:shadow-md space-y-3 block">
+                        <div class="flex justify-between items-start">
+                            <span class="text-2xl p-2.5 bg-amber-50 group-hover:bg-amber-100 rounded-xl transition-colors">🖨️</span>
+                            <span class="text-[11px] text-amber-800 font-bold group-hover:translate-x-1 transition-transform">批次列印燈貼</span>
+                        </div>
+                        <h3 class="font-bold text-sm text-slate-900 group-hover:text-amber-900 transition-colors">批次列印燈貼</h3>
+                        <p class="text-[11px] text-slate-500 leading-relaxed line-clamp-2">燈位批次列印。</p>
+                    </a>
+
+                     
+
                     <!-- 系統操作手冊 (所有人開放閱覽) -->
                     <a href="manual.html" class="group bg-white p-5 rounded-2xl border border-amber-200/90 hover:border-amber-500 transition-all shadow-sm hover:shadow-md space-y-3 block">
                         <div class="flex justify-between items-start">
@@ -501,9 +512,11 @@
                         { page: 'history.html', title: '百年廟宇沿革' },
                         { page: 'events.html', title: '年度法會活動' },
                         { page: 'lantern.html', title: '點燈排位受理' },
+                        { page: 'lantern-print.html', title: '燈位列印' },
                         { page: 'charity.html', title: '物資捐贈管理' },
                         { page: 'finance.html', title: '公庫財務收支' },
                         { page: 'crm.html', title: '信眾家戶檔案' },
+                        
                         { page: 'settings.html', title: '系統參數維護' },
                         { page: 'manual.html', title: '系統操作手冊' },
                         { page: 'contact.html', title: '聯絡資訊' },

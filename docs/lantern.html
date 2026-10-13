@@ -33,7 +33,7 @@
                         </h2>
                         <p class="text-xs text-gray-500 mt-0.5">
                             <span v-if="isGuest" class="text-amber-800 font-bold">【訪客查詢模式】僅提供燈位安奉名冊即時查閱，如需點燈請洽大殿服務台</span>
-                            <span v-else>執事操作模式：可點選空位辦理信眾臨櫃開單安奉，點選已安奉燈位可查閱費用明細</span>
+                            <span v-else>執事操作模式：可點選空位辦理信眾臨櫃開單安奉，點選已安奉燈位可查閱生辰八字與費用明細</span>
                         </p>
                     </div>
 
@@ -48,6 +48,12 @@
                             {{ yr }}年
                         </button>
                     </div>
+                    <!-- 在 lantern.html 頂部加入此按鈕 -->
+                    <a href="lantern-print.html"
+                       class="px-3.5 py-1.5 bg-red-800 hover:bg-red-900 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm">
+                        <span>🖨️</span> 批次列印燈貼
+                    </a>
+
                 </div>
 
                 <!-- 依年度顯示各點燈類別狀況卡片 (含單價顯示) -->
@@ -125,18 +131,22 @@
                                     'bg-gradient-to-b from-red-800 to-red-900 border-red-950 text-white shadow-inner': seat.status === 'OCCUPIED',
                                     'hover:brightness-110 cursor-pointer': seat.status === 'OCCUPIED' && !isGuest
                                 }"
-                                class="p-2 border rounded-xl text-center transition-all flex flex-col items-center justify-between min-h-[66px]">
+                                class="p-2 border rounded-xl text-center transition-all flex flex-col items-center justify-between min-h-[70px]">
 
                             <span class="text-[9px] font-mono opacity-80" :class="seat.status === 'OCCUPIED' ? 'text-amber-200' : 'text-gray-500'">
                                 {{ seat.code }}
                             </span>
 
-                            <!-- 已安奉顯示姓名，未安奉顯示燈位標籤 -->
-                            <div v-if="seat.status === 'OCCUPIED'" class="my-auto text-center">
-                                <span class="text-xs font-black text-amber-300 tracking-wider block truncate max-w-[58px]">
+                            <!-- 已安奉顯示姓名與太歲標籤 -->
+                            <div v-if="seat.status === 'OCCUPIED'" class="my-auto text-center w-full">
+                                <span class="text-xs font-black text-amber-300 tracking-wider block truncate max-w-[58px] mx-auto">
                                     {{ seat.believerName }}
                                 </span>
-                                <span class="text-[8px] text-amber-100/70 scale-90 block">安奉</span>
+                                <span v-if="seat.birthDate && checkTaiSuiStatus(seat.birthDate, seat.year)?.isClash"
+                                      class="text-[7.5px] bg-red-700 text-white px-1 py-0.2 rounded font-bold inline-block scale-90">
+                                    犯沖
+                                </span>
+                                <span v-else class="text-[8px] text-amber-100/70 scale-90 block">安奉</span>
                             </div>
                             <div v-else class="my-auto">
                                 <span class="text-xs font-bold">{{ seat.label }}</span>
@@ -179,7 +189,7 @@
                     <div class="space-y-2 border-l-2 border-amber-700 pl-3">
                         <h4 class="font-bold text-slate-800">如何辦理點燈安奉？</h4>
                         <p class="text-gray-600 text-[11px]">
-                            為確保文疏資料填寫正確並開立具字軌之公庫正式收據，點燈作業需由廟方值班執事人員臨櫃登錄。
+                            為確保疏文八字登錄正確並開立具字軌之公庫正式收據，點燈作業需由廟方值班執事人員臨櫃登錄。
                         </p>
                     </div>
 
@@ -201,7 +211,7 @@
                 </div>
             </div>
 
-            <!-- 【B】若為已登入執事：臨櫃選位、CRM 查找與費用細項結算清單 -->
+            <!-- 【B】若為已登入執事：臨櫃選位、CRM 查找、八字輸入與太歲試算面板 -->
             <div v-else class="bg-white p-6 rounded-2xl border border-amber-200 shadow-sm space-y-4 flex flex-col justify-between h-fit sticky top-20">
                 <div class="space-y-4">
                     <div class="border-b pb-2">
@@ -258,6 +268,7 @@
                         </div>
                     </div>
 
+                    <!-- 信眾基本資料輸入 -->
                     <div class="grid grid-cols-2 gap-2 text-xs">
                         <div>
                             <label class="block font-bold text-gray-700 mb-1">安奉善信大名 *</label>
@@ -267,6 +278,58 @@
                             <label class="block font-bold text-gray-700 mb-1">聯絡電話 *</label>
                             <input v-model="posForm.phone" type="text" placeholder="例：0912-345678" class="w-full border rounded-xl px-3 py-2 bg-gray-50 focus:bg-white outline-none focus:border-amber-700 font-mono" />
                         </div>
+                    </div>
+
+                    <!-- 【核心功能】生辰八字（出生日期與時辰）輸入 -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                        <div class="sm:col-span-2">
+                            <label class="block font-bold text-gray-700 mb-1">
+                                國曆出生年月日 <span class="text-red-600">*</span>
+                            </label>
+                            <input v-model="posForm.birthDate"
+                                   type="date"
+                                   class="w-full border rounded-xl px-3 py-2 bg-gray-50 focus:bg-white outline-none focus:border-amber-700 font-mono font-bold text-slate-800" />
+                        </div>
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">出生時辰</label>
+                            <select v-model="posForm.birthTime" class="w-full border rounded-xl px-2.5 py-2 bg-white text-gray-700 outline-none font-medium">
+                                <option value="吉時">吉時 (吉時吉日)</option>
+                                <option value="子時 (23:00-01:00)">子時 (23-01)</option>
+                                <option value="丑時 (01:00-03:00)">丑時 (01-03)</option>
+                                <option value="寅時 (03:00-05:00)">寅時 (03-05)</option>
+                                <option value="卯時 (05:00-07:00)">卯時 (05-07)</option>
+                                <option value="辰時 (07:00-09:00)">辰時 (07-09)</option>
+                                <option value="巳時 (09:00-11:00)">巳時 (09-11)</option>
+                                <option value="午時 (11:00-13:00)">午時 (11-13)</option>
+                                <option value="未時 (13:00-15:00)">未時 (13-15)</option>
+                                <option value="申時 (15:00-17:00)">申時 (15-17)</option>
+                                <option value="酉時 (17:00-19:00)">酉時 (17-19)</option>
+                                <option value="戌時 (19:00-21:00)">戌時 (19-21)</option>
+                                <option value="亥時 (21:00-23:00)">亥時 (21-23)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 【核心功能】即時犯太歲運勢檢測卡片 -->
+                    <div v-if="taiSuiResult"
+                         class="p-3.5 rounded-xl border text-xs space-y-1.5 transition-all shadow-sm"
+                         :class="taiSuiResult.isClash ? 'bg-rose-50 border-rose-200' : 'bg-emerald-50/70 border-emerald-200'">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <span class="font-bold text-slate-900 text-sm">
+                                    生肖屬【{{ taiSuiResult.zodiac }}】
+                                </span>
+                                <span class="text-slate-500 font-mono text-[11px]">
+                                    (虛歲 {{ taiSuiResult.nominalAge }} 歲)
+                                </span>
+                            </div>
+                            <span class="px-2 py-0.5 rounded-full text-[11px] font-bold border" :class="taiSuiResult.badgeClass">
+                                {{ taiSuiResult.clashType }}
+                            </span>
+                        </div>
+                        <p class="text-[11px] leading-relaxed" :class="taiSuiResult.isClash ? 'text-rose-800 font-bold' : 'text-emerald-800'">
+                            {{ taiSuiResult.suggestion }}
+                        </p>
                     </div>
 
                     <!-- 已選定燈位清單 -->
@@ -289,7 +352,7 @@
                         </div>
                     </div>
 
-                    <!-- 費用細項與小計清單 (整合點燈明細與單價小計) -->
+                    <!-- 費用細項與小計清單 -->
                     <div class="p-4 bg-amber-50/80 rounded-2xl border border-amber-200 text-xs space-y-2">
                         <div class="flex justify-between font-bold text-amber-950 border-b border-amber-200/80 pb-1.5">
                             <span>點燈項目費用細項</span>
@@ -328,7 +391,7 @@
 
         </div>
 
-        <!-- ================= 彈窗 1：已安奉燈位費用與安奉明細 Modal ================= -->
+        <!-- ================= 彈窗 1：已安奉燈位費用、生辰八字與安奉明細 Modal ================= -->
         <div v-if="showDetailModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
             <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden text-xs animate-in fade-in zoom-in-95 duration-200">
                 <div class="bg-red-900 px-6 py-4 text-white flex justify-between items-center">
@@ -348,6 +411,28 @@
                         <div class="flex justify-between items-center border-b border-amber-200/80 pb-2">
                             <span class="text-slate-600">聯絡手機：</span>
                             <span class="font-mono font-bold text-slate-900">{{ activeOccupiedSeat?.phone || '未登記電話' }}</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-amber-200/80 pb-2">
+                            <span class="text-slate-600">生辰八字：</span>
+                            <span class="font-mono font-bold text-slate-900">
+                                {{ activeOccupiedSeat?.birthDate || '吉日' }}
+                                <span v-if="activeOccupiedSeat?.birthTime" class="text-amber-900 font-normal">({{ activeOccupiedSeat?.birthTime }})</span>
+                            </span>
+                        </div>
+                        <div v-if="activeOccupiedSeat?.birthDate" class="flex justify-between items-center border-b border-amber-200/80 pb-2">
+                            <span class="text-slate-600">歲次太歲：</span>
+                            <div>
+                                <span class="font-bold text-slate-900 mr-1.5">
+                                    屬{{ getZodiacFromYear(activeOccupiedSeat.birthDate.split('-')[0]) }}
+                                </span>
+                                <span v-if="checkTaiSuiStatus(activeOccupiedSeat.birthDate, activeOccupiedSeat.year)?.isClash"
+                                      class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                                    ⚠️ {{ checkTaiSuiStatus(activeOccupiedSeat.birthDate, activeOccupiedSeat.year)?.clashType }}
+                                </span>
+                                <span v-else class="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-medium">
+                                    平安吉星
+                                </span>
+                            </div>
                         </div>
                         <div class="flex justify-between items-center border-b border-amber-200/80 pb-2">
                             <span class="text-slate-600">安奉年度：</span>
@@ -393,6 +478,10 @@
                             <span class="text-slate-600">安奉人：</span>
                             <span class="font-bold text-slate-900">{{ orderResult?.name }}</span>
                         </div>
+                        <div v-if="orderResult?.birthDate" class="flex justify-between items-center">
+                            <span class="text-slate-600">生辰八字：</span>
+                            <span class="font-mono font-bold text-slate-900">{{ orderResult?.birthDate }} ({{ orderResult?.birthTime || '吉時' }})</span>
+                        </div>
                         <div class="flex justify-between items-center">
                             <span class="text-slate-600">點燈數量：</span>
                             <span class="font-mono font-bold text-slate-900">{{ orderResult?.count }} 盞</span>
@@ -404,7 +493,7 @@
                     </div>
 
                     <p class="text-[11px] text-gray-500">
-                        點燈神位已即時點亮，該筆款項已同步寫入公庫收支日記帳（finance_ledger）。
+                        點燈神位已即時點亮，該筆款項已同步寫入公庫收支日記帳。
                     </p>
                 </div>
 
@@ -438,7 +527,14 @@
                 const allSeats = ref([]);
                 const categorySummaries = ref([]);
                 const currentCategory = ref('T');
-                const posForm = ref({ name: '', phone: '' });
+
+                // 表單綁定：包含姓名、電話、出生年月日與出生時辰
+                const posForm = ref({
+                    name: '',
+                    phone: '',
+                    birthDate: '',
+                    birthTime: '吉時'
+                });
 
                 const allBelievers = ref([]);
                 const searchKeyword = ref('');
@@ -450,6 +546,72 @@
                 const activeOccupiedSeat = ref(null);
                 const showSuccessModal = ref(false);
                 const orderResult = ref(null);
+
+                // =========================================================================
+                // 民俗生肖與值年太歲犯沖推算邏輯
+                // =========================================================================
+                const ZODIACS = ['鼠', '牛', '虎', '兔', '龍', '蛇', '馬', '羊', '猴', '雞', '狗', '豬'];
+
+                const getZodiacFromYear = (birthYear) => {
+                    if (!birthYear) return '';
+                    const y = parseInt(birthYear, 10);
+                    if (isNaN(y) || y < 1900) return '';
+                    const idx = (y - 4) % 12;
+                    return ZODIACS[(idx + 12) % 12];
+                };
+
+                const checkTaiSuiStatus = (birthDateStr, targetYear = selectedYear.value) => {
+                    if (!birthDateStr) return null;
+                    const birthYear = parseInt(birthDateStr.split('-')[0], 10);
+                    if (isNaN(birthYear)) return null;
+
+                    const userZodiac = getZodiacFromYear(birthYear);
+                    const targetZodiac = getZodiacFromYear(targetYear);
+
+                    const userIdx = ZODIACS.indexOf(userZodiac);
+                    const targetIdx = ZODIACS.indexOf(targetZodiac);
+                    const diff = (userIdx - targetIdx + 12) % 12;
+
+                    const nominalAge = targetYear - birthYear + 1;
+
+                    let clashType = '吉星高照';
+                    let isClash = false;
+                    let badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                    let suggestion = '平安順遂，宜安奉光明燈、文昌燈或財神燈以祈求元辰光彩、家運隆昌。';
+
+                    if (diff === 0) {
+                        clashType = '值太歲 (座太歲)';
+                        isClash = true;
+                        badgeClass = 'bg-rose-100 text-rose-800 border-rose-300 font-bold';
+                        suggestion = '⚠️ 本命年值太歲，運勢起伏較劇，強烈建議安奉【安太歲/太歲星君燈】以化解災煞保平安。';
+                    } else if (diff === 6) {
+                        clashType = '正沖 (歲破/六沖)';
+                        isClash = true;
+                        badgeClass = 'bg-red-100 text-red-900 border-red-300 font-bold';
+                        suggestion = '⚠️ 與值年歲君正沖對望，防破財及疾厄，務必安奉【安太歲/太歲星君燈】以護佑平順安康。';
+                    } else if (diff === 3 || diff === 9) {
+                        clashType = '偏沖 (刑/破太歲)';
+                        isClash = true;
+                        badgeClass = 'bg-amber-100 text-amber-900 border-amber-300 font-bold';
+                        suggestion = '⚡ 歲運相刑相害，易惹口舌是非，建議安奉【太歲燈】或【消災延壽光明燈】以趨吉避凶。';
+                    }
+
+                    return {
+                        birthYear,
+                        nominalAge,
+                        zodiac: userZodiac,
+                        targetYearZodiac: targetZodiac,
+                        clashType,
+                        isClash,
+                        badgeClass,
+                        suggestion
+                    };
+                };
+
+                // 即時推算當前輸入之生辰太歲狀態
+                const taiSuiResult = computed(() => {
+                    return checkTaiSuiStatus(posForm.value.birthDate, selectedYear.value);
+                });
 
                 const getLunarYearGanZhi = (year) => {
                     const tianGan = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
@@ -485,6 +647,8 @@
                                 fee: Number(d.fee) || 600,
                                 believerName: d.assigned_believer_name || '',
                                 phone: d.phone || '',
+                                birthDate: d.birth_date || '',
+                                birthTime: d.birth_time || '',
                                 hallName: d.hall_name || '',
                                 year: d.lantern_year || year
                             }));
@@ -519,6 +683,7 @@
                                     id: `H-${h.familyCode}`,
                                     name: h.name,
                                     phone: h.phone,
+                                    birthDate: h.birthDate || h.birth_date || '',
                                     relationship: '戶長',
                                     familyCode: h.familyCode
                                 });
@@ -528,6 +693,7 @@
                                             id: m.id,
                                             name: m.name,
                                             phone: m.phone || h.phone,
+                                            birthDate: m.birthDate || m.birth_date || '',
                                             relationship: m.relationship || '家眷',
                                             familyCode: h.familyCode
                                         });
@@ -552,7 +718,6 @@
 
                 const selectedSeats = computed(() => allSeats.value.filter(s => s.status === 'LOCKED'));
 
-                // 計算費用細項分組（依類別計算單價、盞數與小計）
                 const feeBreakdown = computed(() => {
                     if (selectedSeats.value.length === 0) return [];
                     const breakdownMap = {};
@@ -596,6 +761,9 @@
                 const selectBeliever = (b) => {
                     posForm.value.name = b.name;
                     posForm.value.phone = b.phone;
+                    if (b.birthDate) {
+                        posForm.value.birthDate = b.birthDate;
+                    }
                     selectedBelieverTag.value = `${b.name} (${b.relationship})`;
                     searchKeyword.value = '';
                     isSearching.value = false;
@@ -611,7 +779,6 @@
                     selectedSeats.value.forEach(s => s.status = 'AVAILABLE');
                 };
 
-                // 處理燈位點擊（空位暫選 vs 已安奉查看細項）
                 const handleSeatClick = (seat) => {
                     if (seat.status === 'OCCUPIED') {
                         if (!isGuest.value) {
@@ -647,6 +814,8 @@
                                 seatCodes: codes,
                                 believerName: applicantName,
                                 phone: posForm.value.phone,
+                                birthDate: posForm.value.birthDate,
+                                birthTime: posForm.value.birthTime,
                                 year: selectedYear.value
                             })
                         });
@@ -655,12 +824,14 @@
                             orderResult.value = {
                                 recordNo: data.recordNo,
                                 name: applicantName,
+                                birthDate: posForm.value.birthDate,
+                                birthTime: posForm.value.birthTime,
                                 count: codes.length,
                                 totalFee: currentTotal
                             };
                             showSuccessModal.value = true;
 
-                            posForm.value = { name: '', phone: '' };
+                            posForm.value = { name: '', phone: '', birthDate: '', birthTime: '吉時' };
                             selectedBelieverTag.value = '';
 
                             await Promise.all([
@@ -707,6 +878,9 @@
                     activeOccupiedSeat,
                     showSuccessModal,
                     orderResult,
+                    taiSuiResult,
+                    getZodiacFromYear,
+                    checkTaiSuiStatus,
                     getLunarYearGanZhi,
                     changeYear,
                     selectCategory,

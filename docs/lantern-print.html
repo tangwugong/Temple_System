@@ -1,0 +1,506 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>神位燈籤列印系統 - 五公祖師巖</title>
+    <script src="js/tailwindcss.js"></script>
+    <script src="js/vue.global.prod.js"></script>
+    <script src="js/common.js"></script>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+
+        /* 螢幕預覽模式下的燈籤樣式 */
+        .lantern-sticker {
+            width: 62mm;
+            min-height: 96mm;
+            border: 2px solid #991b1b; /* 硃砂深紅 */
+            background: #fff;
+            padding: 4mm 3mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            text-align: center;
+            position: relative;
+            box-sizing: border-box;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .lantern-sticker-inner {
+            border: 1px dashed #b91c1c;
+            height: 100%;
+            padding: 3mm 2mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* 橫式短標籤樣式 (備用) */
+        .lantern-sticker-compact {
+            width: 85mm;
+            min-height: 42mm;
+            border: 2px solid #991b1b;
+            background: #fff;
+            padding: 3mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-sizing: border-box;
+        }
+
+        /* ================== A4 列印專用 CSS ================== */
+        @media print {
+            .no-print, header, nav, aside {
+                display: none !important;
+            }
+
+            body {
+                background: #fff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                color: #000 !important;
+            }
+
+                body * {
+                    visibility: hidden;
+                }
+
+            #printable-area, #printable-area * {
+                visibility: visible;
+            }
+
+            #printable-area {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                padding: 4mm !important;
+                margin: 0 !important;
+            }
+
+            /* A4 網格排版：直式 1 頁 3 欄 */
+            .print-grid {
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 5mm !important;
+            }
+
+            .print-grid-compact {
+                display: grid !important;
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 4mm !important;
+            }
+
+            .lantern-sticker, .lantern-sticker-compact {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                border: 2px solid #7f1d1d !important;
+                box-shadow: none !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            @page {
+                size: A4 portrait;
+                margin: 6mm;
+            }
+        }
+    </style>
+</head>
+<body class="bg-[#FFFDF7] text-slate-800 min-h-screen">
+    <div id="app" v-cloak class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+
+        <!-- 頂部功能橫條 (列印時隱藏) -->
+        <div class="no-print flex flex-wrap justify-between items-center bg-white p-5 rounded-2xl border border-amber-200 shadow-sm gap-4">
+            <div class="flex items-center gap-3">
+                <a href="lantern.html" class="p-2 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-1">
+                    <span>⬅️</span> 燈牆矩陣
+                </a>
+                <div>
+                    <h2 class="font-bold text-lg text-slate-900 flex items-center gap-2">
+                        <span>🖨️</span> 五公祖師巖 ‧ 神位燈籤批次列印系統
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">自動套印信士生辰八字、歲次年命與值年太歲，直上 A4 標準裁切列印</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button type="button" @click="executePrint"
+                        :disabled="filteredList.length === 0"
+                        class="px-5 py-2.5 bg-red-800 hover:bg-red-900 active:scale-95 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl shadow transition-all flex items-center gap-2">
+                    <span class="text-sm">🖨️</span> 啟動列印燈籤 (共 {{ filteredList.length }} 份)
+                </button>
+            </div>
+        </div>
+
+        <!-- 篩選條件工具列 (no-print) -->
+        <div class="no-print bg-white p-5 rounded-2xl border border-amber-200 shadow-sm space-y-4 text-xs">
+            <div class="flex justify-between items-center border-b border-amber-100 pb-2">
+                <h3 class="font-bold text-slate-900 flex items-center gap-1.5 text-sm">
+                    <span>🔍</span> 列印標籤條件篩選
+                </h3>
+                <button @click="resetFilters" class="text-slate-500 hover:text-slate-800 flex items-center gap-1 text-[11px]">
+                    <span>🔄</span> 重設條件
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">安奉年度</label>
+                    <select v-model="filters.year" @change="loadLanternData" class="w-full border border-slate-300 rounded-xl px-2.5 py-1.5 bg-white font-mono font-bold text-slate-900 outline-none">
+                        <option v-for="y in yearOptions" :key="y" :value="y">{{ y }} 年度 ({{ getLunarYearGanZhi(y) }})</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">神燈類別</label>
+                    <select v-model="filters.typeCode" class="w-full border border-slate-300 rounded-xl px-2.5 py-1.5 bg-white font-bold text-slate-800 outline-none">
+                        <option value="ALL">全部燈種</option>
+                        <option value="T">太歲星君燈 (T)</option>
+                        <option value="G">文昌延壽光明燈 (G)</option>
+                        <option value="W">五路財神燈 (W)</option>
+                        <option value="Y">延壽藥師燈 (Y)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">太歲運勢過濾</label>
+                    <select v-model="filters.clashStatus" class="w-full border border-slate-300 rounded-xl px-2.5 py-1.5 bg-white font-bold text-slate-800 outline-none">
+                        <option value="ALL">全部信眾</option>
+                        <option value="CLASH_ONLY">⚠️ 僅印犯太歲信眾 (值/沖/刑)</option>
+                        <option value="LUCKY_ONLY">僅印吉星信眾</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">標籤排版版型</label>
+                    <select v-model="stickerLayout" class="w-full border border-slate-300 rounded-xl px-2.5 py-1.5 bg-white font-bold text-slate-800 outline-none">
+                        <option value="VERTICAL">標準燈籤 (直式 3欄/頁)</option>
+                        <option value="COMPACT">橫式名條 (橫式 2欄/頁)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">快速搜尋</label>
+                    <input v-model="filters.keyword" type="text" placeholder="搜尋姓名、手機、燈號..." class="w-full border border-slate-300 rounded-xl px-2.5 py-1.5 bg-slate-50 focus:bg-white outline-none" />
+                </div>
+            </div>
+
+            <!-- 即時統計指標 -->
+            <div class="flex flex-wrap items-center justify-between text-xs pt-1 border-t border-dashed border-slate-200">
+                <span class="text-slate-600">
+                    載入總安奉數：<strong class="font-mono text-slate-900">{{ rawList.length }}</strong> 筆 ｜
+                    符合列印條件：<strong class="font-mono text-red-700 text-sm font-bold">{{ filteredList.length }}</strong> 份
+                    <span v-if="clashCount > 0" class="ml-2 text-rose-700 font-bold bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                        內含犯太歲信眾 {{ clashCount }} 位
+                    </span>
+                </span>
+                <span class="text-slate-400 font-mono text-[11px]">
+                    預估耗用紙張：約 {{ Math.ceil(filteredList.length / (stickerLayout === 'VERTICAL' ? 9 : 10)) }} 張 A4
+                </span>
+            </div>
+        </div>
+
+        <!-- ================= 列印與預覽核心呈現區塊 ================= -->
+        <div id="printable-area" class="space-y-4">
+
+            <div v-if="filteredList.length === 0" class="no-print bg-white p-12 rounded-2xl border text-center text-slate-400 text-xs">
+                目前查無符合條件的已安奉燈位可供列印，請調整篩選年度或條件。
+            </div>
+
+            <!-- 【版型 A】標準直式宮廟燈籤 (預設) -->
+            <div v-else-if="stickerLayout === 'VERTICAL'" class="print-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <div v-for="item in filteredList" :key="item.seatCode" class="lantern-sticker mx-auto">
+                    <div class="lantern-sticker-inner">
+
+                        <!-- 頂部：燈座編號與神明殿堂 -->
+                        <div>
+                            <div class="text-xs font-black tracking-widest text-red-900 border-b border-red-300 pb-0.5 font-mono">
+                                【 {{ item.seatCode }} 】
+                            </div>
+                            <div class="text-[11px] font-bold text-red-800 mt-1">
+                                {{ item.lampTitle }}
+                            </div>
+                        </div>
+
+                        <!-- 中間：信眾姓名 (大字、書法直式氣勢) -->
+                        <div class="my-3 py-2 border-y border-red-200">
+                            <p class="text-[10px] text-gray-500 mb-0.5">信士 / 善女</p>
+                            <h2 class="text-2xl font-black text-slate-900 tracking-wider py-1 font-serif">
+                                {{ item.name }}
+                            </h2>
+                            <p class="text-[10px] text-red-700 font-bold mt-0.5">祈安植福 ‧ 元辰光彩</p>
+                        </div>
+
+                        <!-- 底部：生辰、生肖、虛歲與犯沖註記 (精準黏貼資訊) -->
+                        <div class="space-y-1 text-left text-[10px] text-slate-800 font-mono bg-red-50/50 p-2 rounded border border-red-200">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">誕辰：</span>
+                                <span class="font-bold">{{ item.birthDate || '吉時吉日' }}</span>
+                            </div>
+                            <div v-if="item.birthTime" class="flex justify-between">
+                                <span class="text-gray-500">時辰：</span>
+                                <span>{{ item.birthTime }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">年命：</span>
+                                <span class="font-bold">
+                                    屬{{ item.zodiac || getZodiacFromYear(item.birthDate?.split('-')[0]) }}
+                                    <span v-if="item.nominalAge">(虛歲{{ item.nominalAge }}歲)</span>
+                                </span>
+                            </div>
+                            <div v-if="item.clashInfo && item.clashInfo.isClash" class="flex justify-between text-red-800 font-bold border-t border-red-200 pt-0.5 mt-0.5">
+                                <span>太歲：</span>
+                                <span>⚠️ {{ item.clashInfo.clashType }}</span>
+                            </div>
+                            <div class="flex justify-between text-gray-600 border-t border-red-200 pt-0.5 mt-0.5 text-[9px]">
+                                <span>安奉年份：</span>
+                                <span>歲次 {{ getLunarYearGanZhi(item.year) }}</span>
+                            </div>
+                        </div>
+
+                        <!-- 符印或結尾吉祥標語 -->
+                        <div class="mt-2 text-[9px] text-red-900 tracking-widest font-serif font-bold">
+                            五公祖師巖 護佑吉祥
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- 【版型 B】橫式簡約短籤 (適合矮壓克力燈格) -->
+            <div v-else class="print-grid-compact grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div v-for="item in filteredList" :key="item.seatCode" class="lantern-sticker-compact mx-auto">
+                    <div class="flex justify-between items-center border-b border-red-300 pb-1">
+                        <span class="font-mono font-black text-red-900 text-xs">【 {{ item.seatCode }} 】</span>
+                        <span class="font-bold text-red-800 text-[11px]">{{ item.lampTitle }}</span>
+                        <span class="text-[10px] text-gray-500 font-mono">{{ getLunarYearGanZhi(item.year) }}</span>
+                    </div>
+
+                    <div class="flex items-center justify-between py-2 px-1">
+                        <div class="text-left">
+                            <h2 class="text-xl font-black text-slate-900 tracking-wider font-serif">
+                                {{ item.name }}
+                            </h2>
+                            <p class="text-[10px] text-gray-500 font-mono mt-0.5">
+                                {{ item.birthDate || '吉日' }} ({{ item.birthTime || '吉時' }})
+                            </p>
+                        </div>
+                        <div class="text-right text-[10px] font-mono space-y-0.5">
+                            <div>屬{{ item.zodiac }} (虛歲{{ item.nominalAge }}歲)</div>
+                            <div v-if="item.clashInfo && item.clashInfo.isClash" class="text-red-700 font-bold">
+                                ⚠️ {{ item.clashInfo.clashType }}
+                            </div>
+                            <div v-else class="text-emerald-700 font-medium">平安吉星</div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-red-200 pt-1 text-center text-[8.5px] text-red-800 font-serif">
+                        五公祖師巖 ‧ 祈安植福 元辰光彩
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const getBaseUrl = () => {
+                    let base = (typeof getApiBase === 'function') ? getApiBase() : ((typeof API_BASE !== 'undefined') ? API_BASE : '/api');
+                    return base.replace(/\/+$/, '');
+                };
+
+                const currentYear = new Date().getFullYear();
+                const yearOptions = ref([currentYear - 1, currentYear, currentYear + 1]);
+                const stickerLayout = ref('VERTICAL');
+
+                const filters = ref({
+                    year: currentYear,
+                    typeCode: 'ALL',
+                    clashStatus: 'ALL',
+                    keyword: ''
+                });
+
+                const rawList = ref([]);
+
+                // 民俗生肖與太歲計算基準
+                const ZODIACS = ['鼠', '牛', '虎', '兔', '龍', '蛇', '馬', '羊', '猴', '雞', '狗', '豬'];
+
+                const getZodiacFromYear = (birthYear) => {
+                    if (!birthYear) return '';
+                    const y = parseInt(birthYear, 10);
+                    if (isNaN(y) || y < 1900) return '';
+                    const idx = (y - 4) % 12;
+                    return ZODIACS[(idx + 12) % 12];
+                };
+
+                const getLunarYearGanZhi = (year) => {
+                    const tianGan = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+                    const diZhi = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+                    const tg = tianGan[(year - 4) % 10];
+                    const dz = diZhi[(year - 4) % 12];
+                    return `${tg}${dz}年`;
+                };
+
+                const checkTaiSuiStatus = (birthDateStr, targetYear) => {
+                    if (!birthDateStr) return null;
+                    const birthYear = parseInt(birthDateStr.split('-')[0], 10);
+                    if (isNaN(birthYear)) return null;
+
+                    const userZodiac = getZodiacFromYear(birthYear);
+                    const targetZodiac = getZodiacFromYear(targetYear);
+
+                    const userIdx = ZODIACS.indexOf(userZodiac);
+                    const targetIdx = ZODIACS.indexOf(targetZodiac);
+                    const diff = (userIdx - targetIdx + 12) % 12;
+
+                    const nominalAge = targetYear - birthYear + 1;
+
+                    let clashType = '吉星高照';
+                    let isClash = false;
+
+                    if (diff === 0) {
+                        clashType = '值太歲 (座太歲)';
+                        isClash = true;
+                    } else if (diff === 6) {
+                        clashType = '正沖 (歲破/六沖)';
+                        isClash = true;
+                    } else if (diff === 3 || diff === 9) {
+                        clashType = '偏沖 (刑/破太歲)';
+                        isClash = true;
+                    }
+
+                    return {
+                        birthYear,
+                        nominalAge,
+                        zodiac: userZodiac,
+                        clashType,
+                        isClash
+                    };
+                };
+
+                const getLampTitleByCode = (code) => {
+                    const prefix = code.split('-')[0];
+                    switch (prefix) {
+                        case 'T': return '值年太歲星君燈';
+                        case 'G': return '文昌延壽光明燈';
+                        case 'W': return '五路聚財財神燈';
+                        case 'Y': return '消災延壽藥師燈';
+                        default: return '本命祈福光明燈';
+                    }
+                };
+
+                // 載入指定年度之安奉紀錄
+                const loadLanternData = async () => {
+                    try {
+                        const res = await fetch(`${getBaseUrl()}/lanterns?year=${filters.value.year}`);
+                        const data = await res.json();
+                        if (data.success && Array.isArray(data.data)) {
+                            // 僅篩選出「已安奉 (OCCUPIED)」的燈位名額
+                            rawList.value = data.data
+                                .filter(d => d.status === 'OCCUPIED' && d.assigned_believer_name)
+                                .map(d => {
+                                    const bDate = d.birth_date || '';
+                                    const clash = checkTaiSuiStatus(bDate, filters.value.year);
+                                    return {
+                                        seatCode: d.seat_code,
+                                        label: d.seat_label,
+                                        lampTitle: getLampTitleByCode(d.seat_code),
+                                        name: d.assigned_believer_name,
+                                        phone: d.phone || '',
+                                        birthDate: bDate,
+                                        birthTime: d.birth_time || '',
+                                        year: filters.value.year,
+                                        zodiac: clash ? clash.zodiac : getZodiacFromYear(bDate.split('-')[0]),
+                                        nominalAge: clash ? clash.nominalAge : '',
+                                        clashInfo: clash
+                                    };
+                                });
+                        } else {
+                            rawList.value = [];
+                        }
+                    } catch (e) {
+                        console.error('載入點燈名冊失敗:', e);
+                        rawList.value = [];
+                    }
+                };
+
+                // 過濾符合條件的名單
+                const filteredList = computed(() => {
+                    return rawList.value.filter(item => {
+                        // 1. 燈種過濾
+                        if (filters.value.typeCode !== 'ALL') {
+                            if (!item.seatCode.startsWith(`${filters.value.typeCode}-`)) return false;
+                        }
+
+                        // 2. 太歲過濾
+                        if (filters.value.clashStatus === 'CLASH_ONLY') {
+                            if (!item.clashInfo || !item.clashInfo.isClash) return false;
+                        } else if (filters.value.clashStatus === 'LUCKY_ONLY') {
+                            if (item.clashInfo && item.clashInfo.isClash) return false;
+                        }
+
+                        // 3. 關鍵字檢索
+                        if (filters.value.keyword.trim()) {
+                            const kw = filters.value.keyword.trim().toLowerCase();
+                            const match = (item.name && item.name.toLowerCase().includes(kw)) ||
+                                          (item.seatCode && item.seatCode.toLowerCase().includes(kw)) ||
+                                          (item.phone && item.phone.includes(kw));
+                            if (!match) return false;
+                        }
+
+                        return true;
+                    });
+                });
+
+                const clashCount = computed(() => {
+                    return filteredList.value.filter(item => item.clashInfo && item.clashInfo.isClash).length;
+                });
+
+                const resetFilters = () => {
+                    filters.value = {
+                        year: currentYear,
+                        typeCode: 'ALL',
+                        clashStatus: 'ALL',
+                        keyword: ''
+                    };
+                    loadLanternData();
+                };
+
+                const executePrint = () => {
+                    if (filteredList.value.length === 0) {
+                        alert('目前沒有符合條件的燈位可供列印！');
+                        return;
+                    }
+                    window.print();
+                };
+
+                onMounted(loadLanternData);
+
+                return {
+                    yearOptions,
+                    filters,
+                    stickerLayout,
+                    rawList,
+                    filteredList,
+                    clashCount,
+                    getZodiacFromYear,
+                    getLunarYearGanZhi,
+                    checkTaiSuiStatus,
+                    loadLanternData,
+                    resetFilters,
+                    executePrint
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
