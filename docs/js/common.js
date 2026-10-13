@@ -10,8 +10,8 @@ const ROLE_PERMISSIONS = {
     GUEST: ['index.html', 'history.html', 'lantern.html', 'events.html', 'manual.html', 'contact.html','quotes.html'],
     VOLUNTEER: ['index.html', 'history.html', 'events.html', 'lantern.html', 'charity.html', 'manual.html', 'contact.html', 'quotes.html', 'inquiries.html'],
     RITUAL: ['index.html', 'history.html', 'events.html', 'charity.html', 'manual.html', 'contact.html', 'quotes.html', 'inquiries.html'],
-    ACCOUNTANT: ['index.html', 'history.html', 'events.html', 'finance.html', 'charity.html', 'manual.html', 'contact.html', 'quotes.html', 'inquiries.html'],
-    ADMIN: ['index.html', 'history.html', 'events.html', 'lantern.html', 'finance.html', 'crm.html', 'charity.html', 'settings.html', 'manual.html', 'contact.html', 'quotes.html', 'inquiries.html']
+    ACCOUNTANT: ['index.html', 'history.html', 'events.html', 'finance.html', 'charity.html', 'manual.html', 'contact.html', 'quotes.html', 'inquiries.html',  'lantern-print.html'],
+    ADMIN: ['index.html', 'history.html', 'events.html', 'lantern.html', 'finance.html', 'crm.html', 'charity.html', 'settings.html', 'manual.html', 'contact.html', 'quotes.html', 'inquiries.html','lantern-print.html']
 };
 
 const ROLE_NAMES = {
@@ -150,6 +150,7 @@ function renderGlobalNav() {
         { page: 'quotes.html', icon: '🪷', label: '智慧善語錄' },
         { page: 'events.html', icon: '📅', label: '法會活動' },
         { page: 'lantern.html', icon: '🏮', label: '點燈排位' },
+        { page: 'lantern-print.html', icon: '🖨️', label: '點燈排位' },
         { page: 'charity.html', icon: '🌾', label: '物資捐贈' },
         { page: 'finance.html', icon: '💰', label: '財務收支' },
         { page: 'crm.html', icon: '👤', label: '信眾家戶' },
