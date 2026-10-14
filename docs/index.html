@@ -258,42 +258,15 @@
             <!--<div class="lg:col-span-4 bg-white rounded-3xl border border-amber-200/90 shadow-sm p-6 space-y-4 flex flex-col justify-between">-->
             <!-- ================= 2.Facebook 官方動態牆 ================= -->
             <div class="lg:col-span-4 bg-white rounded-3xl border border-amber-200/90 shadow-sm p-6 space-y-4 flex flex-col justify-between">
-                <!-- 頂部標題與按鈕橫條 -->
-                <div class="flex flex-wrap justify-between items-center border-b border-slate-100 pb-3 gap-2">
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
-                            f
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-sm text-slate-900 flex items-center gap-2">
-                                五公祖師巖 ‧ 官方 Facebook 即時動態
-                                <span class="text-[10px] bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full font-bold">
-                                    即時連線
-                                </span>
-                            </h3>
-                            <p class="text-xs text-slate-500 mt-0.5">即時掌握科儀法會直播、廟務紀實、建廟進度與最新情報</p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-2">
-                        <a :href="fbPageUrl" target="_blank" rel="noopener noreferrer"
-                           class="px-4 py-1.5 bg-[#1877F2] hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1.5">
-                            <span>👍</span> 前往粉專追蹤
-                        </a>
-                        <button type="button" @click="refreshFbWidget" class="text-xs text-slate-500 hover:text-slate-800 p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50" title="重新整理動態">
-                            🔄
-                        </button>
-                    </div>
-                </div>
-
+                
                 <!-- 純動態牆卡片 (置中且完美貼齊 500px 寬度，無側邊留白) -->
                 <div class="flex justify-center items-center w-full py-2">
-                    <div class="w-full max-w-[500px] bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[650px]">
+                    <div class="w-full max-w-[500px] bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[500px]">
                         <div class="fb-page w-full h-full"
                              :data-href="fbPageUrl"
                              data-tabs="timeline,events,messages"
-                             data-width="500"
-                             data-height="650"
+                             <!--data-width="500"
+                             data-height="500"-->
                              data-small-header="false"
                              data-adapt-container-width="true"
                              data-hide-cover="false"
