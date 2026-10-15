@@ -258,141 +258,113 @@
             <!--<div class="lg:col-span-4 bg-white rounded-3xl border border-amber-200/90 shadow-sm p-6 space-y-4 flex flex-col justify-between">-->
             <!-- ================= 2.Facebook 官方動態牆 ================= -->
             <div class="lg:col-span-4 bg-white rounded-3xl border border-amber-200/90 shadow-sm p-6 space-y-4 flex flex-col justify-between">
-                
-                <!-- 純動態牆卡片 (置中且完美貼齊 500px 寬度，無側邊留白) -->
-                <div class="flex justify-center items-center w-full py-2">
-                    <div class="w-full max-w-[500px] bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[500px]">
-                        <div class="fb-page w-full h-full"
-                             :data-href="fbPageUrl"
-                             data-tabs="timeline,events,messages"
-                             <!--data-width="500"
-                             data-height="500"-->
-                             data-small-header="false"
-                             data-adapt-container-width="true"
-                             data-hide-cover="false"
-                             data-show-facepile="true">
-                            <blockquote :cite="fbPageUrl" class="fb-xfbml-parse-ignore">
-                                <div class="text-center py-16 text-slate-400 text-xs space-y-2">
-                                    <p class="text-sm font-bold text-slate-700">正在連線讀取 Facebook 最新動態牆...</p>
-                                    <a :href="fbPageUrl" target="_blank" class="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 mt-2">
-                                        前往五公祖師巖 Facebook 專頁 ➔
-                                    </a>
-                                </div>
-                            </blockquote>
+
+                <!-- 頂部標題與說明 -->
+                <div class="flex flex-wrap justify-between items-center border-b border-amber-100 pb-3 gap-2">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-2xl">🏮</span>
+                        <div>
+                            <h3 class="font-bold text-base text-slate-900 flex items-center gap-2">
+                                信眾參香 ‧ 殿堂吉日提醒與科儀指南
+                                
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-0.5">初一十五消災延壽、各殿主神聖誕萬壽千秋科儀時程與參拜禮儀</p>
                         </div>
                     </div>
+
+                    <div class="flex items-center gap-2 text-xs font-mono text-slate-600 bg-amber-50/70 border border-amber-200 px-3 py-1.5 rounded-xl">
+                        <span>🕒 大殿參香開放時間：每日 07:00 ~ 21:00</span>
+                    </div>
+                </div>
+
+                <!-- ================= 上下垂直排列：上方開放時間 ＋ 下方臨櫃服務 ================= -->
+                <div class="flex flex-col gap-4 w-full">
+
+                    <!-- 上區塊：大殿開放時間與問事收驚 -->
+                    <div class="p-5 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50/60 via-amber-50/30 to-white flex flex-col justify-between space-y-3">
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between border-b border-amber-200/70 pb-2">
+                                <span class="text-xs font-bold text-amber-950 flex items-center gap-1.5 text-sm">
+                                    <span>🏛️</span> 大殿開放與濟世服務時間
+                                </span>
+                                <span class="text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full">
+                                    常態開放
+                                </span>
+                            </div>
+
+                            <div class="space-y-2.5 text-xs text-slate-700">
+                                <div class="flex items-start gap-2.5">
+                                    <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-bold text-[11px] shrink-0 font-mono">參拜時間</span>
+                                    <div>
+                                        <p class="font-bold text-slate-900 text-sm">每日上午 07:00 至 晚間 21:00</p>
+                                        <p class="text-[11px] text-slate-500 mt-0.5">大殿各尊神聖全日開放信眾虔誠參香祈福、添點光明福燈。</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-start gap-2.5 pt-1">
+                                    <span class="px-2 py-0.5 rounded bg-red-100 text-red-900 font-bold text-[11px] shrink-0 font-mono">收驚問事</span>
+                                    <div>
+                                        <p class="font-bold text-red-900 text-sm">每週六 晚間 19:00 至 21:00</p>
+                                        <p class="text-[11px] text-slate-500 mt-0.5">循古禮啟請五公祖師慈悲開壇收驚、指點迷津、安撫元神。（請提早至大殿服務台取牌登記）</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 border-t border-dashed border-amber-200 text-[10px] text-amber-900/80 font-mono flex justify-between">
+                            <span>迎神納福 ‧ 香火長存</span>
+                            <span class="font-bold">護佑闔家清吉</span>
+                        </div>
+                    </div>
+
+                    <!-- 下區塊：臨櫃服務項目與辦理指引 -->
+                    <div class="p-5 rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50/40 via-slate-50/30 to-white flex flex-col justify-between space-y-3">
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between border-b border-blue-200/70 pb-2">
+                                <span class="text-xs font-bold text-slate-900 flex items-center gap-1.5 text-sm">
+                                    <span>📜</span> 大殿服務台 ‧ 臨櫃受理項目
+                                </span>
+                                <span class="text-[10px] font-bold text-blue-800 bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-full">
+                                    公庫正式收據
+                                </span>
+                            </div>
+
+                            <ul class="text-xs text-slate-700 space-y-2">
+                                <li class="flex items-center gap-2">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-700"></span>
+                                    <span><b>太歲燈、光明燈：</b>年度登記安奉排位</span>
+                                </li>
+                                <li class="flex items-center gap-2">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-700"></span>
+                                    <span><b>祈安植福文疏：</b>神明聖誕千秋、法會消災拔薦疏文填寫登錄</span>
+                                </li>
+                                <li class="flex items-center gap-2">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-700"></span>
+                                    <span><b>添油香與發心捐獻：</b>隨喜油香開立具字軌之公庫正式收據</span>
+                                </li>
+                                <li class="flex items-center gap-2">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-700"></span>
+                                    <span><b>愛心平安物資代捐：</b>登記法會白米、食用油代捐轉贈育幼弱勢</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="pt-2 border-t border-dashed border-blue-200 text-[10px] text-blue-900/80 font-mono flex justify-between">
+                            <span>執事專人登錄 ‧ 帳冊即時透明</span>
+                            <span class="font-bold">神恩浩蕩 ‧ 福慧同增</span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- 底部莊嚴法語條 -->
+                <div class="p-3 rounded-xl bg-amber-100/60 border border-amber-300 text-center text-xs text-amber-950 font-serif font-bold">
+                    五公祖師 慈航普渡 ‧ 護佑吉祥
                 </div>
             </div>
         </div>
 
-        <!-- ================= 4. 第二列：信眾參香 ‧ 殿堂吉日提醒 (左右雙區塊排版) ================= -->
-        <div class="bg-white p-6 rounded-3xl border border-amber-200 shadow-sm space-y-5">
-            <!-- 頂部標題與說明 -->
-            <div class="flex flex-wrap justify-between items-center border-b border-amber-100 pb-3 gap-2">
-                <div class="flex items-center gap-2.5">
-                    <span class="text-2xl">🏮</span>
-                    <div>
-                        <h3 class="font-bold text-base text-slate-900 flex items-center gap-2">
-                            信眾參香 ‧ 殿堂吉日提醒與科儀指南
-                            <span class="text-xs font-mono font-bold text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-300">
-                                天運吉昌 ‧ 神靈感應
-                            </span>
-                        </h3>
-                        <p class="text-xs text-slate-500 mt-0.5">初一十五消災延壽、各殿主神聖誕萬壽千秋科儀時程與參拜禮儀</p>
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-2 text-xs font-mono text-slate-600 bg-amber-50/70 border border-amber-200 px-3 py-1.5 rounded-xl">
-                    <span>🕒 大殿參香開放時間：每日 07:00 ~ 21:00</span>
-                </div>
-            </div>
-
-            <!-- 【核心調整】：大殿開放時間 (左) 與 臨櫃服務項目 (右) 拆為左右兩大區塊 -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                <!-- 左區塊：大殿開放時間與問事收驚 -->
-                <div class="p-5 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50/60 via-amber-50/30 to-white flex flex-col justify-between space-y-3">
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between border-b border-amber-200/70 pb-2">
-                            <span class="text-xs font-bold text-amber-950 flex items-center gap-1.5 text-sm">
-                                <span>🏛️</span> 大殿開放與濟世服務時間
-                            </span>
-                            <span class="text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full">
-                                常態開放
-                            </span>
-                        </div>
-
-                        <div class="space-y-2.5 text-xs text-slate-700">
-                            <div class="flex items-start gap-2.5">
-                                <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-bold text-[11px] shrink-0 font-mono">參拜時間</span>
-                                <div>
-                                    <p class="font-bold text-slate-900 text-sm">每日上午 07:00 至 晚間 21:00</p>
-                                    <p class="text-[11px] text-slate-500 mt-0.5">大殿各尊神聖全日開放信眾虔誠參香祈福、添點光明福燈。</p>
-                                </div>
-                            </div>
-
-                            <div class="flex items-start gap-2.5 pt-1">
-                                <span class="px-2 py-0.5 rounded bg-red-100 text-red-900 font-bold text-[11px] shrink-0 font-mono">收驚問事</span>
-                                <div>
-                                    <p class="font-bold text-red-900 text-sm">每週六 晚間 19:00 至 21:00</p>
-                                    <p class="text-[11px] text-slate-500 mt-0.5">循古禮啟請五公祖師慈悲開壇收驚、指點迷津、安撫元神。（請提早至大殿服務台取牌登記）</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="pt-2 border-t border-dashed border-amber-200 text-[10px] text-amber-900/80 font-mono flex justify-between">
-                        <span>迎神納福 ‧ 香火長存</span>
-                        <span class="font-bold">護佑闔家清吉</span>
-                    </div>
-                </div>
-
-                <!-- 右區塊：臨櫃服務項目與辦理指引 -->
-                <div class="p-5 rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50/40 via-slate-50/30 to-white flex flex-col justify-between space-y-3">
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between border-b border-blue-200/70 pb-2">
-                            <span class="text-xs font-bold text-slate-900 flex items-center gap-1.5 text-sm">
-                                <span>📜</span> 大殿服務台 ‧ 臨櫃受理項目
-                            </span>
-                            <span class="text-[10px] font-bold text-blue-800 bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-full">
-                                公庫正式收據
-                            </span>
-                        </div>
-
-                        <ul class="text-xs text-slate-700 space-y-2">
-                            <li class="flex items-center gap-2">
-                                <span class="w-1.5 h-1.5 rounded-full bg-amber-700"></span>
-                                <span><b>太歲燈、文昌延壽光明燈、財神燈：</b>年度登記安奉排位</span>
-                            </li>
-                            <li class="flex items-center gap-2">
-                                <span class="w-1.5 h-1.5 rounded-full bg-amber-700"></span>
-                                <span><b>祈安植福文疏：</b>神明聖誕千秋、法會消災拔薦疏文填寫登錄</span>
-                            </li>
-                            <li class="flex items-center gap-2">
-                                <span class="w-1.5 h-1.5 rounded-full bg-amber-700"></span>
-                                <span><b>添油香與發心捐獻：</b>隨喜油香開立具字軌之公庫正式收據</span>
-                            </li>
-                            <li class="flex items-center gap-2">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-700"></span>
-                                <span><b>愛心平安物資代捐：</b>登記法會白米、食用油代捐轉贈育幼弱勢</span>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <div class="pt-2 border-t border-dashed border-blue-200 text-[10px] text-blue-900/80 font-mono flex justify-between">
-                        <span>執事專人登錄 ‧ 帳冊即時透明</span>
-                        <span class="font-bold">神恩浩蕩 ‧ 福慧同增</span>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- 底部莊嚴法語條 -->
-            <div class="p-3 rounded-xl bg-amber-100/60 border border-amber-300 text-center text-xs text-amber-950 font-serif font-bold">
-                南無五公祖師天尊 慈航普渡 ‧ 護佑吉祥
-            </div>
-        </div>
-
+       
         <!-- ================= 4. 業務模組作業大廳 (白底立體琥珀金邊卡片) ================= -->
         <div class="space-y-4 pt-2">
             <div class="flex justify-between items-center border-b border-amber-200 pb-3">
