@@ -1451,12 +1451,14 @@
                 };
 
 
+                // 1. 智慧善語錄檔案上傳：純前端轉 Base64，不呼叫任何後端 upload API
                 const handleKindFileUpload = (e) => {
                     const file = e.target.files[0];
                     if (!file) return;
 
-                    if (file.size > 50 * 1024 * 1024) {
-                        alert('檔案過大，請選擇小於 50MB 的照片或影片！');
+                    // 限制單檔 15MB 避免資料庫存取負擔過大
+                    if (file.size > 15 * 1024 * 1024) {
+                        alert('檔案過大，請選擇小於 15MB 的照片或影片！');
                         e.target.value = '';
                         return;
                     }
@@ -1464,31 +1466,12 @@
                     isUploadingMedia.value = true;
 
                     const reader = new FileReader();
-                    reader.onload = async () => {
-                        try {
-                            const res = await fetch(`${getBaseUrl()}/upload/kind-media`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    fileName: file.name,
-                                    fileBase64: reader.result
-                                })
-                            });
-
-                            const result = await res.json();
-                            if (result.success) {
-                                quoteForm.value.imageUrl = result.fileUrl;
-                                alert('媒體檔案上傳成功！');
-                            } else {
-                                alert('上傳失敗：' + result.message);
-                            }
-                        } catch (err) {
-                            console.error('上傳出錯:', err);
-                            alert('上傳失敗，請確認後端 server.js 已啟動！');
-                        } finally {
-                            isUploadingMedia.value = false;
-                            e.target.value = '';
-                        }
+                    reader.onload = () => {
+                        // 直接將包含 MIME 前綴的 Base64 字串填入表單
+                        quoteForm.value.imageUrl = reader.result;
+                        isUploadingMedia.value = false;
+                        e.target.value = '';
+                        alert('檔案已成功載入為 Base64！請記得點擊「儲存此筆修改」或「加入善語錄清單」以保存。');
                     };
 
                     reader.onerror = () => {
@@ -1500,7 +1483,7 @@
                     reader.readAsDataURL(file);
                 };
 
-                // 處理神尊單張照片上傳 (正確使用後端回傳相對路徑，若無後端則備援為 Base64)
+                // 2. 神尊法相相片上傳：純前端轉 Base64，不呼叫任何後端 upload API
                 const handleDeityPhotoUpload = (e, photoIndex) => {
                     const file = e.target.files[0];
                     if (!file) return;
@@ -1512,32 +1495,11 @@
                     }
 
                     const reader = new FileReader();
-                    reader.onload = async () => {
-                        try {
-                            const res = await fetch(`${getBaseUrl()}/upload/deity-photo`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    fileName: file.name,
-                                    fileBase64: reader.result
-                                })
-                            });
-
-                            const result = await res.json();
-                            if (result.success && result.fileUrl) {
-                                currentDeity.value.photos[photoIndex].url = result.fileUrl;
-                                alert('神尊相片上傳成功！');
-                            } else {
-                                currentDeity.value.photos[photoIndex].url = reader.result;
-                                alert('已讀取相片！請記得點擊上方「儲存全體聖尊資料」保存。');
-                            }
-                        } catch (err) {
-                            console.warn('API 上傳失敗，改以本機預覽模式載入:', err);
-                            currentDeity.value.photos[photoIndex].url = reader.result;
-                            alert('已載入本機預覽相片！請記得點擊「儲存全體聖尊資料」。');
-                        } finally {
-                            e.target.value = '';
-                        }
+                    reader.onload = () => {
+                        // 直接將 Base64 寫入目前選取神尊對應的照片網址中
+                        currentDeity.value.photos[photoIndex].url = reader.result;
+                        e.target.value = '';
+                        alert('神尊相片已成功載入為 Base64！請點擊右上角「儲存全體聖尊資料」以保存。');
                     };
 
                     reader.onerror = () => {
@@ -1548,6 +1510,7 @@
                     reader.readAsDataURL(file);
                 };
 
+                 
                 onMounted(async () => {
                     await Promise.all([
                         loadLanternConfigs(),
