@@ -37,9 +37,12 @@
 <body class="bg-[#FFFDF7] text-slate-800 min-h-screen">
     <div id="app" v-cloak class="max-w-7xl mx-auto px-4 py-6 sm:py-8 space-y-6">
 
-        <!-- 頂部標題列 -->
+        <!-- 頂部標題列 (含返回大廳快捷鍵) -->
         <div class="bg-white p-5 sm:p-6 rounded-2xl border border-amber-200 shadow-sm flex flex-wrap justify-between items-center gap-4">
             <div class="flex items-center gap-3">
+                <a href="index.html" class="p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-1 shadow-sm">
+                    <span>⬅️</span> 大廳
+                </a>
                 <span class="text-3xl p-2.5 bg-amber-100 rounded-xl">⚙️</span>
                 <div>
                     <h1 class="text-lg sm:text-xl font-black text-slate-900">五公祖師巖 ‧ 系統核心參數維護</h1>
@@ -663,7 +666,6 @@
                         </div>
 
                         <!-- 多照片清單維護 -->
-                        <!-- 多照片清單維護 -->
                         <div class="space-y-3 pt-2 border-t border-amber-200/80">
                             <div class="flex justify-between items-center">
                                 <label class="font-bold text-slate-800 flex items-center gap-1">
@@ -701,7 +703,6 @@
 
                                     <!-- 控制輸入區 -->
                                     <div class="flex-1 space-y-2.5 w-full">
-                                        <!-- 上傳與路徑選擇 -->
                                         <div>
                                             <label class="block text-[11px] font-bold text-slate-700 mb-1">照片檔案來源 *</label>
                                             <div class="flex items-center gap-2">
@@ -721,7 +722,6 @@
                                             </div>
                                         </div>
 
-                                        <!-- 說明文字 -->
                                         <div>
                                             <label class="block text-[11px] font-bold text-slate-700 mb-1">相片說明文字 (圖說 Caption) *</label>
                                             <input v-model="photo.caption" type="text" placeholder="例：本巖開基正殿金身寶相"
@@ -732,44 +732,6 @@
 
                             </div>
                         </div>
-                        <!--<div class="space-y-3 pt-2 border-t border-amber-200/80">
-        <div class="flex justify-between items-center">
-            <label class="font-bold text-slate-800 flex items-center gap-1">
-                <span>📷</span> 神尊寶相照片清單
-            </label>
-            <button @click="addPhotoToCurrentDeity" type="button"
-                    class="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-[11px] flex items-center gap-1 transition-all">
-                <span>➕</span> 新增相片
-            </button>
-        </div>
-
-        <div v-if="!currentDeity.photos || currentDeity.photos.length === 0" class="text-center py-4 text-slate-400 bg-white rounded-xl border border-dashed border-amber-200">
-            尚未加入相片，請點擊上方按鈕新增
-        </div>
-
-        <div v-for="(photo, pIdx) in currentDeity.photos" :key="pIdx"
-             class="p-3 bg-white rounded-xl border border-amber-200 space-y-2 relative">
-            <div class="flex justify-between items-center text-[11px] text-slate-400 font-mono">
-                <span>相片 #{{ pIdx + 1 }}</span>
-                <button @click="removePhotoFromCurrentDeity(pIdx)" type="button" class="text-red-600 hover:underline">
-                    🗑️ 刪除此相片
-                </button>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-[11px] text-slate-600 mb-0.5">圖片網址路徑 *</label>
-                    <input v-model="photo.url" type="text" placeholder="例：images/deities/zhi_gong_1.jpg"
-                           class="w-full border border-amber-200 rounded-lg px-2.5 py-1.5 outline-none font-mono text-xs" />
-                </div>
-                <div>
-                    <label class="block text-[11px] text-slate-600 mb-0.5">相片說明文字 (Caption) *</label>
-                    <input v-model="photo.caption" type="text" placeholder="例：本巖開基正殿金身寶相"
-                           class="w-full border border-amber-200 rounded-lg px-2.5 py-1.5 outline-none text-xs" />
-                </div>
-            </div>
-        </div>
-    </div>-->
 
                     </div>
                 </div>
@@ -811,7 +773,7 @@
                             </div>
                         </div>
 
-                        <!-- 善語錄媒體檔案（照片 / 影片）上傳區塊 (全面統一綁定 quoteForm) -->
+                        <!-- 善語錄媒體檔案（照片 / 影片）上傳區塊 -->
                         <div class="space-y-2">
                             <label class="block font-bold text-xs text-slate-700">
                                 語錄影音配圖 (照片或短影音)
@@ -1066,7 +1028,6 @@
                 };
 
                 const deleteLantern = async (typeCode, occupiedSeats) => {
-                    // 前端防呆攔截
                     if (occupiedSeats > 0) {
                         return alert(`⚠️ 警告：該規格目前尚有 ${occupiedSeats} 盞燈位已被安奉，為避免帳務與信眾資料遺失，請先將相關燈位退單重置後再進行刪除！`);
                     }
@@ -1081,9 +1042,8 @@
 
                         if (d.success) {
                             alert(d.message);
-                            await loadLanternConfigs(); // 重新載入畫面
+                            await loadLanternConfigs();
 
-                            // 若使用者正在編輯這個已被刪除的規格，則清空表單
                             if (lanternForm.value.typeCode === typeCode) {
                                 lanternForm.value = {
                                     typeCode: '', typeName: '', hallName: '祖師殿', defaultFee: 600, totalCapacity: 32, isEnabled: true
@@ -1352,7 +1312,7 @@
                     if (!currentDeity.value) return;
                     if (!currentDeity.value.photos) currentDeity.value.photos = [];
                     currentDeity.value.photos.push({
-                        url: 'images/deities/sample.jpg',
+                        url: '',
                         caption: '神尊寶相說明'
                     });
                 };
@@ -1384,7 +1344,6 @@
                         { id: 'hua_gong', name: '化公菩薩', alias: '化公仙師', summary: '應化無方，解冤釋結平息人間爭端', bio: '千百億化身普施教化，逢凶化吉。', photos: [{ url: 'images/deities/hua_gong_1.jpg', caption: '化公菩薩神尊特寫' }] }
                     ];
                 };
-
 
                 const saveDeitiesSettings = async () => {
                     try {
@@ -1534,12 +1493,11 @@
                     reader.readAsDataURL(file);
                 };
 
-                // 處理神尊單張照片上傳
+                // 處理神尊單張照片上傳 (正確使用後端回傳相對路徑，若無後端則備援為 Base64)
                 const handleDeityPhotoUpload = (e, photoIndex) => {
                     const file = e.target.files[0];
                     if (!file) return;
 
-                    // 限制圖片大小 (15MB)
                     if (file.size > 15 * 1024 * 1024) {
                         alert('照片檔案過大，請選擇小於 15MB 的圖檔！');
                         e.target.value = '';
@@ -1559,16 +1517,17 @@
                             });
 
                             const result = await res.json();
-                            if (result.success) {
-                                // 自動將上傳完成的路徑填入對應相片項目
-                                currentDeity.value.photos[photoIndex].url = reader.result;//result.fileUrl;
+                            if (result.success && result.fileUrl) {
+                                currentDeity.value.photos[photoIndex].url = result.fileUrl;
                                 alert('神尊相片上傳成功！');
                             } else {
-                                alert('上傳失敗：' + result.message);
+                                currentDeity.value.photos[photoIndex].url = reader.result;
+                                alert('已讀取相片！請記得點擊上方「儲存全體聖尊資料」保存。');
                             }
                         } catch (err) {
-                            console.error('上傳出錯:', err);
-                            alert('上傳失敗，請確認後端 server.js 已重新啟動！');
+                            console.warn('API 上傳失敗，改以本機預覽模式載入:', err);
+                            currentDeity.value.photos[photoIndex].url = reader.result;
+                            alert('已載入本機預覽相片！請記得點擊「儲存全體聖尊資料」。');
                         } finally {
                             e.target.value = '';
                         }
