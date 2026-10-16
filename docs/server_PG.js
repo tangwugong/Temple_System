@@ -2133,33 +2133,7 @@ app.post('/api/upload/deity-photo', (req, res) => {
     }
 });
 
-//app.post('/api/upload/deity-photo', (req, res) => {
-//    try {
-//        const { fileName, fileBase64 } = req.body;
-//        if (!fileName || !fileBase64) {
-//            return res.status(400).json({ success: false, message: '未接收到照片內容' });
-//        }
 
-//        const ext = path.extname(fileName).toLowerCase() || '.jpg';
-//        const uniqueName = `DEITY-${Date.now()}-${Math.round(Math.random() * 1E4)}${ext}`;
-//        const targetPath = path.join(uploadDeityDir, uniqueName);
-
-//        const base64Data = fileBase64.replace(/^data:.*?;base64,/, '');
-//        const buffer = Buffer.from(base64Data, 'base64');
-
-//        fs.writeFileSync(targetPath, buffer);
-//        console.log(`[神尊相片上傳] 檔案已成功儲存：${targetPath}`);
-
-//        res.json({
-//            success: true,
-//            message: '相片上傳成功',
-//            fileUrl: `/images/Deities/${uniqueName}` // 對應 public 靜態目錄路徑
-//        });
-//    } catch (err) {
-//        console.error('[神尊相片上傳錯誤]:', err.message);
-//        res.status(500).json({ success: false, message: '儲存失敗: ' + err.message });
-//    }
-//});
 // =========================================================================
 // 五公祖師聖尊聖紀與法相相簿 API (對應 settings.html & history.html)
 // =========================================================================
@@ -2312,6 +2286,130 @@ app.get('/api/believers/search', async (req, res) => {
         });
     }
 });
+
+// =========================================================================
+// 1. 中繼軟體調整：確保支援 Base64 大容量傳輸 (請置於路由前)
+// =========================================================================
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// =========================================================================
+// 2. 智慧善語錄 API：查詢清單 (GET /api/settings/quotes)
+// =========================================================================
+app.get(['/api/settings/quotes', '/settings/quotes'], async (req, res) => {
+    try {
+        // 從資料庫按日期或 ID 由新到舊排序
+        const queryText = `
+            SELECT id, title, author, tag, image_url AS "imageUrl", content, date 
+            FROM quotes 
+            ORDER BY date DESC, id DESC
+        `;
+        const result = await db.query(queryText);
+
+        return res.json({
+            success: true,
+            data: result.rows || result // 相容 pg (result.rows) 或 sqlite
+        });
+    } catch (err) {
+        console.error('[API 讀取善語錄失敗]:', err);
+        return res.status(500).json({
+            success: false,
+            message: '讀取善語錄資料失敗：' + err.message
+        });
+    }
+});
+
+// =========================================================================
+// 3. 智慧善語錄 API：全量覆蓋儲存 (POST /api/settings/quotes)
+//    對應前端 saveQuotesToDB() 方法
+// =========================================================================
+app.post(['/api/settings/quotes', '/settings/quotes'], async (req, res) => {
+    const quotesList = req.body;
+
+    if (!Array.isArray(quotesList)) {
+        return res.status(400).json({
+            success: false,
+            message: '格式錯誤，傳入主體必須為陣列清單！'
+        });
+    }
+
+    // 使用事務 (Transaction) 進行整批覆寫更新
+    const client = await (typeof db.getClient === 'function' ? db.getClient() : db);
+
+    try {
+        if (typeof client.query === 'function') {
+            await client.query('BEGIN');
+
+            // 清空舊清單
+            await client.query('DELETE FROM quotes');
+
+            // 逐筆批次寫入
+            const insertText = `
+                INSERT INTO quotes (id, title, author, tag, image_url, content, date)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+            `;
+
+            for (const item of quotesList) {
+                await client.query(insertText, [
+                    item.id || Date.now(),
+                    item.title || '',
+                    item.author || '五公祖師法音',
+                    item.tag || '福慧兼修',
+                    item.imageUrl || '',
+                    item.content || '',
+                    item.date || new Date().toISOString().slice(0, 10)
+                ]);
+            }
+
+            await client.query('COMMIT');
+        } else {
+            // SQLite (better-sqlite3) 寫法相容
+            const deleteStmt = db.prepare('DELETE FROM quotes');
+            const insertStmt = db.prepare(`
+                INSERT INTO quotes (id, title, author, tag, image_url, content, date)
+                VALUES (@id, @title, @author, @tag, @imageUrl, @content, @date)
+            `);
+
+            const transaction = db.transaction((list) => {
+                deleteStmt.run();
+                for (const item of list) {
+                    insertStmt.run({
+                        id: item.id || Date.now(),
+                        title: item.title || '',
+                        author: item.author || '五公祖師法音',
+                        tag: item.tag || '福慧兼修',
+                        imageUrl: item.imageUrl || '',
+                        content: item.content || '',
+                        date: item.date || new Date().toISOString().slice(0, 10)
+                    });
+                }
+            });
+
+            transaction(quotesList);
+        }
+
+        console.log(`[善語錄更新成功] 共更新 ${quotesList.length} 則語錄`);
+        return res.json({
+            success: true,
+            message: '善語錄清單已成功儲存！'
+        });
+
+    } catch (err) {
+        if (client && typeof client.query === 'function') {
+            await client.query('ROLLBACK');
+        }
+        console.error('[API 儲存善語錄失敗]:', err);
+        return res.status(500).json({
+            success: false,
+            message: '儲存善語錄失敗：' + err.message
+        });
+    } finally {
+        if (client && typeof client.release === 'function') {
+            client.release();
+        }
+    }
+});
+
 // 啟動伺服器
 const PORT = process.env.PORT || 3000;
 initDatabase().then(() => {
