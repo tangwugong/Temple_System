@@ -774,6 +774,7 @@
                         </div>
 
                         <!-- 善語錄媒體檔案（照片 / 影片）上傳區塊 -->
+                        <!-- 善語錄媒體檔案（照片 / 影片）上傳區塊 -->
                         <div class="space-y-2">
                             <label class="block font-bold text-xs text-slate-700">
                                 語錄影音配圖 (照片或短影音)
@@ -789,15 +790,15 @@
                                 <label for="kind-file-picker"
                                        class="cursor-pointer px-3.5 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm">
                                     <span>📁</span>
-                                    <span>{{ isUploadingMedia ? '正在上傳中...' : '選擇照片或影片上傳' }}</span>
+                                    <span>{{ isUploadingMedia ? '正在讀取中...' : '選擇照片或影片 (轉 Base64)' }}</span>
                                 </label>
 
                                 <span class="text-[11px] text-slate-400 font-mono truncate max-w-[200px]">
-                                    {{ quoteForm.imageUrl || '尚未指定檔案' }}
+                                    {{ quoteForm.imageUrl ? (quoteForm.imageUrl.startsWith('data:') ? '已載入 Base64 媒體資料' : quoteForm.imageUrl) : '尚未指定檔案' }}
                                 </span>
                             </div>
 
-                            <!-- 預覽區塊 -->
+                            <!-- 預覽區塊：img 與 video 原生完美支援 Base64 src -->
                             <div v-if="quoteForm.imageUrl" class="relative mt-2 w-full max-w-sm rounded-xl overflow-hidden border border-amber-200 bg-black/5 p-1">
                                 <video v-if="isVideoFile(quoteForm.imageUrl)"
                                        :src="quoteForm.imageUrl"
@@ -816,10 +817,12 @@
                         </div>
 
                         <div>
-                            <label class="block font-bold text-gray-700 mb-1">圖片網址 / 本機路徑 *</label>
-                            <input v-model="quoteForm.imageUrl" type="text" placeholder="例：/public/images/Kind/xxx.jpg"
-                                   class="w-full border border-amber-200 rounded-xl px-3 py-2 font-mono text-slate-800 outline-none focus:border-amber-700" />
+                            <label class="block font-bold text-gray-700 mb-1">圖片網址 / Base64 資料 *</label>
+                            <input v-model="quoteForm.imageUrl" type="text" placeholder="例：/public/images/Kind/xxx.jpg 或 data:image/..."
+                                   class="w-full border border-amber-200 rounded-xl px-3 py-2 font-mono text-slate-800 outline-none focus:border-amber-700 truncate" />
                         </div>
+
+                        
 
                         <div>
                             <label class="block font-bold text-gray-700 mb-1">維護 / 發布日期 *</label>
@@ -1439,10 +1442,14 @@
                     await saveQuotesToDB();
                 };
 
+                 
                 const isVideoFile = (url) => {
                     if (!url) return false;
+                    // 支援 Base64 格式 (data:video/mp4;base64...) 與一般副檔名判斷
+                    if (url.startsWith('data:video/')) return true;
                     return /\.(mp4|webm|mov)$/i.test(url);
                 };
+
 
                 const handleKindFileUpload = (e) => {
                     const file = e.target.files[0];
