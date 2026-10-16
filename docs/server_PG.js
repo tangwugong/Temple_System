@@ -2294,21 +2294,21 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // =========================================================================
-// 2. 智慧善語錄 API：查詢清單 (GET /api/settings/quotes)
+// 1. 智慧善語錄 API：查詢清單 (GET /api/settings/quotes)
 // =========================================================================
 app.get(['/api/settings/quotes', '/settings/quotes'], async (req, res) => {
     try {
-        // 從資料庫按日期或 ID 由新到舊排序
         const queryText = `
             SELECT id, title, author, tag, image_url AS "imageUrl", content, date 
             FROM quotes 
             ORDER BY date DESC, id DESC
         `;
-        const result = await db.query(queryText);
+        // 使用 pool.query
+        const result = await pool.query(queryText);
 
         return res.json({
             success: true,
-            data: result.rows || result // 相容 pg (result.rows) 或 sqlite
+            data: result.rows
         });
     } catch (err) {
         console.error('[API 讀取善語錄失敗]:', err);
@@ -2320,8 +2320,7 @@ app.get(['/api/settings/quotes', '/settings/quotes'], async (req, res) => {
 });
 
 // =========================================================================
-// 3. 智慧善語錄 API：全量覆蓋儲存 (POST /api/settings/quotes)
-//    對應前端 saveQuotesToDB() 方法
+// 2. 智慧善語錄 API：全量覆蓋儲存 (POST /api/settings/quotes)
 // =========================================================================
 app.post(['/api/settings/quotes', '/settings/quotes'], async (req, res) => {
     const quotesList = req.body;
@@ -2333,80 +2332,51 @@ app.post(['/api/settings/quotes', '/settings/quotes'], async (req, res) => {
         });
     }
 
-    // 使用事務 (Transaction) 進行整批覆寫更新
-    const client = await (typeof db.getClient === 'function' ? db.getClient() : db);
+    // 從 pool 連線池取得 client 執行事務
+    const client = await pool.connect();
 
     try {
-        if (typeof client.query === 'function') {
-            await client.query('BEGIN');
+        await client.query('BEGIN');
 
-            // 清空舊清單
-            await client.query('DELETE FROM quotes');
+        // 1. 清空舊清單
+        await client.query('DELETE FROM quotes');
 
-            // 逐筆批次寫入
-            const insertText = `
-                INSERT INTO quotes (id, title, author, tag, image_url, content, date)
-                VALUES ($1, $2, $3, $4, $5, $6, $7)
-            `;
+        // 2. 逐筆寫入新資料 (支援 Base64)
+        const insertText = `
+            INSERT INTO quotes (id, title, author, tag, image_url, content, date)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `;
 
-            for (const item of quotesList) {
-                await client.query(insertText, [
-                    item.id || Date.now(),
-                    item.title || '',
-                    item.author || '五公祖師法音',
-                    item.tag || '福慧兼修',
-                    item.imageUrl || '',
-                    item.content || '',
-                    item.date || new Date().toISOString().slice(0, 10)
-                ]);
-            }
-
-            await client.query('COMMIT');
-        } else {
-            // SQLite (better-sqlite3) 寫法相容
-            const deleteStmt = db.prepare('DELETE FROM quotes');
-            const insertStmt = db.prepare(`
-                INSERT INTO quotes (id, title, author, tag, image_url, content, date)
-                VALUES (@id, @title, @author, @tag, @imageUrl, @content, @date)
-            `);
-
-            const transaction = db.transaction((list) => {
-                deleteStmt.run();
-                for (const item of list) {
-                    insertStmt.run({
-                        id: item.id || Date.now(),
-                        title: item.title || '',
-                        author: item.author || '五公祖師法音',
-                        tag: item.tag || '福慧兼修',
-                        imageUrl: item.imageUrl || '',
-                        content: item.content || '',
-                        date: item.date || new Date().toISOString().slice(0, 10)
-                    });
-                }
-            });
-
-            transaction(quotesList);
+        for (const item of quotesList) {
+            await client.query(insertText, [
+                item.id || Date.now(),
+                item.title || '',
+                item.author || '五公祖師法音',
+                item.tag || '福慧兼修',
+                item.imageUrl || '',
+                item.content || '',
+                item.date || new Date().toISOString().slice(0, 10)
+            ]);
         }
 
-        console.log(`[善語錄更新成功] 共更新 ${quotesList.length} 則語錄`);
+        await client.query('COMMIT');
+
+        console.log(`[善語錄更新成功] 共儲存 ${quotesList.length} 筆資料`);
         return res.json({
             success: true,
             message: '善語錄清單已成功儲存！'
         });
 
     } catch (err) {
-        if (client && typeof client.query === 'function') {
-            await client.query('ROLLBACK');
-        }
+        await client.query('ROLLBACK');
         console.error('[API 儲存善語錄失敗]:', err);
         return res.status(500).json({
             success: false,
             message: '儲存善語錄失敗：' + err.message
         });
     } finally {
-        if (client && typeof client.release === 'function') {
-            client.release();
-        }
+        // 歸還連線至連線池
+        client.release();
     }
 });
 
