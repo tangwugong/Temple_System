@@ -140,6 +140,16 @@
 
         </div>
 
+        <!-- 活動歷程誌 (所有人開放閱覽) -->
+        <a href="activity-log.html" class="group bg-white p-5 rounded-2xl border border-amber-200/90 hover:border-amber-500 transition-all shadow-sm hover:shadow-md space-y-3 block">
+            <div class="flex justify-between items-start">
+                <span class="text-2xl p-2.5 bg-amber-50 group-hover:bg-amber-100 rounded-xl transition-colors">📸</span>
+                <span class="text-[11px] text-amber-800 font-bold group-hover:translate-x-1 transition-transform">歷程 ➔</span>
+            </div>
+            <h3 class="font-bold text-sm text-slate-900 group-hover:text-amber-900 transition-colors">活動紀實與歷程誌</h3>
+            <p class="text-[11px] text-slate-500 leading-relaxed line-clamp-2">法會科儀照片集錦、出巡遶境影像與歷史大事現場記錄。</p>
+        </a>
+
         <!-- ================= 2. 明亮開運即時看板 (白底暖金邊框) ================= -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div class="bg-white p-5 rounded-2xl border border-amber-200/90 hover:border-amber-400 transition-all shadow-sm space-y-2">
@@ -266,7 +276,7 @@
                         <div>
                             <h3 class="font-bold text-base text-slate-900 flex items-center gap-2">
                                 信眾參香 ‧ 殿堂吉日提醒與科儀指南
-                                
+
                             </h3>
                             <p class="text-xs text-slate-500 mt-0.5">初一十五消災延壽、各殿主神聖誕萬壽千秋科儀時程與參拜禮儀</p>
                         </div>
@@ -364,7 +374,7 @@
             </div>
         </div>
 
-       
+
         <!-- ================= 4. 業務模組作業大廳 (白底立體琥珀金邊卡片) ================= -->
         <div class="space-y-4 pt-2">
             <div class="flex justify-between items-center border-b border-amber-200 pb-3">
@@ -605,6 +615,7 @@
 
                     const allModules = [
                         { page: 'history.html', title: '百年廟宇沿革' },
+                        { page: 'activity-log.html', title: '活動歷程誌' },
                         { page: 'events.html', title: '年度法會活動' },
                         { page: 'lantern.html', title: '點燈排位受理' },
                         { page: 'lantern-print.html', title: '燈位列印' },
