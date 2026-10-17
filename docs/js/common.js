@@ -3,15 +3,15 @@
 const API_BASE = 'https://wukong-api.onrender.com/api';
 
 // 訪客白名單頁面
-const GUEST_ALLOWED_PAGES = ['index.html', 'history.html', 'lantern.html', 'events.html', 'login.html', 'manual.html', 'contact.html','quotes.html'];
+const GUEST_ALLOWED_PAGES = ['index.html', 'history.html', 'lantern.html', 'events.html', 'login.html', 'manual.html', 'contact.html', 'quotes.html', 'activity-log.html'];
 
 // 登入後各角色權限表
 const ROLE_PERMISSIONS = {
-    GUEST: ['index.html', 'history.html', 'lantern.html', 'events.html', 'manual.html', 'contact.html','quotes.html'],
-    VOLUNTEER: ['index.html', 'history.html', 'events.html', 'lantern.html', 'charity.html', 'manual.html', 'contact.html', 'quotes.html', 'inquiries.html'],
-    RITUAL: ['index.html', 'history.html', 'events.html', 'charity.html', 'manual.html', 'contact.html', 'quotes.html', 'inquiries.html'],
-    ACCOUNTANT: ['index.html', 'history.html', 'events.html', 'finance.html', 'charity.html', 'manual.html', 'contact.html', 'quotes.html', 'inquiries.html',  'lantern-print.html'],
-    ADMIN: ['index.html', 'history.html', 'events.html', 'lantern.html', 'finance.html', 'crm.html', 'charity.html', 'settings.html', 'manual.html', 'contact.html', 'quotes.html', 'inquiries.html','lantern-print.html']
+    GUEST: ['index.html', 'history.html', 'lantern.html', 'events.html', 'manual.html', 'contact.html','quotes.html','activity-log.html'],
+    VOLUNTEER: ['index.html', 'history.html', 'events.html', 'lantern.html', 'charity.html', 'manual.html', 'contact.html', 'quotes.html', 'inquiries.html', 'activity-log.html'],
+    RITUAL: ['index.html', 'history.html', 'events.html', 'charity.html', 'manual.html', 'contact.html', 'quotes.html', 'inquiries.html', 'activity-log.html'],
+    ACCOUNTANT: ['index.html', 'history.html', 'events.html', 'finance.html', 'charity.html', 'manual.html', 'contact.html', 'quotes.html', 'inquiries.html', 'lantern-print.html', 'activity-log.html'],
+    ADMIN: ['index.html', 'history.html', 'events.html', 'lantern.html', 'finance.html', 'crm.html', 'charity.html', 'settings.html', 'manual.html', 'contact.html', 'quotes.html', 'inquiries.html', 'lantern-print.html', 'activity-log.html']
 };
 
 const ROLE_NAMES = {
