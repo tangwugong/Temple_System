@@ -2380,6 +2380,48 @@ app.post(['/api/settings/quotes', '/settings/quotes'], async (req, res) => {
     }
 });
 
+// =========================================================================
+// 活動歷程 API (GET /api/activities & POST /api/activities)
+// =========================================================================
+app.get(['/api/activities', '/activities'], async (req, res) => {
+    try {
+        const queryText = `SELECT * FROM activities ORDER BY activity_date DESC, id DESC`;
+        const result = await pool.query(queryText);
+        return res.json({ success: true, data: result.rows });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.post(['/api/activities', '/activities'], async (req, res) => {
+    try {
+        const { id, title, category, activityDate, lunarDate, coordinator, description, schedule, photos } = req.body;
+        const actId = id || Date.now();
+
+        const queryText = `
+            INSERT INTO activities (id, title, category, activity_date, lunar_date, coordinator, description, schedule_json, photos_json)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            ON CONFLICT (id) DO UPDATE SET
+                title = EXCLUDED.title,
+                category = EXCLUDED.category,
+                activity_date = EXCLUDED.activity_date,
+                lunar_date = EXCLUDED.lunar_date,
+                coordinator = EXCLUDED.coordinator,
+                description = EXCLUDED.description,
+                schedule_json = EXCLUDED.schedule_json,
+                photos_json = EXCLUDED.photos_json
+        `;
+        await pool.query(queryText, [
+            actId, title, category, activityDate, lunarDate, coordinator, description,
+            JSON.stringify(schedule || []), JSON.stringify(photos || [])
+        ]);
+
+        return res.json({ success: true, message: '活動歷程已成功儲存' });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 // 啟動伺服器
 const PORT = process.env.PORT || 3000;
 initDatabase().then(() => {
