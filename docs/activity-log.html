@@ -1,0 +1,433 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活動紀實與科儀歷程 - 五公祖師巖</title>
+    <script src="js/tailwindcss.js"></script>
+    <script src="js/vue.global.prod.js"></script>
+    <script src="js/common.js"></script>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+
+        .text-glow-gold {
+            text-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-[#FDFBF7] text-slate-800 min-h-screen selection:bg-amber-800 selection:text-white">
+    <div id="app" v-cloak class="max-w-7xl mx-auto px-4 py-6 sm:py-8 space-y-6">
+
+        <!-- 頂部全景標題橫幅 -->
+        <div class="relative overflow-hidden rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-amber-950 via-stone-900 to-red-950 text-white shadow-xl border-2 border-amber-500/40 flex flex-wrap justify-between items-center gap-4">
+            <div class="space-y-2 z-10">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-950/80 border border-amber-400/80 text-amber-300 text-xs font-bold font-mono">
+                    <span>⛩️</span> 五公祖師巖 ‧ 歲時科儀留影
+                </div>
+                <h1 class="text-2xl sm:text-4xl font-black font-serif tracking-widest text-amber-50 text-glow-gold">
+                    廟宇活動紀實 ‧ 歷程誌
+                </h1>
+                <p class="text-xs sm:text-sm text-amber-100/80 max-w-2xl leading-relaxed">
+                    記錄五公菩薩聖誕千秋、消災祈安大法會、遶境巡狩與十方善信發心公益之珍貴歷程，廣宣法音、永續傳承。
+                </p>
+            </div>
+
+            <div class="flex items-center gap-3 z-10">
+                <a href="index.html" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl border border-white/20 backdrop-blur-sm transition-all flex items-center gap-1.5">
+                    <span>🏠</span> 返回大廳
+                </a>
+                <button v-if="canManage" @click="openAddModal" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl shadow-lg transition-all flex items-center gap-1.5">
+                    <span>➕</span> 發布新紀實
+                </button>
+            </div>
+        </div>
+
+        <!-- 篩選控制列 -->
+        <div class="bg-white p-4 rounded-2xl border border-amber-200/90 shadow-sm flex flex-wrap justify-between items-center gap-3 text-xs">
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+                <button v-for="cat in categories" :key="cat"
+                        @click="selectedCategory = cat"
+                        :class="selectedCategory === cat ? 'bg-amber-800 text-white font-bold' : 'bg-amber-50 text-amber-900 hover:bg-amber-100'"
+                        class="px-3.5 py-1.5 rounded-xl border border-amber-200 transition-all whitespace-nowrap">
+                    {{ cat }}
+                </button>
+            </div>
+
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <input v-model="searchKeyword" type="text" placeholder="搜尋活動標題或事蹟..."
+                       class="w-full sm:w-60 px-3 py-1.5 border border-amber-200 rounded-xl outline-none focus:border-amber-700 bg-amber-50/20 text-xs" />
+            </div>
+        </div>
+
+        <!-- 活動紀實清單 (時間軸呈現) -->
+        <div class="space-y-8">
+            <div v-for="item in filteredActivities" :key="item.id"
+                 class="bg-white rounded-3xl border border-amber-200/90 shadow-sm overflow-hidden transition-all hover:shadow-md">
+
+                <!-- 活動卡片標頭 -->
+                <div class="p-5 sm:p-6 bg-gradient-to-r from-amber-50/70 via-white to-white border-b border-amber-100 flex flex-wrap justify-between items-center gap-3">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                                {{ item.category }}
+                            </span>
+                            <span class="text-xs font-mono text-slate-400">📅 {{ item.activityDate }}</span>
+                            <span v-if="item.lunarDate" class="text-xs font-serif text-amber-900/80">（農曆 {{ item.lunarDate }}）</span>
+                        </div>
+                        <h2 class="text-lg sm:text-xl font-bold text-slate-900 font-serif">{{ item.title }}</h2>
+                    </div>
+
+                    <div class="flex items-center gap-2" v-if="canManage">
+                        <button @click="editActivity(item)" class="text-xs text-amber-800 hover:underline px-2 py-1">✏️ 編輯</button>
+                        <button @click="deleteActivity(item.id)" class="text-xs text-red-600 hover:underline px-2 py-1">🗑️ 刪除</button>
+                    </div>
+                </div>
+
+                <!-- 內文與影音相簿主體 -->
+                <div class="p-5 sm:p-6 space-y-6">
+                    <!-- 活動緣起與總結說明 -->
+                    <p class="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line bg-amber-50/30 p-4 rounded-2xl border border-amber-100/60">
+                        {{ item.description }}
+                    </p>
+
+                    <!-- 當日科儀日程表 / 流程時間軸 -->
+                    <div v-if="item.schedule && item.schedule.length > 0" class="space-y-2">
+                        <h3 class="text-xs font-bold text-amber-950 flex items-center gap-1.5">
+                            <span>📜</span> 科儀法程時刻表
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 text-xs">
+                            <div v-for="(sch, sIdx) in item.schedule" :key="sIdx"
+                                 class="p-2.5 rounded-xl border border-amber-150 bg-white flex items-start gap-2 shadow-2xs">
+                                <span class="px-2 py-0.5 rounded bg-amber-100 font-mono font-bold text-amber-900 text-[11px] shrink-0">
+                                    {{ sch.time }}
+                                </span>
+                                <div>
+                                    <p class="font-bold text-slate-800">{{ sch.title }}</p>
+                                    <p class="text-[11px] text-slate-500">{{ sch.note }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 現場影音照片相簿集錦 -->
+                    <div v-if="item.photos && item.photos.length > 0" class="space-y-2">
+                        <h3 class="text-xs font-bold text-amber-950 flex items-center gap-1.5">
+                            <span>📷</span> 活動現場紀實留影 (點擊放大瀏覽)
+                        </h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                            <div v-for="(photo, pIdx) in item.photos" :key="pIdx"
+                                 @click="openLightbox(photo)"
+                                 class="group relative aspect-4/3 rounded-2xl overflow-hidden border border-amber-200 bg-amber-50 cursor-pointer shadow-2xs">
+                                <img :src="photo.url" :alt="photo.caption"
+                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
+                                    <span class="text-white text-[11px] truncate">{{ photo.caption || '活動現場照片' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 卡片底層資訊 -->
+                <div class="px-6 py-3 bg-amber-50/30 border-t border-amber-100 flex justify-between items-center text-[11px] text-slate-400 font-mono">
+                    <span>主事執事：{{ item.coordinator || '管理委員會' }}</span>
+                    <span>紀實建立：{{ item.createdDate }}</span>
+                </div>
+            </div>
+
+            <div v-if="filteredActivities.length === 0" class="text-center py-16 bg-white rounded-3xl border border-amber-200 text-slate-400 text-xs">
+                尚無相符的活動歷程記錄
+            </div>
+        </div>
+
+        <!-- 圖片燈箱 Lightbox Modal -->
+        <div v-if="activeLightboxPhoto" @click="activeLightboxPhoto = null"
+             class="fixed inset-0 bg-black/85 z-50 flex flex-col items-center justify-center p-4">
+            <div class="max-w-4xl max-h-[85vh] relative" @click.stop>
+                <img :src="activeLightboxPhoto.url" class="max-w-full max-h-[75vh] rounded-2xl shadow-2xl object-contain mx-auto" />
+                <p class="text-white text-center text-sm font-serif mt-3">{{ activeLightboxPhoto.caption }}</p>
+                <button @click="activeLightboxPhoto = null" class="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-white/20 hover:bg-white/40 text-white font-bold flex items-center justify-center">✕</button>
+            </div>
+        </div>
+
+        <!-- 執事管理員：新增 / 編輯活動歷程 Modal -->
+        <div v-if="showModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div class="bg-white border border-amber-300 w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden flex flex-col text-slate-800 animate-in fade-in zoom-in duration-200">
+                <div class="bg-amber-900 px-6 py-4 text-white flex justify-between items-center">
+                    <h3 class="font-bold text-sm">{{ form.id ? '編輯活動紀實' : '發布新活動歷程記錄' }}</h3>
+                    <button @click="showModal = false" class="text-amber-200 hover:text-white text-xl">✕</button>
+                </div>
+
+                <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="sm:col-span-2">
+                            <label class="block font-bold text-slate-700 mb-1">活動全銜標題 *</label>
+                            <input v-model="form.title" type="text" placeholder="例：歲次丙午年 梁皇寶懺祈安消災大法會"
+                                   class="w-full border border-amber-200 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-amber-700" />
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-700 mb-1">活動分類</label>
+                            <select v-model="form.category" class="w-full border border-amber-200 rounded-xl px-3 py-2 bg-white outline-none">
+                                <option>法會科儀</option>
+                                <option>神尊聖誕</option>
+                                <option>遶境出巡</option>
+                                <option>愛心物資普施</option>
+                                <option>廟殿修繕工程</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block font-bold text-slate-700 mb-1">西曆日期 *</label>
+                            <input v-model="form.activityDate" type="date" class="w-full border border-amber-200 rounded-xl px-3 py-2 outline-none font-mono" />
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-700 mb-1">農曆吉期記敘</label>
+                            <input v-model="form.lunarDate" type="text" placeholder="例：四月十五日 辰時" class="w-full border border-amber-200 rounded-xl px-3 py-2 outline-none" />
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-700 mb-1">主事/協調執事</label>
+                            <input v-model="form.coordinator" type="text" placeholder="例：祭典組 / 林組長" class="w-full border border-amber-200 rounded-xl px-3 py-2 outline-none" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">活動事蹟與紀實說明 *</label>
+                        <textarea v-model="form.description" rows="3" placeholder="記載法會緣起、開壇盛況與圓滿過程..."
+                                  class="w-full border border-amber-200 rounded-xl p-3 outline-none focus:border-amber-700 leading-relaxed"></textarea>
+                    </div>
+
+                    <!-- 相片清單 (支援本機檔案轉 Base64) -->
+                    <div class="space-y-3 pt-2 border-t border-amber-100">
+                        <div class="flex justify-between items-center">
+                            <label class="font-bold text-slate-800 flex items-center gap-1">
+                                <span>📷</span> 現場紀實照片集 (支援選擇圖片轉 Base64)
+                            </label>
+                            <button type="button" @click="addPhotoRow" class="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-[11px]">
+                                ➕ 新增照片欄位
+                            </button>
+                        </div>
+
+                        <div v-for="(photo, idx) in form.photos" :key="idx"
+                             class="p-3 bg-amber-50/40 rounded-xl border border-amber-200 space-y-2">
+                            <div class="flex justify-between items-center text-[11px] text-slate-400">
+                                <span>相片 #{{ idx + 1 }}</span>
+                                <button type="button" @click="form.photos.splice(idx, 1)" class="text-red-600 hover:underline">移除</button>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div class="flex items-center gap-1.5">
+                                    <input type="file" :id="`act-photo-${idx}`" @change="e => handlePhotoUpload(e, idx)" accept="image/*" class="hidden" />
+                                    <label :for="`act-photo-${idx}`" class="cursor-pointer px-2.5 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-xs font-bold shrink-0">
+                                        選本機圖
+                                    </label>
+                                    <input v-model="photo.url" type="text" placeholder="Base64 或圖片網址" class="w-full border border-amber-200 rounded-lg px-2 py-1.5 text-xs truncate" />
+                                </div>
+                                <input v-model="photo.caption" type="text" placeholder="照片圖說 (如：起壇淨壇科儀)" class="w-full border border-amber-200 rounded-lg px-2 py-1.5 text-xs" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 px-6 py-3 border-t flex justify-end gap-2 text-xs">
+                    <button @click="showModal = false" class="px-4 py-2 text-slate-500 hover:bg-gray-200 rounded-xl font-bold">取消</button>
+                    <button @click="saveActivity" class="px-5 py-2 bg-amber-800 hover:bg-amber-900 active:scale-95 text-white font-bold rounded-xl shadow">
+                        儲存發布
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const currentUser = ref(null);
+                const categories = ['全部活動', '法會科儀', '神尊聖誕', '遶境出巡', '愛心物資普施', '廟殿修繕工程'];
+                const selectedCategory = ref('全部活動');
+                const searchKeyword = ref('');
+                const activities = ref([]);
+
+                const showModal = ref(false);
+                const activeLightboxPhoto = ref(null);
+
+                const form = ref({
+                    id: null,
+                    title: '',
+                    category: '法會科儀',
+                    activityDate: new Date().toISOString().slice(0, 10),
+                    lunarDate: '',
+                    coordinator: '',
+                    description: '',
+                    schedule: [],
+                    photos: []
+                });
+
+                const canManage = computed(() => {
+                    return currentUser.value && ['ADMIN', 'RITUAL'].includes(currentUser.value.role);
+                });
+
+                const filteredActivities = computed(() => {
+                    return activities.value.filter(a => {
+                        const matchCat = selectedCategory.value === '全部活動' || a.category === selectedCategory.value;
+                        const matchKw = !searchKeyword.value.trim() ||
+                            a.title.includes(searchKeyword.value) ||
+                            a.description.includes(searchKeyword.value);
+                        return matchCat && matchKw;
+                    });
+                });
+
+                const loadActivities = async () => {
+                    const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api';
+                    try {
+                        const res = await fetch(`${apiBase}/activities`);
+                        if (res.ok) {
+                            const d = await res.json();
+                            if (d.success && Array.isArray(d.data)) {
+                                activities.value = d.data;
+                                return;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('載入活動失敗，採用範例備援資料');
+                    }
+
+                    // 預設示範歷程紀錄
+                    activities.value = [
+                        {
+                            id: 1,
+                            title: '歲次甲辰年 五公菩薩聖誕千秋祈安祝壽大法會',
+                            category: '神尊聖誕',
+                            activityDate: '2026-05-18',
+                            lunarDate: '四月初八日',
+                            coordinator: '祭典科儀組 敬啟',
+                            description: '恭逢五公祖師聖誕良辰，全體執事虔備鮮花素果、天公清醮。啟建吉祥清醮，誦念真經祈求合境平安、家戶吉慶。同日舉辦十方平安福宴，共沐神恩。',
+                            createdDate: '2026-05-19',
+                            schedule: [
+                                { time: '07:30', title: '迎神啟壇', note: '鳴鐘擊鼓，道長依科開壇淨筵' },
+                                { time: '09:30', title: '恭誦五公救劫寶經', note: '十方善信隨壇禮懺' },
+                                { time: '14:00', title: '五營犒軍科儀', note: '大殿前廣場犒勞兵將' }
+                            ],
+                            photos: [
+                                { url: 'https://images.unsplash.com/photo-1548013146-72479768bada?w=600&q=80', caption: '大殿祝壽清醮道場莊嚴殊勝' },
+                                { url: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&q=80', caption: '信眾齊聚參香祈福' }
+                            ]
+                        }
+                    ];
+                };
+
+                const openAddModal = () => {
+                    form.value = {
+                        id: null,
+                        title: '',
+                        category: '法會科儀',
+                        activityDate: new Date().toISOString().slice(0, 10),
+                        lunarDate: '',
+                        coordinator: currentUser.value?.realName || '執事組',
+                        description: '',
+                        schedule: [{ time: '09:00', title: '啟壇安奉', note: '誦經禮懺' }],
+                        photos: []
+                    };
+                    showModal.value = true;
+                };
+
+                const editActivity = (item) => {
+                    form.value = JSON.parse(JSON.stringify(item));
+                    showModal.value = true;
+                };
+
+                const addPhotoRow = () => {
+                    form.value.photos.push({ url: '', caption: '' });
+                };
+
+                const handlePhotoUpload = (e, index) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    if (file.size > 15 * 1024 * 1024) return alert('圖片請小於 15MB');
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        form.value.photos[index].url = reader.result;
+                        e.target.value = '';
+                    };
+                    reader.readAsDataURL(file);
+                };
+
+                const saveActivity = async () => {
+                    if (!form.value.title || !form.value.description) {
+                        return alert('請填寫完整標題與活動說明！');
+                    }
+                    const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api';
+                    try {
+                        const res = await fetch(`${apiBase}/activities`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(form.value)
+                        });
+                        const d = await res.json();
+                        if (d.success) {
+                            alert('活動紀實已成功發布！');
+                            showModal.value = false;
+                            await loadActivities();
+                            return;
+                        }
+                    } catch (e) {
+                        console.warn('API 未實作，本地陣列儲存');
+                    }
+
+                    // 本地離線暫存
+                    if (form.value.id) {
+                        const idx = activities.value.findIndex(a => a.id === form.value.id);
+                        if (idx !== -1) activities.value[idx] = { ...form.value };
+                    } else {
+                        activities.value.unshift({
+                            ...form.value,
+                            id: Date.now(),
+                            createdDate: new Date().toISOString().slice(0, 10)
+                        });
+                    }
+                    showModal.value = false;
+                    alert('活動紀實已成功記錄！');
+                };
+
+                const deleteActivity = async (id) => {
+                    if (!confirm('確定要刪除這筆活動紀實嗎？')) return;
+                    activities.value = activities.value.filter(a => a.id !== id);
+                };
+
+                const openLightbox = (photo) => {
+                    activeLightboxPhoto.value = photo;
+                };
+
+                onMounted(async () => {
+                    currentUser.value = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+                    await loadActivities();
+                });
+
+                return {
+                    currentUser,
+                    canManage,
+                    categories,
+                    selectedCategory,
+                    searchKeyword,
+                    filteredActivities,
+                    showModal,
+                    form,
+                    activeLightboxPhoto,
+                    openAddModal,
+                    editActivity,
+                    addPhotoRow,
+                    handlePhotoUpload,
+                    saveActivity,
+                    deleteActivity,
+                    openLightbox
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
