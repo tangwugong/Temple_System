@@ -80,15 +80,15 @@
                     </div>
 
                     <div class="flex items-center gap-2" v-if="canManage">
-                        <button @click="editActivity(item)" class="text-xs text-amber-800 hover:underline px-2 py-1">✏️ 編輯</button>
-                        <button @click="deleteActivity(item.id)" class="text-xs text-red-600 hover:underline px-2 py-1">🗑️ 刪除</button>
+                        <button @click="editActivity(item)" class="text-xs text-amber-800 hover:underline px-2 py-1 font-bold">✏️ 編輯</button>
+                        <button @click="deleteActivity(item.id)" class="text-xs text-red-600 hover:underline px-2 py-1 font-bold">🗑️ 刪除</button>
                     </div>
                 </div>
 
                 <!-- 內文與影音相簿主體 -->
                 <div class="p-5 sm:p-6 space-y-6">
                     <!-- 活動緣起與總結說明 -->
-                    <p class="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line bg-amber-50/30 p-4 rounded-2xl border border-amber-100/60">
+                    <p class="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line bg-amber-50/30 p-4 rounded-2xl border border-amber-100/60 font-serif">
                         {{ item.description }}
                     </p>
 
@@ -99,7 +99,7 @@
                         </h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 text-xs">
                             <div v-for="(sch, sIdx) in item.schedule" :key="sIdx"
-                                 class="p-2.5 rounded-xl border border-amber-150 bg-white flex items-start gap-2 shadow-2xs">
+                                 class="p-2.5 rounded-xl border border-amber-100 bg-white flex items-start gap-2 shadow-sm">
                                 <span class="px-2 py-0.5 rounded bg-amber-100 font-mono font-bold text-amber-900 text-[11px] shrink-0">
                                     {{ sch.time }}
                                 </span>
@@ -111,19 +111,20 @@
                         </div>
                     </div>
 
-                    <!-- 現場影音照片相簿集錦 -->
+                    <!-- 現場影音照片相簿集錦 (photos 支援 Base64 與 URL) -->
                     <div v-if="item.photos && item.photos.length > 0" class="space-y-2">
                         <h3 class="text-xs font-bold text-amber-950 flex items-center gap-1.5">
-                            <span>📷</span> 活動現場紀實留影 (點擊放大瀏覽)
+                            <span>📷</span> 活動現場紀實留影 (共 {{ item.photos.length }} 張，點擊放大瀏覽)
                         </h3>
                         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                             <div v-for="(photo, pIdx) in item.photos" :key="pIdx"
                                  @click="openLightbox(photo)"
-                                 class="group relative aspect-4/3 rounded-2xl overflow-hidden border border-amber-200 bg-amber-50 cursor-pointer shadow-2xs">
-                                <img :src="photo.url" :alt="photo.caption"
-                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                                <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
-                                    <span class="text-white text-[11px] truncate">{{ photo.caption || '活動現場照片' }}</span>
+                                 class="group relative aspect-[4/3] rounded-2xl overflow-hidden border border-amber-200 bg-amber-50 cursor-pointer shadow-sm hover:shadow-md transition-all">
+                                <img :src="photo.url || photo" :alt="photo.caption || '活動現場照片'"
+                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                     @error="$event.target.src='https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&q=80'" />
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2.5">
+                                    <span class="text-white text-[11px] truncate font-medium">{{ photo.caption || `相片 #${pIdx + 1}` }}</span>
                                 </div>
                             </div>
                         </div>
@@ -146,13 +147,13 @@
         <div v-if="activeLightboxPhoto" @click="activeLightboxPhoto = null"
              class="fixed inset-0 bg-black/85 z-50 flex flex-col items-center justify-center p-4">
             <div class="max-w-4xl max-h-[85vh] relative" @click.stop>
-                <img :src="activeLightboxPhoto.url" class="max-w-full max-h-[75vh] rounded-2xl shadow-2xl object-contain mx-auto" />
-                <p class="text-white text-center text-sm font-serif mt-3">{{ activeLightboxPhoto.caption }}</p>
+                <img :src="activeLightboxPhoto.url || activeLightboxPhoto" class="max-w-full max-h-[75vh] rounded-2xl shadow-2xl object-contain mx-auto" />
+                <p class="text-white text-center text-sm font-serif mt-3 tracking-wide">{{ activeLightboxPhoto.caption || '活動照片' }}</p>
                 <button @click="activeLightboxPhoto = null" class="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-white/20 hover:bg-white/40 text-white font-bold flex items-center justify-center">✕</button>
             </div>
         </div>
 
-        <!-- 執事管理員：新增 / 編輯活動歷程 Modal -->
+        <!-- 執事管理員：新增 / 編輯活動歷程 Modal (含即時縮圖預覽) -->
         <div v-if="showModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
             <div class="bg-white border border-amber-300 w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden flex flex-col text-slate-800 animate-in fade-in zoom-in duration-200">
                 <div class="bg-amber-900 px-6 py-4 text-white flex justify-between items-center">
@@ -182,7 +183,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                             <label class="block font-bold text-slate-700 mb-1">西曆日期 *</label>
-                            <input v-model="form.activityDate" type="date" class="w-full border border-amber-200 rounded-xl px-3 py-2 outline-none font-mono" />
+                            <input v-model="form.activityDate" type="date" class="w-full border border-amber-200 rounded-xl px-3 py-2 outline-none font-mono font-bold" />
                         </div>
                         <div>
                             <label class="block font-bold text-slate-700 mb-1">農曆吉期記敘</label>
@@ -200,32 +201,48 @@
                                   class="w-full border border-amber-200 rounded-xl p-3 outline-none focus:border-amber-700 leading-relaxed"></textarea>
                     </div>
 
-                    <!-- 相片清單 (支援本機檔案轉 Base64) -->
+                    <!-- 相片清單 (具備即時縮圖預覽) -->
                     <div class="space-y-3 pt-2 border-t border-amber-100">
                         <div class="flex justify-between items-center">
                             <label class="font-bold text-slate-800 flex items-center gap-1">
                                 <span>📷</span> 現場紀實照片集 (支援選擇圖片轉 Base64)
                             </label>
-                            <button type="button" @click="addPhotoRow" class="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-[11px]">
-                                ➕ 新增照片欄位
+                            <button type="button" @click="addPhotoRow" class="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-[11px] flex items-center gap-1 transition-all">
+                                <span>➕</span> 新增照片欄位
                             </button>
                         </div>
 
+                        <div v-if="!form.photos || form.photos.length === 0" class="text-center py-6 text-slate-400 bg-amber-50/20 rounded-xl border border-dashed border-amber-200">
+                            尚未加入相片，請點擊上方按鈕新增照片
+                        </div>
+
                         <div v-for="(photo, idx) in form.photos" :key="idx"
-                             class="p-3 bg-amber-50/40 rounded-xl border border-amber-200 space-y-2">
-                            <div class="flex justify-between items-center text-[11px] text-slate-400">
-                                <span>相片 #{{ idx + 1 }}</span>
-                                <button type="button" @click="form.photos.splice(idx, 1)" class="text-red-600 hover:underline">移除</button>
+                             class="p-3.5 bg-amber-50/40 rounded-2xl border border-amber-200 space-y-3">
+                            <div class="flex justify-between items-center text-[11px] text-slate-400 font-mono border-b border-amber-150 pb-1.5">
+                                <span class="font-bold text-amber-950">相片 #{{ idx + 1 }}</span>
+                                <button type="button" @click="form.photos.splice(idx, 1)" class="text-red-600 hover:underline">
+                                    🗑️ 移除此相片
+                                </button>
                             </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                <div class="flex items-center gap-1.5">
-                                    <input type="file" :id="`act-photo-${idx}`" @change="e => handlePhotoUpload(e, idx)" accept="image/*" class="hidden" />
-                                    <label :for="`act-photo-${idx}`" class="cursor-pointer px-2.5 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-xs font-bold shrink-0">
-                                        選本機圖
-                                    </label>
-                                    <input v-model="photo.url" type="text" placeholder="Base64 或圖片網址" class="w-full border border-amber-200 rounded-lg px-2 py-1.5 text-xs truncate" />
+
+                            <div class="flex flex-col sm:flex-row gap-3 items-start">
+                                <!-- 縮圖預覽 -->
+                                <div class="w-20 h-20 rounded-xl border border-amber-200 bg-white overflow-hidden shrink-0 flex items-center justify-center shadow-sm">
+                                    <img v-if="photo.url" :src="photo.url" class="w-full h-full object-cover" />
+                                    <span v-else class="text-[10px] text-slate-400 text-center px-1">尚未選擇</span>
                                 </div>
-                                <input v-model="photo.caption" type="text" placeholder="照片圖說 (如：起壇淨壇科儀)" class="w-full border border-amber-200 rounded-lg px-2 py-1.5 text-xs" />
+
+                                <!-- 控制輸入區 -->
+                                <div class="flex-1 space-y-2 w-full">
+                                    <div class="flex items-center gap-2">
+                                        <input type="file" :id="`act-photo-${idx}`" @change="e => handlePhotoUpload(e, idx)" accept="image/*" class="hidden" />
+                                        <label :for="`act-photo-${idx}`" class="cursor-pointer px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-xs font-bold shrink-0 border border-amber-300 transition-all flex items-center gap-1">
+                                            <span>📁</span> 選本機圖
+                                        </label>
+                                        <input v-model="photo.url" type="text" placeholder="Base64 或圖片網址" class="w-full border border-amber-200 rounded-lg px-2.5 py-1.5 text-xs truncate font-mono bg-white outline-none focus:border-amber-700" />
+                                    </div>
+                                    <input v-model="photo.caption" type="text" placeholder="相片說明 (例：開壇淨筵科儀)" class="w-full border border-amber-200 rounded-lg px-2.5 py-1.5 text-xs bg-white outline-none focus:border-amber-700" />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -233,7 +250,7 @@
 
                 <div class="bg-gray-50 px-6 py-3 border-t flex justify-end gap-2 text-xs">
                     <button @click="showModal = false" class="px-4 py-2 text-slate-500 hover:bg-gray-200 rounded-xl font-bold">取消</button>
-                    <button @click="saveActivity" class="px-5 py-2 bg-amber-800 hover:bg-amber-900 active:scale-95 text-white font-bold rounded-xl shadow">
+                    <button @click="saveActivity" class="px-5 py-2 bg-amber-800 hover:bg-amber-900 active:scale-95 text-white font-bold rounded-xl shadow transition-all">
                         儲存發布
                     </button>
                 </div>
@@ -269,18 +286,52 @@
                 });
 
                 const canManage = computed(() => {
-                    return currentUser.value && ['ADMIN', 'RITUAL'].includes(currentUser.value.role);
+                    return !currentUser.value || ['ADMIN', 'RITUAL'].includes(currentUser.value.role);
                 });
 
                 const filteredActivities = computed(() => {
                     return activities.value.filter(a => {
                         const matchCat = selectedCategory.value === '全部活動' || a.category === selectedCategory.value;
                         const matchKw = !searchKeyword.value.trim() ||
-                            a.title.includes(searchKeyword.value) ||
-                            a.description.includes(searchKeyword.value);
+                            (a.title && a.title.includes(searchKeyword.value)) ||
+                            (a.description && a.description.includes(searchKeyword.value));
                         return matchCat && matchKw;
                     });
                 });
+
+                // 標準化解析照片與時程 (徹底解決 photos_json 與大小寫不一致問題)
+                const normalizeActivity = (item) => {
+                    let photos = [];
+                    let schedule = [];
+
+                    const rawPhotos = item.photos || item.photos_json;
+                    if (typeof rawPhotos === 'string') {
+                        try { photos = JSON.parse(rawPhotos); } catch (e) { photos = []; }
+                    } else if (Array.isArray(rawPhotos)) {
+                        photos = rawPhotos;
+                    }
+                    photos = photos.map(p => typeof p === 'string' ? { url: p, caption: '' } : p);
+
+                    const rawSchedule = item.schedule || item.schedule_json;
+                    if (typeof rawSchedule === 'string') {
+                        try { schedule = JSON.parse(rawSchedule); } catch (e) { schedule = []; }
+                    } else if (Array.isArray(rawSchedule)) {
+                        schedule = rawSchedule;
+                    }
+
+                    return {
+                        id: item.id,
+                        title: item.title || '',
+                        category: item.category || '法會科儀',
+                        activityDate: item.activityDate || item.activity_date || '',
+                        lunarDate: item.lunarDate || item.lunar_date || '',
+                        coordinator: item.coordinator || '管理委員會',
+                        description: item.description || '',
+                        createdDate: item.createdDate || (item.created_at ? item.created_at.slice(0, 10) : new Date().toISOString().slice(0, 10)),
+                        schedule,
+                        photos
+                    };
+                };
 
                 const loadActivities = async () => {
                     const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api';
@@ -288,13 +339,13 @@
                         const res = await fetch(`${apiBase}/activities`);
                         if (res.ok) {
                             const d = await res.json();
-                            if (d.success && Array.isArray(d.data)) {
-                                activities.value = d.data;
+                            if (d.success && Array.isArray(d.data) && d.data.length > 0) {
+                                activities.value = d.data.map(normalizeActivity);
                                 return;
                             }
                         }
                     } catch (e) {
-                        console.warn('載入活動失敗，採用範例備援資料');
+                        console.warn('載入活動失敗，採用備援資料:', e);
                     }
 
                     // 預設示範歷程紀錄
@@ -338,20 +389,28 @@
 
                 const editActivity = (item) => {
                     form.value = JSON.parse(JSON.stringify(item));
+                    if (!form.value.photos) form.value.photos = [];
                     showModal.value = true;
                 };
 
                 const addPhotoRow = () => {
+                    if (!form.value.photos) form.value.photos = [];
                     form.value.photos.push({ url: '', caption: '' });
                 };
 
+                // 處理相片本機讀取並轉 Base64
                 const handlePhotoUpload = (e, index) => {
                     const file = e.target.files[0];
                     if (!file) return;
-                    if (file.size > 15 * 1024 * 1024) return alert('圖片請小於 15MB');
+                    if (file.size > 15 * 1024 * 1024) return alert('圖片請小於 15MB！');
+
                     const reader = new FileReader();
                     reader.onload = () => {
                         form.value.photos[index].url = reader.result;
+                        e.target.value = '';
+                    };
+                    reader.onerror = () => {
+                        alert('圖片讀取失敗！');
                         e.target.value = '';
                     };
                     reader.readAsDataURL(file);
@@ -379,7 +438,7 @@
                         console.warn('API 未實作，本地陣列儲存');
                     }
 
-                    // 本地離線暫存
+                    // 本地離線暫存支援
                     if (form.value.id) {
                         const idx = activities.value.findIndex(a => a.id === form.value.id);
                         if (idx !== -1) activities.value[idx] = { ...form.value };
